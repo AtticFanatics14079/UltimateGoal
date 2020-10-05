@@ -15,7 +15,7 @@ import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDrive;
 @Config
 @Autonomous(group = "drive")
 public class FollowerPIDTuner extends LinearOpMode {
-    public static double DISTANCE = 24; // in
+    public static double DISTANCE = 48; // in
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -36,7 +36,7 @@ public class FollowerPIDTuner extends LinearOpMode {
             drive.followTrajectory(traj);
             drive.turn(Math.toRadians(90));
 
-            startPose = drive.getPoseEstimate().plus(new Pose2d(0, 0, Math.toRadians(90)));
+            startPose = traj.end().plus(new Pose2d(0, 0, Math.toRadians(90)));
         }
     }
 }
