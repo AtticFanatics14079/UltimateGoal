@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.Autonomous.RoadRunner;
+package org.firstinspires.ftc.teamcode.Autonomous.RRBasicPaths;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
@@ -22,7 +22,7 @@ import java.util.List;
  */
 @Config
 @Autonomous(group = "drive")
-public class AutonomousPaths extends LinearOpMode {
+public class AllPaths extends LinearOpMode {
     public static double DISTANCE = 36; // in
     private DriveConstraints constraints = new DriveConstraints(45.0, 30.0, 0.0, Math.toRadians(270), Math.toRadians(270), 0.0);
     private Pose2d startPose = new Pose2d(-63.0, -36.0, Math.toRadians(180));
@@ -37,6 +37,10 @@ public class AutonomousPaths extends LinearOpMode {
     public void runOpMode() throws InterruptedException {
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+
+        waitForStart();
+
+        if(isStopRequested()) return;
 
         TrajectoryBuilder shootergobrr0 = new TrajectoryBuilder(startPose, startPose.getHeading(), constraints);
         TrajectoryBuilder builder0 = new TrajectoryBuilder(shootPose0, 0.0, constraints);
