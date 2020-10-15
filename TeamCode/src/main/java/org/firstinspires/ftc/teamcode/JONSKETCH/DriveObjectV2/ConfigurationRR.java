@@ -25,17 +25,21 @@ import com.acmerobotics.roadrunner.trajectory.TrajectoryBuilder;
 import com.acmerobotics.roadrunner.trajectory.constraints.DriveConstraints;
 import com.acmerobotics.roadrunner.trajectory.constraints.MecanumConstraints;
 import com.acmerobotics.roadrunner.util.NanoClock;
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants;
+import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDrive;
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.StandardTrackingWheelLocalizer;
 import org.firstinspires.ftc.teamcode.Utils.DashboardUtil;
 import org.firstinspires.ftc.teamcode.Utils.LynxModuleUtil;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants.BASE_CONSTRAINTS;
@@ -51,6 +55,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(2, 0, 0);
     public static PIDCoefficients HEADING_PID = new PIDCoefficients(1, 0, 0);
 
+    public static double LATERAL_MULTIPLIER = 1;
 
     public enum Mode {
         IDLE,
@@ -72,7 +77,8 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
     private List<Pose2d> poseHistory;
 
-    private ArrayList<DMotor> motors = new ArrayList<>();
+    private DMotor leftFront, leftRear, rightRear, rightFront;
+    private List<DMotor> motors;
     private List<LynxModule> allHubs;
     private DIMU imu;
 
@@ -110,10 +116,17 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         //Example: hardware.put("motor1", new DriveObject(DriveObject.type.DcMotorImplEx, "left_back_motor", DriveObject.classification.Drivetrain, hwMap));
         //In this example, "left_back_motor" is whatever your configuration says.
         int i = 0;
-        motors.add(new DMotor(vals, hwMap, "back_left_motor", i++));
-        motors.add(new DMotor(vals, hwMap, "front_left_motor", i++));
-        motors.add(new DMotor(vals, hwMap, "front_right_motor", i++));
-        motors.add(new DMotor(vals, hwMap, "back_right_motor", i++));
+
+        leftFront = new DMotor(vals, hwMap, "front_left_motor", i++);
+        leftRear = new DMotor(vals, hwMap, "back_left_motor", i++);
+        rightRear = new DMotor(vals, hwMap, "back_right_motor", i++);
+        rightFront = new DMotor(vals, hwMap, "front_right_motor", i++);
+        motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
+        hardware.add(motors.get(0));
+        hardware.add(motors.get(1));
+        hardware.add(motors.get(2));
+        hardware.add(motors.get(3));
+
         // TODO: if your hub is mounted vertically, remap the IMU axes so that the z-axis points
         // upward (normal to the floor) using a command like the following:
         // BNO055IMUUtil.remapAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);

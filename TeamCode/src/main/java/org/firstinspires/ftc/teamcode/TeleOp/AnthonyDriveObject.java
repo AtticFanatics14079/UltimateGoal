@@ -38,7 +38,7 @@ public class AnthonyDriveObject extends LinearOpMode {
 
     private void getInput() {
 
-        setPower(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
+        //setPower(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
 
         Sequence BIGSPICE1 = new Sequence(() -> config.motor.setForTime(2000,3), null);
         Sequence BIGSPICE2 = new Sequence(() -> {
@@ -54,6 +54,9 @@ public class AnthonyDriveObject extends LinearOpMode {
             bigSpice.start();
         }
         else if (!gamepad1.x) xPressed = false;
+
+        if(gamepad1.a) setPower(0, 1, 0);
+        else setPower(0, 0, 0);
     }
 
     private void setPower(double px, double py, double pa){
