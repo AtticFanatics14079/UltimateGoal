@@ -4,25 +4,26 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.HardwareConfigs.OneHubDrive;
+
 import java.util.Arrays;
 
 @TeleOp
 public class SampleTeleOp extends LinearOpMode {
 
     HardwareThread hardware;
-    SampleConfiguration config;
+    OneHubDrive config;
 
     @Override
     public void runOpMode() throws InterruptedException {
         try {
-            config = new SampleConfiguration();
+            config = new OneHubDrive();
             ValueStorage vals = new ValueStorage();
             hardware = new HardwareThread(hardwareMap, vals, config);
             //hardware.config.ExtendGripper.setPID(2, 0, 0); //Gonna need to mess with this one
             waitForStart();
             ElapsedTime time = new ElapsedTime();
             hardware.start();
-            //config.odometry.beginTracking();
             while(!isStopRequested()){
                 vals.waitForCycle();
                 System.out.println("Finshed waiting, " + time.milliseconds());
@@ -31,28 +32,12 @@ public class SampleTeleOp extends LinearOpMode {
         } catch(Exception e) {
             System.out.println("Exception: " + e);
         } finally {
-            config.odometry.endTracking();
             hardware.Stop();
         }
     }
 
     private void getInput(){
         setPower(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
-
-        //config.motor.setPower(1);
-
-        if(gamepad1.a) config.servo.set(1);
-        else if(gamepad1.b) config.servo.set(0);
-
-        if(gamepad1.x) config.motor.setPosition(1000, 1, 50);
-        else if(gamepad1.y) config.motor.setPosition(0, 1, 50);
-
-        //if(gamepad1.start) {
-        //}
-
-        telemetry.addData("Values: ", Arrays.toString(config.backLeft.get()));
-
-        System.out.println("After in runValues in op mode");
 
         telemetry.update();
     }

@@ -71,7 +71,7 @@ public class SampleMecanumDrive extends MecanumDrive {
     private List<Pose2d> poseHistory;
 
     private DcMotorEx leftFront, leftRear, rightRear, rightFront;
-    private List<DcMotorEx> motors;
+    public List<DcMotorEx> motors;
     private BNO055IMU imu;
 
     private Pose2d lastPoseOnTurn;

@@ -1,18 +1,21 @@
 package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorImplEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+
+import org.firstinspires.ftc.teamcode.Utils.Encoder;
 
 public class DOdometryPod implements DriveObject {
 
-    private DcMotor odoPod;
+    private Encoder odoPod;
     private int partNum;
     private double ticksPerInch = 1000; //MODIFY WITH THE EXACT VALUE
 
     private ValueStorage vals;
 
     public DOdometryPod(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum) {
-        odoPod = hwMap.get(DcMotor.class, objectName);
+        odoPod = new Encoder(hwMap.get(DcMotorImplEx.class, objectName));
         this.vals = vals;
         this.partNum = partNum;
     }
@@ -34,8 +37,7 @@ public class DOdometryPod implements DriveObject {
     }
 
     public double[] getHardware() {
-        System.out.println(odoPod.getCurrentPosition());
-        return new double[]{odoPod.getCurrentPosition()};
+        return new double[]{odoPod.getCurrentPosition(), odoPod.getCorrectedVelocity()};
     }
 
     public void endThreads() {

@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDrive;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ConfigurationRR;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.HardwareThread;
+import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.Sequence;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ValueStorage;
 
 /*
@@ -21,10 +22,10 @@ import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ValueStorage;
 @Config
 @Autonomous(group = "drive")
 public class ZeroStackPathDriveObject extends LinearOpMode {
-    private Pose2d startPose = new Pose2d(-63.0, -36.0, Math.toRadians(180));
-    private Pose2d shootPose = new Pose2d(-2.0, -15.0, Math.toRadians(0));
+    private Pose2d startPose = new Pose2d(-63.0, -36.0, Math.toRadians(0));
+    private Pose2d shootPose = new Pose2d(-2.0, -32.0, Math.toRadians(0));
     private Vector2d dropoff0 = new Vector2d(10.0, -58.0);
-    private Vector2d pickup = new Vector2d(-48.0, -48.0);
+    private Vector2d pickup = new Vector2d(-52.0, -48.0);
 
     ValueStorage vals = new ValueStorage();
     HardwareThread hardware;
@@ -39,7 +40,20 @@ public class ZeroStackPathDriveObject extends LinearOpMode {
 
         hardware.start();
 
+        drive.setPoseEstimate(startPose);
+
+        Sequence s = new Sequence(() -> {
+                while(!isStopRequested()) {
+                    telemetry.addData("Position: ", drive.getPoseEstimate());
+                    telemetry.update();
+                }
+                return null;
+        }, null);
+        Thread t = new Thread(s);
+        t.start();
+
         if(isStopRequested()) return;
+
         Trajectory goToShoot = drive.trajectoryBuilder(startPose)
                 .lineToLinearHeading(shootPose)
                 .build();
@@ -57,11 +71,13 @@ public class ZeroStackPathDriveObject extends LinearOpMode {
         //do stuff
 
         Trajectory wobble2 = drive.trajectoryBuilder(drive.getPoseEstimate())
-                .splineTo(new Vector2d(dropoff0.getX(), dropoff0.getY()+6), Math.toRadians(0))
+                .splineTo(new Vector2d(dropoff0.getX(), dropoff0.getY()+8), Math.toRadians(0))
                 .addDisplacementMarker(() -> {
                     //do stuff
                 })
                 .build();
         drive.followTrajectory(wobble2);
+
+        t.stop();
     }
 }

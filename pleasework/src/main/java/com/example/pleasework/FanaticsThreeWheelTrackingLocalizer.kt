@@ -1,8 +1,10 @@
-package org.firstinspires.ftc.teamcode.Autonomous.RoadRunner
+package com.example.pleasework
 
 import com.acmerobotics.roadrunner.geometry.Pose2d
 import com.acmerobotics.roadrunner.kinematics.Kinematics
 import com.acmerobotics.roadrunner.localization.Localizer
+import com.qualcomm.hardware.bosch.BNO055IMU
+import com.qualcomm.hardware.bosch.BNO055IMUImpl
 import org.apache.commons.math3.linear.Array2DRowRealMatrix
 import org.apache.commons.math3.linear.DecompositionSolver
 import org.apache.commons.math3.linear.LUDecomposition
@@ -14,10 +16,12 @@ import org.apache.commons.math3.linear.MatrixUtils
  * @param wheelPoses wheel poses relative to the center of the robot (positive X points forward on the robot)
  */
 abstract class FanaticsThreeWheelTrackingLocalizer(
-        wheelPoses: List<Pose2d>
+        wheelPoses: List<Pose2d>,
+        imu : BNO055IMU
 ) : Localizer {
     private var _poseEstimate = Pose2d()
     val TRACK_WIDTH = wheelPoses.get(0).y*2 // in; distance between the left and right wheels
+    val IMU = imu
     override var poseEstimate: Pose2d
         get() = _poseEstimate
         set(value) {
@@ -61,7 +65,7 @@ abstract class FanaticsThreeWheelTrackingLocalizer(
                     rawPoseDelta.getEntry(2, 0)
             )
             _poseEstimate = Kinematics.relativeOdometryUpdate(_poseEstimate, robotPoseDelta)
-            _poseEstimate = Pose2d(_poseEstimate.x,_poseEstimate.y,Math.toRadians(wheelPositions.get(0)-wheelPositions.get(1)/TRACK_WIDTH))
+            _poseEstimate = Pose2d(_poseEstimate.x, _poseEstimate.y, IMU.getAngularOrientation().firstAngle.toDouble())//Math.toRadians((wheelPositions.get(0)-wheelPositions.get(1))/TRACK_WIDTH))
         }
         lastWheelPositions = wheelPositions
     }
@@ -70,5 +74,7 @@ abstract class FanaticsThreeWheelTrackingLocalizer(
      * Returns the positions of the tracking wheels in the desired distance units (not encoder counts!)
      */
     abstract fun getWheelPositions(): List<Double>
+
+    open fun getWheelVelocities(): List<Double>? = null
 }
 
