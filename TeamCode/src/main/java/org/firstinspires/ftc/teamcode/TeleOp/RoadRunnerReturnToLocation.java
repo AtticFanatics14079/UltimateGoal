@@ -2,12 +2,15 @@ package org.firstinspires.ftc.teamcode.TeleOp;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.acmerobotics.roadrunner.drive.Drive;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
+import com.acmerobotics.roadrunner.trajectory.constraints.DriveConstraints;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants;
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDrive;
 
 @TeleOp
@@ -38,11 +41,15 @@ public class RoadRunnerReturnToLocation extends LinearOpMode {
         setPower(gamepad1.left_stick_x, -gamepad1.left_stick_y, gamepad1.right_stick_x);
         if(gamepad1.x) drive.setPoseEstimate(new Pose2d(0, 0, heading = drive.getRawExternalHeading()));
         if(gamepad1.y) {
+            DriveConstants.BASE_CONSTRAINTS = new DriveConstraints(45.0, 25.0,
+                    0.0, Math.toRadians(180.0), Math.toRadians(180.0), 0.0);
             Trajectory goToShoot = drive.trajectoryBuilder(drive.getPoseEstimate())
                     .lineToLinearHeading(new Pose2d(0, 0))
                     .build();
             drive.followTrajectory(goToShoot);
             System.out.println("Here");
+            DriveConstants.BASE_CONSTRAINTS = new DriveConstraints(80.0, 60.0,
+                    0.0, Math.toRadians(180.0), Math.toRadians(180.0), 0.0);
         }
     }
 

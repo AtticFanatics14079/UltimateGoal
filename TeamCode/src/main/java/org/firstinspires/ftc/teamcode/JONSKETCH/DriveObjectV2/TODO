@@ -1,9 +1,8 @@
-- Potentially update time-gated system to simply wait on hardware for maximum efficiency (#)
+- Need to update all objects with implementing type (e.g. DMotor implements DcMotor)
 - Add a backup system to end Sequence threads on stop/crash
 - Fix-up PositionThread (again) as it is very clunky and hard to troubleshoot
 
 Known potential issues:
-- RoadRunner may skip past "motors" and therefore ignore DriveObject's system (!)
 - No way to recognize end of servo movement (?)
 
 Shortcuts:

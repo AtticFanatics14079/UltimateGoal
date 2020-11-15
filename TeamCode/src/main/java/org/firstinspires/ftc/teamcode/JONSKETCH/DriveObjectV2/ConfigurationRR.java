@@ -31,6 +31,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants;
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveObjectTrackingWheelLocalizer;
@@ -142,12 +143,11 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         // BNO055IMUUtil.remapAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);
 
         //Not sure what the next part does so if stuff is wonky check it.
-        /*for (DMotor motor : motors) {
+        for (DMotor motor : motors) {
             MotorConfigurationType motorConfigurationType = motor.getMotorType().clone();
             motorConfigurationType.setAchieveableMaxRPMFraction(1.0);
             motor.setMotorType(motorConfigurationType);
         }
-        */
 
         setBulkCachingManual(true);
 
@@ -161,7 +161,6 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         // TODO: if desired, use setLocalizer() to change the localization method
         setLocalizer(new DriveObjectTrackingWheelLocalizer(hwMap, this));
 
-        //Need to make an IMU class soon, no idea how I haven't yet.
         imu = new DIMU(vals, hwMap, i++);
     }
 

@@ -1,13 +1,15 @@
 package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorController;
 import com.qualcomm.robotcore.hardware.DcMotorImplEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
-public class DMotor implements DriveObject {
+public class DMotor implements DriveObject, DcMotor {
 
-    private DcMotorImplEx motor;
+    DcMotorImplEx motor;
     private double[] pid = new double[]{30.0, 0.0, 0.0, 2700};
     private int partNum;
     private double powerToVelocity = 2700; //MODIFY WITH THE EXACT VALUE
@@ -15,13 +17,16 @@ public class DMotor implements DriveObject {
     private DOThread thread = new NullThread();
     private ValueStorage vals;
 
-    //Constructors
-
-    public DMotor(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum){
+    public DMotor(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum) {
         motor = hwMap.get(DcMotorImplEx.class, objectName);
         this.partNum = partNum;
         this.vals = vals;
+        //Goal: use super and hwMap.get() in a way that doesn't
     }
+
+    //Constructors
+
+
 
     //Interface methods
 
@@ -51,8 +56,23 @@ public class DMotor implements DriveObject {
 
     //Class-specific methods
 
+    @Override
+    public void setDirection(Direction direction) {
+
+    }
+
+    @Override
+    public Direction getDirection() {
+        return null;
+    }
+
     public void setPower(double power) {
         set(power * powerToVelocity);
+    }
+
+    @Override
+    public double getPower() {
+        return 0;
     }
 
     //Assumes set to 0 at the end
@@ -90,8 +110,76 @@ public class DMotor implements DriveObject {
         if(mode != DcMotor.RunMode.RUN_TO_POSITION) motor.setMode(mode);
     }
 
+    @Override
+    public RunMode getMode() {
+        return motor.getMode();
+    }
+
+    @Override
+    public MotorConfigurationType getMotorType() {
+        return motor.getMotorType();
+    }
+
+    @Override
+    public void setMotorType(MotorConfigurationType motorType) {
+        motor.setMotorType(motorType);
+    }
+
+    @Override
+    public DcMotorController getController() {
+        return motor.getController();
+    }
+
+    @Override
+    public int getPortNumber() {
+        return motor.getPortNumber();
+    }
+
     public void setZeroPowerBehavior(DcMotor.ZeroPowerBehavior behavior){
         motor.setZeroPowerBehavior(behavior);
+    }
+
+    @Override
+    public ZeroPowerBehavior getZeroPowerBehavior() {
+        return motor.getZeroPowerBehavior();
+    }
+
+    @Deprecated
+    @Override
+    public void setPowerFloat() {
+        //Should never be called
+    }
+
+    @Deprecated
+    @Override
+    public boolean getPowerFloat() {
+        return false;
+    }
+
+    @Deprecated
+    @Override
+    public void setTargetPosition(int position) {
+        //Leaving this deprecated, use setPosition instead.
+
+        //Default values below
+        setPosition(position, 1, 10);
+    }
+
+    @Deprecated
+    @Override
+    public int getTargetPosition() {
+        return -1;
+    }
+
+    //isBusy checks for alive threads and non-zero velocity, THIS IS NOT THE SAME AS NORMAL ISBUSY.
+    @Override
+    public boolean isBusy() {
+        return (thread.isAlive() || get()[0] != 0);
+    }
+
+    @Override
+    public int getCurrentPosition() {
+        return (int) get()[1];
     }
 
     public double[] getPID() {
@@ -107,4 +195,34 @@ public class DMotor implements DriveObject {
         motor.setDirection(reverse ? DcMotorSimple.Direction.REVERSE : DcMotorSimple.Direction.FORWARD);
     }
 
+    @Override
+    public Manufacturer getManufacturer() {
+        return motor.getManufacturer();
+    }
+
+    @Override
+    public String getDeviceName() {
+        return motor.getDeviceName();
+    }
+
+    @Override
+    public String getConnectionInfo() {
+        return motor.getConnectionInfo();
+    }
+
+    @Override
+    public int getVersion() {
+        return motor.getVersion();
+    }
+
+    @Override
+    public void resetDeviceConfigurationForOpMode() {
+        motor.resetDeviceConfigurationForOpMode();
+    }
+
+    @Override
+    public void close() {
+        //Just gonna assume this is either not used or used at the end of an opmode.
+        motor.close();
+    }
 }

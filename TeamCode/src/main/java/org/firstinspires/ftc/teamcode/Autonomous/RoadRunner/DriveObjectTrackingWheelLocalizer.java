@@ -5,6 +5,7 @@ import androidx.annotation.NonNull;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.localization.ThreeTrackingWheelLocalizer;
+import com.example.pleasework.FanaticsThreeWheelTrackingLocalizer;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
@@ -29,7 +30,7 @@ import java.util.List;
  *
  */
 @Config
-public class DriveObjectTrackingWheelLocalizer extends ThreeTrackingWheelLocalizer {
+public class DriveObjectTrackingWheelLocalizer extends FanaticsThreeWheelTrackingLocalizer {
     public static double TICKS_PER_REV = 8192;
     public static double WHEEL_RADIUS = 0.77; // in
     public static double GEAR_RATIO = 1; // output (wheel) speed / input (encoder) speed
@@ -47,7 +48,7 @@ public class DriveObjectTrackingWheelLocalizer extends ThreeTrackingWheelLocaliz
                 new Pose2d(0, LATERAL_DISTANCE / 2, 0), // left
                 new Pose2d(0, -LATERAL_DISTANCE / 2, 0), // right
                 new Pose2d(FORWARD_OFFSET, 0, Math.toRadians(90)) // front
-        ));
+        ), config.);
 
         this.config = config;
 
