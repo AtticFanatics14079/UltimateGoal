@@ -33,13 +33,16 @@ public class scanPipeline extends LinearOpMode {
 
     private final int rows = 640;
     private final int cols = 480;
-    public static int sampleWidth = 3;
-    public static int sampleHeight = 2;
-    public static Point topCenter = new Point(320, 100);
-    public static Point bottomCenter = new Point(320, 250);
+    public static int sampleWidth = 30;
+    public static int sampleHeight = 3;
+    public static Point topCenter = new Point(510, 420);
+    public static Point bottomCenter = new Point(510, 350);
     public static int thresh = 140;
     public static int stackSize = -1;
     private static double color1, color2;
+
+    public static int extract = 1;
+
     OpenCvCamera webCam;
 
     @Override
@@ -110,8 +113,10 @@ public class scanPipeline extends LinearOpMode {
         public Mat processFrame(Mat input)
         {
             rawMat = input;
-            Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2YCrCb);
-            Core.extractChannel(YCRCBMat,ExtractMat, 2);
+            //Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2YCrCb);
+            //YCRCBMat = rawMat;
+            Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2HSV);
+            Core.extractChannel(YCRCBMat, ExtractMat, extract);
             Imgproc.cvtColor(ExtractMat, MediumRareMat, Imgproc.COLOR_GRAY2RGB);
 
             Point topLeft1 = new Point(topCenter.x - sampleWidth,topCenter.y - sampleHeight);

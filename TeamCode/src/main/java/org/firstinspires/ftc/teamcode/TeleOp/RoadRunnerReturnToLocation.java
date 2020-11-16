@@ -2,23 +2,36 @@ package org.firstinspires.ftc.teamcode.TeleOp;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.acmerobotics.roadrunner.drive.Drive;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
+import com.acmerobotics.roadrunner.trajectory.constraints.DriveConstraints;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants;
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.TeleOpMecanumDrive;
 
 @TeleOp
 public class RoadRunnerReturnToLocation extends LinearOpMode {
 
-    private double heading = 0; // in
-    private SampleMecanumDrive drive;
+    private double heading = 0; // radians
+    //private SampleMecanumDrive control, auton;
+    private TeleOpMecanumDrive drive;
 
     @Override
     public void runOpMode() throws InterruptedException {
-        drive = new SampleMecanumDrive(hardwareMap);
+        //auton = new SampleMecanumDrive(hardwareMap);
+        /*DriveConstants.BASE_CONSTRAINTS = new DriveConstraints(
+                90.0, 60.0, 0.0,
+                Math.toRadians(180.0), Math.toRadians(180.0), 0.0
+        ); //Need to modify these as well as check to make sure the changed values only impact control.
+           //Trying to use DriveConstraints in lineToLinearHeading first.
+         */
+        //control = new SampleMecanumDrive(hardwareMap);
+        drive = new TeleOpMecanumDrive(hardwareMap);
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         waitForStart();
@@ -36,10 +49,16 @@ public class RoadRunnerReturnToLocation extends LinearOpMode {
 
     public void takeInput() {
         setPower(gamepad1.left_stick_x, -gamepad1.left_stick_y, gamepad1.right_stick_x);
-        if(gamepad1.x) drive.setPoseEstimate(new Pose2d(0, 0, heading = drive.getRawExternalHeading()));
+        if(gamepad1.x) {
+            drive.setPoseEstimate(new Pose2d(0, 0));
+            heading = drive.getRawExternalHeading();
+        }
         if(gamepad1.y) {
+            drive.setPoseEstimate(drive.getPoseEstimate());
             Trajectory goToShoot = drive.trajectoryBuilder(drive.getPoseEstimate())
-                    .lineToLinearHeading(new Pose2d(0, 0))
+                    .lineToLinearHeading(new Pose2d(0, 0, heading), new DriveConstraints(
+                            40.0, 20.0, 0.0,
+                            Math.toRadians(180.0), Math.toRadians(180.0), 0.0))
                     .build();
             drive.followTrajectory(goToShoot);
             System.out.println("Here");

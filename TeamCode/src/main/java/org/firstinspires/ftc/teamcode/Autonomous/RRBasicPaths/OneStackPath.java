@@ -18,7 +18,7 @@ import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDrive;
  */
 @Config
 @Autonomous(group = "drive")
-public class ThreeStackPath extends LinearOpMode {
+public class OneStackPath extends LinearOpMode {
 
     private DriveConstraints constraints = new DriveConstraints(45.0, 30.0, 0.0, Math.toRadians(270), Math.toRadians(270), 0.0);
     private Pose2d startPose = new Pose2d(-63.0, -36.0, Math.toRadians(0.0));
