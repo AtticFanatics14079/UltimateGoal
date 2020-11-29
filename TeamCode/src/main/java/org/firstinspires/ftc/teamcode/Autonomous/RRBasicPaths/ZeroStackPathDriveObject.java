@@ -24,7 +24,7 @@ import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ValueStorage;
 public class ZeroStackPathDriveObject extends LinearOpMode {
     private Pose2d startPose = new Pose2d(-63.0, -36.0, Math.toRadians(0));
     private Pose2d shootPose = new Pose2d(-2.0, -32.0, Math.toRadians(0));
-    private Vector2d dropoff0 = new Vector2d(10.0, -58.0);
+    private Vector2d dropoff0 = new Vector2d(10.0, -60.0);
     private Vector2d pickup = new Vector2d(-52.0, -48.0);
 
     ValueStorage vals = new ValueStorage();
@@ -40,29 +40,23 @@ public class ZeroStackPathDriveObject extends LinearOpMode {
 
         hardware.start();
 
-        drive.setPoseEstimate(startPose);
-
-        Sequence s = new Sequence(() -> {
-                while(!isStopRequested()) {
-                    telemetry.addData("Position: ", drive.getPoseEstimate());
-                    telemetry.update();
-                }
-                return null;
-        }, null);
-        Thread t = new Thread(s);
-        t.start();
-
         if(isStopRequested()) return;
 
+        drive.setPoseEstimate(startPose);
+
         Trajectory goToShoot = drive.trajectoryBuilder(startPose)
-                .lineToLinearHeading(shootPose)
+                .splineTo(new Vector2d(shootPose.getX(), shootPose.getY()), 0)
                 .build();
         drive.followTrajectory(goToShoot);
 
+        telemetry.addData("Position: ", drive.getPoseEstimate());
+        telemetry.update();
+
         Trajectory wobble1 = drive.trajectoryBuilder(drive.getPoseEstimate())
                 .splineTo(dropoff0, Math.toRadians(180))
-                .addDisplacementMarker(() ->{
-                    //do stuff
+                .addTemporalMarker(1, () ->{
+                    telemetry.addData("Position: ", drive.getPoseEstimate());
+                    telemetry.update();
                 })
                 .splineTo(pickup, Math.toRadians(180))
                 .build();
@@ -70,14 +64,12 @@ public class ZeroStackPathDriveObject extends LinearOpMode {
 
         //do stuff
 
-        Trajectory wobble2 = drive.trajectoryBuilder(drive.getPoseEstimate())
-                .splineTo(new Vector2d(dropoff0.getX(), dropoff0.getY()+8), Math.toRadians(0))
+        Trajectory wobble2 = drive.trajectoryBuilder(drive.getPoseEstimate(), true)
+                .splineTo(new Vector2d(dropoff0.getX() + 6, dropoff0.getY()+8), Math.toRadians(0))
                 .addDisplacementMarker(() -> {
                     //do stuff
                 })
                 .build();
         drive.followTrajectory(wobble2);
-
-        t.stop();
     }
 }
