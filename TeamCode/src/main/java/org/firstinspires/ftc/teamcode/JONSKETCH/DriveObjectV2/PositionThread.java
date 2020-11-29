@@ -8,14 +8,14 @@ public class PositionThread extends Thread implements DOThread {
 
     private int pos; //Arrays are all ordered according to partNum.
     private double lastTime, tolerance, error, totalError, lastError, maxSpeed;
-    private volatile DriveObject[] drive;
+    private volatile DMotor[] drive;
     private volatile double[] PID;
     private boolean stillGoing = true, group = false;
     private volatile boolean stop;
     private ValueStorage vals;
 
     public PositionThread(int position, double maxSpeed, double tolerance, DMotor motor, ValueStorage vals){
-        this.drive = new DriveObject[]{motor};
+        this.drive = new DMotor[]{motor};
         pos = position;
         this.maxSpeed = maxSpeed;
         PID = motor.getPID().clone();
@@ -53,7 +53,7 @@ public class PositionThread extends Thread implements DOThread {
                     velocity = 0;
                     stop = true;
                 }
-                for(DriveObject d : drive) {
+                for(DMotor d : drive) {
                     d.set(velocity);
                 }
             }

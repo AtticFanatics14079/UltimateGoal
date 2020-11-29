@@ -31,20 +31,25 @@ public class HardwareThread extends Thread {
 
         time = new ElapsedTime();
 
-        while(!stop) {
+        try {
+            while(!stop) {
 
-            readHardware(); //Longest section by a ridiculous margin (about 90% of time)
+                readHardware(); //Longest section by a ridiculous margin (about 90% of time)
 
-            System.out.println("Hardware cycle: " + time.milliseconds());
-            vals.updateCycle();
-            //Should allow every other thread to simply wait for cycle. Consider moving this or adding a sleep to prevent runValues being off by a cycle.
+                System.out.println("Hardware cycle: " + time.milliseconds());
+                vals.updateCycle();
+                //Should allow every other thread to simply wait for cycle. Consider moving this or adding a sleep to prevent runValues being off by a cycle.
 
-            runHardware(vals.runValues(false, 0, 0));
+                runHardware(vals.runValues(false, 0, 0));
+            }
         }
-        for(DriveObject d : config.hardware) {
-            d.endThreads();
+        catch(Exception e) {}
+        finally {
+            for(DriveObject d : config.hardware) {
+                d.endThreads();
+            }
+            vals.clear();
         }
-        vals.clear();
     }
 
     private void readHardware(){

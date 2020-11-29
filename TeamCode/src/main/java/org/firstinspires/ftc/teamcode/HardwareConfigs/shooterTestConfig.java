@@ -21,7 +21,6 @@ public class shooterTestConfig {
         shooter = hwMap.get(DcMotorImplEx.class,"motor");
         shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        shooter.setDirection(DcMotorSimple.Direction.REVERSE);
         loader = hwMap.get(Servo.class, "servo");
 
         return hwMap;

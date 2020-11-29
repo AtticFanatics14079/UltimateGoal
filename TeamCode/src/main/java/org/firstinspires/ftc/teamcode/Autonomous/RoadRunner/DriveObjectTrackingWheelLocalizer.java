@@ -44,17 +44,13 @@ public class DriveObjectTrackingWheelLocalizer extends FanaticsThreeWheelTrackin
 
     private DOdometryPod leftEncoder, rightEncoder, frontEncoder;
 
-    private ConfigurationRR config;
-
     public DriveObjectTrackingWheelLocalizer(HardwareMap hardwareMap, ConfigurationRR config) {
 
         super(Arrays.asList(
                 new Pose2d(0, LATERAL_DISTANCE / 2, 0), // left
                 new Pose2d(0, -LATERAL_DISTANCE / 2, 0), // right
                 new Pose2d(FORWARD_OFFSET, 0, Math.toRadians(90)) // front
-        ), (BNO055IMU) config.imu);
-
-        this.config = config;
+        ), config.imu);
 
         leftEncoder = config.leftEncoder;
         rightEncoder = config.rightEncoder;
@@ -78,7 +74,6 @@ public class DriveObjectTrackingWheelLocalizer extends FanaticsThreeWheelTrackin
                 encoderTicksToInches(leftEncoder.get()[0]),
                 encoderTicksToInches(-rightEncoder.get()[0]),
                 encoderTicksToInches(frontEncoder.get()[0]));
-        System.out.println("Left: " + a.get(0) + "\nRight: " + a.get(1) + "\nFront: " + a.get(2));
         return a;
     }
 

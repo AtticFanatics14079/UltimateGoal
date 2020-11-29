@@ -130,6 +130,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         frontEncoder = new DOdometryPod(vals, hwMap, "frontEncoder", i++);
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
         pods = Arrays.asList(leftEncoder, rightEncoder, frontEncoder);
+        imu = new DIMU(vals, hwMap, i++);
         hardware.add(motors.get(0));
         hardware.add(motors.get(1));
         hardware.add(motors.get(2));
@@ -137,6 +138,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         hardware.add(leftEncoder);
         hardware.add(rightEncoder);
         hardware.add(frontEncoder);
+        hardware.add(imu);
 
         // TODO: if your hub is mounted vertically, remap the IMU axes so that the z-axis points
         // upward (normal to the floor) using a command like the following:
@@ -155,13 +157,15 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
             setPIDCoefficients(MOTOR_VELO_PID);
         }
 
+        if (RUN_USING_ENCODER) {
+            setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        }
+
         // TODO: reverse any motors using DcMotor.setDirection()
         motors.get(2).reverse(true);
         motors.get(3).reverse(true);
         // TODO: if desired, use setLocalizer() to change the localization method
         setLocalizer(new DriveObjectTrackingWheelLocalizer(hwMap, this));
-
-        imu = new DIMU(vals, hwMap, i++);
     }
 
     public void setBulkCachingManual(boolean manual){

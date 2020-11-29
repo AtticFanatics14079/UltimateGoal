@@ -9,9 +9,11 @@ import org.firstinspires.ftc.teamcode.HardwareConfigs.shooterTestConfig;
 @Config
 @TeleOp
 public class ShooterTest extends LinearOpMode {
-    public static int velo = 1500;
-    public static double open = 0.9;
-    public static double closed = 0.2;
+
+    public static int velo = 1700;
+    public static double open = 0.15;
+    public static double closed = 0.65;
+
     @Override
     public void runOpMode() throws InterruptedException {
         shooterTestConfig config = new shooterTestConfig();
@@ -19,7 +21,7 @@ public class ShooterTest extends LinearOpMode {
         config.loader.setPosition(open);
         waitForStart();
         while(!isStopRequested()) {
-            if(gamepad1.a && config.shooter.getVelocity() > (velo - 150)) config.loader.setPosition(closed);
+            if(gamepad1.a) config.loader.setPosition(closed);
             else config.loader.setPosition(open);
 
             config.shooter.setVelocity(velo);

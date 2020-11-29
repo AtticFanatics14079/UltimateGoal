@@ -87,7 +87,9 @@ public class DIMU implements DriveObject, BNO055IMU {
     @Deprecated
     @Override
     public Orientation getAngularOrientation() {
-        return null;
+        return new Orientation(
+                AxesReference.EXTRINSIC, AxesOrder.XYZ, org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.RADIANS, (float) get()[0], (float) get()[1], (float) get()[2], 0
+        );
     }
 
     //Use get().

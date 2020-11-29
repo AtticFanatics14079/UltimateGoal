@@ -1,3 +1,4 @@
+/*
 package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
 
 //import android.app.Activity;
@@ -63,11 +64,13 @@ public class ControllerInput extends LinearOpMode {
         while(hardware.isAlive() && time2.seconds() < 1.0){
         }
 
-        /*if(write.isAlive()) {
+        */
+/*if(write.isAlive()) {
             write.stop();
         }
 
-         */
+         *//*
+
         if(hardware.isAlive()) hardware.stop();
     }
 
@@ -106,3 +109,4 @@ public class ControllerInput extends LinearOpMode {
         hardware.config.hardware.get(3).set(p[3] * 2700);
     }
 }
+*/

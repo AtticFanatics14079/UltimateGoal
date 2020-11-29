@@ -78,14 +78,14 @@ public class DMotor implements DriveObject, DcMotor {
     //Assumes set to 0 at the end
     public DOThread setForTime(double velocity, double seconds) {
         if(thread != null && thread.isAlive()) thread.Stop();
-        thread = new TimeThread(velocity, seconds, this);
+        //thread = new TimeThread(velocity, seconds, this);
         thread.start();
         return thread;
     }
 
     public DOThread setForTime(double velocity, double endVelocity, double seconds) {
         if(thread != null && thread.isAlive()) thread.Stop();
-        thread = new TimeThread(velocity, endVelocity, seconds, this);
+        //thread = new TimeThread(velocity, endVelocity, seconds, this);
         thread.start();
         return thread;
     }
