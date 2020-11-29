@@ -2,9 +2,15 @@ package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
-public interface DriveObject {
+public abstract class DriveObject {
 
-    void set(double value);
+    static ValueStorage vals;
+    int partNum;
+
+    public DriveObject(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum) {};
+    void set(double value) {
+
+    };
     int getPartNum();
     double[] get();
     void setHardware(double value);
