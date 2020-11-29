@@ -6,12 +6,16 @@ import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.localization.ThreeTrackingWheelLocalizer;
 import com.example.pleasework.FanaticsThreeWheelTrackingLocalizer;
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ConfigurationRR;
+import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DIMU;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DOdometryPod;
+import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ValueStorage;
 import org.firstinspires.ftc.teamcode.Utils.Encoder;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
@@ -48,7 +52,7 @@ public class DriveObjectTrackingWheelLocalizer extends FanaticsThreeWheelTrackin
                 new Pose2d(0, LATERAL_DISTANCE / 2, 0), // left
                 new Pose2d(0, -LATERAL_DISTANCE / 2, 0), // right
                 new Pose2d(FORWARD_OFFSET, 0, Math.toRadians(90)) // front
-        ), config.);
+        ), (BNO055IMU) config.imu);
 
         this.config = config;
 
@@ -90,5 +94,11 @@ public class DriveObjectTrackingWheelLocalizer extends FanaticsThreeWheelTrackin
                 encoderTicksToInches(rightEncoder.get()[1]),
                 encoderTicksToInches(frontEncoder.get()[1])
         );
+    }
+
+    @Nullable
+    @Override
+    public Pose2d getPoseVelocity() {
+        return null;
     }
 }
