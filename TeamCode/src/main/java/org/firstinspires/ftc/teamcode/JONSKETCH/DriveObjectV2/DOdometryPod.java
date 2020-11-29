@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.Utils.Encoder;
 
-public class DOdometryPod implements DriveObject {
+public class DOdometryPod implements Sensor {
 
     private Encoder odoPod;
     private int partNum;
@@ -20,20 +20,12 @@ public class DOdometryPod implements DriveObject {
         this.partNum = partNum;
     }
 
-    public void set(double value) {
-        //Do nothing
-    }
-
     public int getPartNum() {
         return partNum;
     }
 
     public double[] get() {
         return vals.hardware(false, null, partNum);
-    }
-
-    public void setHardware(double value) {
-
     }
 
     public double[] getHardware() {

@@ -7,14 +7,14 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
-public class DMotor implements DriveObject, DcMotor {
+public class DMotor implements Active, DcMotor {
 
     DcMotorImplEx motor;
     private double[] pid = new double[]{30.0, 0.0, 0.0, 2700};
     private int partNum;
     private double powerToVelocity = 2700; //MODIFY WITH THE EXACT VALUE
 
-    private DOThread thread = new NullThread();
+    private DThread thread = new NullThread();
     private ValueStorage vals;
 
     public DMotor(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum) {
@@ -76,21 +76,21 @@ public class DMotor implements DriveObject, DcMotor {
     }
 
     //Assumes set to 0 at the end
-    public DOThread setForTime(double velocity, double seconds) {
+    public DThread setForTime(double velocity, double seconds) {
         if(thread != null && thread.isAlive()) thread.Stop();
-        //thread = new TimeThread(velocity, seconds, this);
+        thread = new TimeThread(velocity, seconds, this);
         thread.start();
         return thread;
     }
 
-    public DOThread setForTime(double velocity, double endVelocity, double seconds) {
+    public DThread setForTime(double velocity, double endVelocity, double seconds) {
         if(thread != null && thread.isAlive()) thread.Stop();
-        //thread = new TimeThread(velocity, endVelocity, seconds, this);
+        thread = new TimeThread(velocity, endVelocity, seconds, this);
         thread.start();
         return thread;
     }
 
-    public DOThread setPosition(int position, double relativeSpeed, double tolerance) {
+    public DThread setPosition(int position, double relativeSpeed, double tolerance) {
         //Trying out never overriding threads (aka forcing use of endThreads() when need to replace active thread)
         if(thread != null && thread.isAlive()) return null;
         thread = new PositionThread(position, relativeSpeed, tolerance, this, vals);
@@ -98,7 +98,7 @@ public class DMotor implements DriveObject, DcMotor {
         return thread;
     }
 
-    public DOThread groupSetPosition(int position, double relativeSpeed, double tolerance, DMotor... motors) {
+    public DThread groupSetPosition(int position, double relativeSpeed, double tolerance, DMotor... motors) {
         if(thread.isAlive()) thread.Stop();
         thread = new PositionThread(position, relativeSpeed, tolerance, motors, vals);
         thread.start();

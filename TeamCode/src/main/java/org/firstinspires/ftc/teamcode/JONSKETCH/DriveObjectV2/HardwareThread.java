@@ -12,8 +12,8 @@ public class HardwareThread extends Thread {
     double[] lastRun; //Previous run values.
     public Configuration config;
     private volatile boolean stop;
-    private boolean setTime = false;
-    public double voltMult = 1, lastTime = 0;
+    private boolean setTime = false; //Vestigial variable
+    public double voltMult = 1, lastTime = 0; //Vestigial variables
 
     public HardwareThread(HardwareMap hwMap, ValueStorage vals, Configuration configuration){
         config = configuration;
@@ -66,8 +66,9 @@ public class HardwareThread extends Thread {
     private void runHardware(double[] Values) {
 
         for(int i = 0; i < this.hardwareVals.length; i++) {
-            if(lastRun[i] != Values[i])
-                config.hardware.get(i).setHardware(Values[i]);
+            if(config.hardware.get(i) instanceof Active && lastRun[i] != Values[i])
+                ((Active) config.hardware.get(i)).setHardware(Values[i]);
+            //instanceof and typecasting allows for sensors to not include setHardware.
         }
 
         lastRun = Values;

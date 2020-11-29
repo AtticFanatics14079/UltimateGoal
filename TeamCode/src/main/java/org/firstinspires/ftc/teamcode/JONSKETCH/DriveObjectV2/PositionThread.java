@@ -4,7 +4,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import java.util.Arrays;
 
-public class PositionThread extends Thread implements DOThread {
+public class PositionThread extends Thread implements DThread {
 
     private int pos; //Arrays are all ordered according to partNum.
     private double lastTime, tolerance, error, totalError, lastError, maxSpeed;

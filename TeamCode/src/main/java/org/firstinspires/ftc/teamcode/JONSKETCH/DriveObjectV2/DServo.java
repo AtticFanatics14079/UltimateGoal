@@ -3,12 +3,12 @@ package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
-public class DServo implements DriveObject {
+public class DServo implements Active {
 
     private Servo servo;
     private int partNum;
 
-    private DOThread thread = new NullThread();
+    private DThread thread = new NullThread();
     private ValueStorage vals;
 
     //Constructors

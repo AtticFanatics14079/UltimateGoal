@@ -1,18 +1,17 @@
-/*
 package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
 
-public class TimeThread extends Thread implements DOThread {
+public class TimeThread extends Thread implements DThread {
 
     private double seconds, value, endValue = 0;
-    private DriveObject drive;
+    private Active drive;
     private boolean stop = false;
 
-    public TimeThread(double value, double seconds, DriveObject drive){
+    public TimeThread(double value, double seconds, Active drive){
         this.seconds = seconds;
         this.value = value;
         this.drive = drive;
     }
-    public TimeThread(double value, double endValue, double seconds, DriveObject drive){
+    public TimeThread(double value, double endValue, double seconds, Active drive){
         this.seconds = seconds;
         this.value = value;
         this.drive = drive;
@@ -36,4 +35,3 @@ public class TimeThread extends Thread implements DOThread {
         stop = true;
     }
 }
-*/

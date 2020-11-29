@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
 
-public class OdometryThread extends Thread implements DOThread {
+public class OdometryThread extends Thread implements DThread {
 
     private Odometry odo;
     private ValueStorage vals;

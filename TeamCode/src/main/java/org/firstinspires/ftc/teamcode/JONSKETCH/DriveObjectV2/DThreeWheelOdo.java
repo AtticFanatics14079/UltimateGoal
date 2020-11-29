@@ -8,7 +8,7 @@ public class DThreeWheelOdo implements Odometry {
 
     //First val is trackwith, second value is forward offset, third is auxiliary trackwidth
     double[] dimensions;
-    DOThread thread = new NullThread();
+    DThread thread = new NullThread();
 
     ValueStorage vals;
 

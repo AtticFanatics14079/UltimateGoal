@@ -17,12 +17,12 @@ import org.firstinspires.ftc.robotcore.external.navigation.Quaternion;
 import org.firstinspires.ftc.robotcore.external.navigation.Temperature;
 import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 
-public class DIMU implements DriveObject, BNO055IMU {
+public class DIMU implements Sensor, BNO055IMU {
 
     private BNO055IMU imu;
     private ValueStorage vals;
 
-    private DOThread thread = new NullThread();
+    private DThread thread = new NullThread();
 
     private int partNum;
 
@@ -36,20 +36,12 @@ public class DIMU implements DriveObject, BNO055IMU {
         this.partNum = partnum;
     }
 
-    public void set(double value) {
-        //Do nothing
-    }
-
     public int getPartNum() {
         return partNum;
     }
 
     public double[] get() {
         return vals.hardware(false, null, partNum);
-    }
-
-    public void setHardware(double value) {
-        //Do nothing
     }
 
     public double[] getHardware() {

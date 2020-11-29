@@ -6,7 +6,6 @@ public interface DriveObject {
 
     int getPartNum();
     double[] get();
-    void setHardware(double value);
     double[] getHardware();
     void endThreads();
 

@@ -6,7 +6,7 @@ public class Sequence implements Runnable {
     private Sequence sequence;
 
     public interface Action {
-        DOThread runAction(); //Return null if not setting anything to a position, return the thread you are waiting on otherwise.
+        DThread runAction(); //Return null if not setting anything to a position, return the thread you are waiting on otherwise.
     }
 
     public Sequence(Action action, Sequence sequence){
@@ -22,7 +22,7 @@ public class Sequence implements Runnable {
         if(sequence != null) {
             sequence.run();
         }
-        DOThread t = action.runAction();
+        DThread t = action.runAction();
         while(t != null && t.isAlive()){} //Accounts both for threads and single actions.
     }
 }
