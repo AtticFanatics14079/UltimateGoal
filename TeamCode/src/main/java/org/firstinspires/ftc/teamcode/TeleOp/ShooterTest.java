@@ -12,7 +12,7 @@ public class ShooterTest extends LinearOpMode {
 
     public static int velo = 1700;
     public static double open = 0.15;
-    public static double closed = 0.65;
+    public static double closed = 0.55;
 
     @Override
     public void runOpMode() throws InterruptedException {

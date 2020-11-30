@@ -66,6 +66,7 @@ abstract class FanaticsThreeWheelTrackingLocalizer(
             )
             _poseEstimate = Kinematics.relativeOdometryUpdate(_poseEstimate, robotPoseDelta)
             _poseEstimate = Pose2d(_poseEstimate.x, _poseEstimate.y, IMU.getAngularOrientation().firstAngle.toDouble())//Math.toRadians((wheelPositions.get(0)-wheelPositions.get(1))/TRACK_WIDTH))
+            print(poseEstimate)
         }
         lastWheelPositions = wheelPositions
     }

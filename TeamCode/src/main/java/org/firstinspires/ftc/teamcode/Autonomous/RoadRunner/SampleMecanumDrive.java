@@ -25,9 +25,11 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorImplEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
 import org.firstinspires.ftc.teamcode.Utils.LynxModuleUtil;
@@ -70,6 +72,8 @@ public class SampleMecanumDrive extends MecanumDrive {
 
     private List<Pose2d> poseHistory;
 
+    public DcMotorImplEx shooter;
+    public Servo loader, wobble, gripper;
     private DcMotorEx leftFront, leftRear, rightRear, rightFront;
     public List<DcMotorEx> motors;
     private BNO055IMU imu;
@@ -115,6 +119,12 @@ public class SampleMecanumDrive extends MecanumDrive {
         leftRear = hardwareMap.get(DcMotorEx.class, "back_left_motor");
         rightRear = hardwareMap.get(DcMotorEx.class, "back_right_motor");
         rightFront = hardwareMap.get(DcMotorEx.class, "front_right_motor");
+        shooter = hardwareMap.get(DcMotorImplEx.class,"motor");
+        shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        loader = hardwareMap.get(Servo.class, "servo");
+        wobble = hardwareMap.get(Servo.class, "wobble");
+        gripper = hardwareMap.get(Servo.class, "gripper");
 
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
 
