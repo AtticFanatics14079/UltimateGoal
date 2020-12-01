@@ -28,13 +28,13 @@ public class ValueStorage {
         try {
             wait();
             Thread.sleep(0, 300000);
+            //Allows HardwareThread to access runValues first, however this approach puts every
+            //thread exactly 1 cycle behind HardwareThread at all times.
+
+            //Have confirmed that some delay is necessary, <= 0.2 leads to inconsistency.
         } catch(Exception e) {
             System.out.println(e);
         }
-        //Should allow HardwareThread to access runValues first, however this approach puts every
-        //thread exactly 1 cycle behind HardwareThread at all times.
-
-        //Have confirmed that some delay is necessary, <= 0.2 leads to inconsistency.
     }
 
     //Branched programming to allow for synchronous access to hardwareValues
@@ -50,8 +50,6 @@ public class ValueStorage {
     }
 
     public synchronized double[] runValues(boolean Writing, double value, int partNum){
-
-        System.out.println("Thread " + Thread.currentThread().getName());
 
         if(Writing) {
             runValues[partNum] = value;
