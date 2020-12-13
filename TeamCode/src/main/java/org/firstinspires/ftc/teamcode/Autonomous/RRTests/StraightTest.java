@@ -21,7 +21,7 @@ public class StraightTest extends LinearOpMode {
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
 
         Trajectory trajectory = drive.trajectoryBuilder(new Pose2d())
-                .splineToLinearHeading(new Pose2d(DISTANCE, 0, Math.toRadians(180)), Math.toRadians(180))
+                .lineToLinearHeading(new Pose2d(DISTANCE, 0, Math.toRadians(180)))
                 .build();
 
         waitForStart();

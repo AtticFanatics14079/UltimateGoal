@@ -79,10 +79,12 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
     private List<Pose2d> poseHistory;
 
-    private DMotor leftFront, leftRear, rightRear, rightFront;
+    public DMotor leftFront, leftRear, rightRear, rightFront;
     public DOdometryPod leftEncoder, rightEncoder, frontEncoder;
-    private List<DOdometryPod> pods;
-    private List<DMotor> motors;
+    public DServo loader, gripper, wobble;
+    public DMotor shooter, ingester;
+    public List<DOdometryPod> pods;
+    public List<DMotor> motors;
     private List<LynxModule> allHubs;
     public DIMU imu;
 
@@ -99,7 +101,10 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         turnController = new PIDFController(HEADING_PID);
         turnController.setInputBounds(0, 2 * Math.PI);
 
-        constraints = new MecanumConstraints(BASE_CONSTRAINTS, TRACK_WIDTH);
+        constraints = new MecanumConstraints(new DriveConstraints(
+                100.0, 80.0, 0.0,
+                Math.toRadians(180.0), Math.toRadians(180.0), 0.0
+        ), TRACK_WIDTH); //Just has to be high enough to not mess with driving.
         follower = new HolonomicPIDVAFollower(TRANSLATIONAL_PID, TRANSLATIONAL_PID, HEADING_PID,
                 new Pose2d(0.5, 0.5, Math.toRadians(5.0)), 0.5);
 
@@ -128,6 +133,11 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         leftEncoder = new DOdometryPod(vals, hwMap, "leftEncoder", i++);
         rightEncoder = new DOdometryPod(vals, hwMap, "rightEncoder", i++);
         frontEncoder = new DOdometryPod(vals, hwMap, "frontEncoder", i++);
+        loader = new DServo(vals, hwMap, "loader", i++);
+        gripper = new DServo(vals, hwMap, "gripper", i++);
+        wobble = new DServo(vals, hwMap, "wobble", i++);
+        shooter = new DMotor(vals, hwMap, "shooter", i++);
+        ingester = new DMotor(vals, hwMap, "ingester", i++);
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
         pods = Arrays.asList(leftEncoder, rightEncoder, frontEncoder);
         imu = new DIMU(vals, hwMap, i++);
@@ -139,6 +149,10 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         hardware.add(rightEncoder);
         hardware.add(frontEncoder);
         hardware.add(imu);
+        hardware.add(loader);
+        hardware.add(gripper);
+        hardware.add(wobble);
+        hardware.add(shooter);
 
         // TODO: if your hub is mounted vertically, remap the IMU axes so that the z-axis points
         // upward (normal to the floor) using a command like the following:

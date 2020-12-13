@@ -37,8 +37,9 @@ public class AllPathsVision extends LinearOpMode {
     private Pose2d pickup4 = new Pose2d(-56.0, -61.0);
     private Pose2d path1dropoff = new Pose2d(20.0, -38.0);
     private Pose2d pickup1 = new Pose2d(-39, -46);
-    private Pose2d path0dropoff = new Pose2d(10.0, -58.0);
-    private Pose2d pickup0 = new Pose2d(-48.0, -44.0);
+    private Pose2d path0dropoff = new Pose2d(10.0, -60.0);
+    private Pose2d pickup0 = new Pose2d(-46.0, -51.0);
+    private Pose2d endLocation = new Pose2d(5.0, -56.0, 0.0);
 
     public static double wobbleUp = 0.22, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1;
 
@@ -49,7 +50,8 @@ public class AllPathsVision extends LinearOpMode {
     public static Point topCenter = new Point(510, 420);
     public static Point bottomCenter = new Point(510, 350);
     public static int thresh = 155;
-    public static int stackSize = -1;
+    public static int stackSize = 1; //For testing, choose whatever path + disable camera
+    public static boolean usingCamera = false;
     private static double color1, color2;
     OpenCvCamera webCam;
 
@@ -58,13 +60,15 @@ public class AllPathsVision extends LinearOpMode {
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
-        int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-        webCam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam1"), cameraMonitorViewId);
-        webCam.openCameraDevice();//open camera
-        webCam.setPipeline(new StageSwitchingPipeline());//different stages
-        webCam.startStreaming(rows, cols, OpenCvCameraRotation.UPRIGHT);//display on RC
+        if(usingCamera) {
+            int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+            webCam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam1"), cameraMonitorViewId);
+            webCam.openCameraDevice();//open camera
+            webCam.setPipeline(new StageSwitchingPipeline());//different stages
+            webCam.startStreaming(rows, cols, OpenCvCameraRotation.UPRIGHT);//display on RC
+        }
 
-        drive.loader.setPosition(0.15);
+        drive.loader.setPosition(0.25);
 
         drive.wobble.setPosition(wobbleDown);
 
@@ -92,41 +96,47 @@ public class AllPathsVision extends LinearOpMode {
                         .build();
                 drive.followTrajectory(goToShoot);
 
-                drive.loader.setPosition(0.55);
+                drive.loader.setPosition(0.6);
                 sleep(800);
-                drive.loader.setPosition(0.1);
+                drive.loader.setPosition(0.15);
+                drive.turn(Math.toRadians(8));
+                sleep(200);
+                drive.loader.setPosition(0.6);
                 sleep(800);
-                drive.loader.setPosition(0.55);
+                drive.loader.setPosition(0.15);
+                drive.turn(Math.toRadians(9));
+                sleep(200);
+                drive.loader.setPosition(0.6);
                 sleep(800);
-                drive.loader.setPosition(0.1);
-                sleep(800);
-                drive.loader.setPosition(0.55);
-                sleep(800);
-                drive.loader.setPosition(0.1);
+                drive.loader.setPosition(0.15);
                 drive.shooter.setVelocity(0);
 
                 Trajectory wobble1 = drive.trajectoryBuilder(drive.getPoseEstimate())
                         .splineTo(new Vector2d(path0dropoff.getX(), path0dropoff.getY()), Math.toRadians(180))
-                        .addSpatialMarker(new Vector2d(10, -50), () -> {
-                            drive.wobble.setPosition(wobbleDown);
-                            drive.gripper.setPosition(gripperOpen);
-                        })
-                        .splineTo(new Vector2d(pickup0.getX(), pickup0.getY()), Math.toRadians(180))
                         .build();
                 drive.followTrajectory(wobble1);
+
+                drive.wobble.setPosition(wobbleDown);
+                drive.gripper.setPosition(gripperOpen);
+                sleep(1000);
+
+                Trajectory pickupWobble = drive.trajectoryBuilder(drive.getPoseEstimate())
+                        .lineToLinearHeading(new Pose2d(pickup0.getX(), pickup0.getY(), Math.toRadians(165.0)))
+                        .build();
+                drive.followTrajectory(pickupWobble);
 
                 drive.gripper.setPosition(gripperClosed);
                 sleep(800);
                 drive.wobble.setPosition(wobbleMid);
 
-                Trajectory wobble2 = drive.trajectoryBuilder(drive.getPoseEstimate(), true)
-                        .splineTo(new Vector2d(path0dropoff.getX() - 5, path0dropoff.getY()+6), Math.toRadians(0))
-                        .addDisplacementMarker(() -> {
-                            drive.wobble.setPosition(wobbleDown);
-                            drive.gripper.setPosition(gripperOpen);
-                        })
+                Trajectory wobble2 = drive.trajectoryBuilder(drive.getPoseEstimate())
+                        .lineToLinearHeading(endLocation)
                         .build();
                 drive.followTrajectory(wobble2);
+
+                drive.wobble.setPosition(wobbleDown);
+                drive.gripper.setPosition(gripperOpen);
+                sleep(1000);
             }
             break;
             case 1: {
@@ -136,19 +146,21 @@ public class AllPathsVision extends LinearOpMode {
                         .build();
                 drive.followTrajectory(goToShoot);
 
-                drive.loader.setPosition(0.55);
+                System.out.println("1. Off target: " + (drive.getPoseEstimate().getX() - powerShotShoot.getX()) + ", " + (drive.getPoseEstimate().getY() - powerShotShoot.getY()));
+
+                drive.loader.setPosition(0.6);
                 sleep(800);
-                drive.loader.setPosition(0.1);
+                drive.loader.setPosition(0.15);
                 drive.turn(Math.toRadians(8));
                 sleep(200);
-                drive.loader.setPosition(0.55);
+                drive.loader.setPosition(0.6);
                 sleep(800);
-                drive.loader.setPosition(0.1);
+                drive.loader.setPosition(0.15);
                 drive.turn(Math.toRadians(9));
                 sleep(200);
-                drive.loader.setPosition(0.55);
+                drive.loader.setPosition(0.6);
                 sleep(800);
-                drive.loader.setPosition(0.1);
+                drive.loader.setPosition(0.15);
                 drive.shooter.setVelocity(0);
 
                 Trajectory wobble1 = drive.trajectoryBuilder(drive.getPoseEstimate())
@@ -160,10 +172,15 @@ public class AllPathsVision extends LinearOpMode {
                 drive.gripper.setPosition(gripperOpen);
                 sleep(1000);
 
+                System.out.println("2. Off target: " + (drive.getPoseEstimate().getX() - path1dropoff.getX()) + ", " + (drive.getPoseEstimate().getY() - path1dropoff.getY()));
+
                 Trajectory rings = drive.trajectoryBuilder(drive.getPoseEstimate(), true)
-                        .splineToLinearHeading(new Pose2d(highGoalShoot.getX() + 4, highGoalShoot.getY(), Math.toRadians(180)), Math.toRadians(180))
+                        .lineToLinearHeading(new Pose2d(highGoalShoot.getX() + 4, highGoalShoot.getY(), Math.toRadians(180)))
+                        //.splineTo(new Vector2d(highGoalShoot.getX() + 4, highGoalShoot.getY()), Math.toRadians(180.0))
                         .build();
                 drive.followTrajectory(rings);
+
+                System.out.println("3. Off target: " + (drive.getPoseEstimate().getX() - highGoalShoot.getX() - 4) + ", " + (drive.getPoseEstimate().getY() - highGoalShoot.getY()));
 
                 Trajectory wobble2 = drive.trajectoryBuilder(drive.getPoseEstimate(), false)
                         .splineTo(new Vector2d(pickup1.getX(), pickup1.getY()), Math.toRadians(215.0))
@@ -176,27 +193,29 @@ public class AllPathsVision extends LinearOpMode {
                 sleep(100); //To keep from dragging
                 drive.shooter.setVelocity(1500);
 
+                System.out.println("4. Off target: " + (drive.getPoseEstimate().getX() - pickup1.getX()) + ", " + (drive.getPoseEstimate().getY() - pickup1.getY()));
+
                 Trajectory shoot = drive.trajectoryBuilder(drive.getPoseEstimate(), true)
-                        .splineToLinearHeading(new Pose2d(highGoalShoot.getX(), highGoalShoot.getY(), Math.toRadians(0)), Math.toRadians(0))
+                        .lineToLinearHeading(new Pose2d(highGoalShoot.getX(), highGoalShoot.getY()))
                         .build();
                 drive.followTrajectory(shoot);
 
-                drive.loader.setPosition(0.55);
+                drive.loader.setPosition(0.6);
                 sleep(800);
-                drive.loader.setPosition(0.1);
-                drive.shooter.setVelocity(0);
+                drive.loader.setPosition(0.15);
 
                 Trajectory drop = drive.trajectoryBuilder(drive.getPoseEstimate(), false)
                         .splineTo(new Vector2d(path1dropoff.getX(), path1dropoff.getY() + 9), Math.toRadians(0.0))
                         .build();
                 drive.followTrajectory(drop);
 
+                drive.shooter.setVelocity(0);
                 drive.wobble.setPosition(wobbleDown);
                 drive.gripper.setPosition(gripperOpen);
                 sleep(1000);
 
-                Trajectory toPark = drive.trajectoryBuilder(drive.getPoseEstimate(), true)
-                        .splineTo(new Vector2d(5.0, path1dropoff.getY() + 9), Math.toRadians(180.0))
+                Trajectory toPark = drive.trajectoryBuilder(drive.getPoseEstimate(), false)
+                        .lineToLinearHeading(endLocation)
                         .build();
                 drive.followTrajectory(toPark);
             }
