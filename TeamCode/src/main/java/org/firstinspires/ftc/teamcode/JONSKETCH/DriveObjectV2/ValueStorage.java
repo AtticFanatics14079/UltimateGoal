@@ -20,55 +20,45 @@ public class ValueStorage {
         Arrays.fill(hardwareValues, null);
     }
 
-    public synchronized void updateCycle() {
+    public void updateCycle() {
         notifyAll();
     }
 
-    public synchronized void waitForCycle() {
+    public void waitForCycle() {
         try {
             wait();
             Thread.sleep(0, 300000);
+            //Allows HardwareThread to access runValues first, however this approach puts every
+            //thread exactly 1 cycle behind HardwareThread at all times.
+
+            //Have confirmed that some delay is necessary, <= 0.2 leads to inconsistency.
         } catch(Exception e) {
             System.out.println(e);
         }
-        //Should allow HardwareThread to access runValues first, however this approach puts every
-        //thread exactly 1 cycle behind HardwareThread at all times.
-
-        //Have confirmed that some delay is necessary, <= 0.2 leads to inconsistency.
     }
 
     //Branched programming to allow for synchronous access to hardwareValues
-    public synchronized double[] hardware(boolean writing, double[][] values, int partNum){
+    public double[] hardware(boolean writing, double[][] values, int partNum){
+        synchronized(hardwareValues) {
+            if (writing) {
+                for (int i = 0; i < values.length; i++) hardwareValues[i] = values[i].clone();
+                return null;
+            }
 
-        if(writing) {
-            for(int i = 0; i < values.length; i++) hardwareValues[i] = values[i].clone();
-            return null;
+            //Returning clone to prevent threads changing/using the same value at the same time - potentially unnecessary
+            return hardwareValues[partNum].clone();
         }
-
-        //Returning clone to prevent threads changing/using the same value at the same time - potentially unnecessary
-        return hardwareValues[partNum].clone();
     }
 
     public synchronized double[] runValues(boolean Writing, double value, int partNum){
+        synchronized (runValues) {
+            if (Writing) {
+                runValues[partNum] = value;
+                return null;
+            }
 
-        System.out.println("Thread " + Thread.currentThread().getName());
-
-        if(Writing) {
-            runValues[partNum] = value;
-            return null;
+            //Returning clone to prevent threads changing/using the same value at the same time - potentially unnecessary
+            return runValues.clone();
         }
-
-        //Returning clone to prevent threads changing/using the same value at the same time - potentially unnecessary
-        return runValues.clone();
     }
-
-    //Used to be used
-    /*public synchronized double time(boolean writing, double time){
-        if(writing){
-            Time = time;
-            return 0;
-        }
-        return Time;
-    }
-     */
 }
