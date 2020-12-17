@@ -20,11 +20,11 @@ public class ValueStorage {
         Arrays.fill(hardwareValues, null);
     }
 
-    public void updateCycle() {
+    public synchronized void updateCycle() {
         notifyAll();
     }
 
-    public void waitForCycle() {
+    public synchronized void waitForCycle() {
         try {
             wait();
             Thread.sleep(0, 300000);
