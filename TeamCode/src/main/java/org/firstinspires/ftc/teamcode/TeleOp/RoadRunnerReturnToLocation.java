@@ -9,6 +9,7 @@ import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.acmerobotics.roadrunner.trajectory.constraints.DriveConstraints;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants;
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDrive;
@@ -48,12 +49,12 @@ public class RoadRunnerReturnToLocation extends LinearOpMode {
     }
 
     public void takeInput() {
-        setPower(gamepad1.left_stick_x, -gamepad1.left_stick_y, gamepad1.right_stick_x);
         if(gamepad1.x) {
             drive.setPoseEstimate(new Pose2d(0, 0));
             heading = drive.getRawExternalHeading();
         }
         if(gamepad1.y) {
+            for(DcMotor d : drive.motors) d.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             drive.setPoseEstimate(drive.getPoseEstimate());
             Trajectory goToShoot = drive.trajectoryBuilder(drive.getPoseEstimate())
                     .lineToLinearHeading(new Pose2d(0, 0, heading), new DriveConstraints(
@@ -64,6 +65,9 @@ public class RoadRunnerReturnToLocation extends LinearOpMode {
             System.out.println("Here");
             DriveConstants.BASE_CONSTRAINTS = new DriveConstraints(80.0, 60.0,
                     0.0, Math.toRadians(180.0), Math.toRadians(180.0), 0.0);
+        }
+        else {
+            for(DcMotor d : drive.motors) d.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         }
     }
 
