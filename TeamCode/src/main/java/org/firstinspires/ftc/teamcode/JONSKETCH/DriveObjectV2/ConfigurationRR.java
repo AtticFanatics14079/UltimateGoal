@@ -82,7 +82,8 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     public DMotor leftFront, leftRear, rightRear, rightFront;
     public DOdometryPod leftEncoder, rightEncoder, frontEncoder;
     public DServo loader, gripper, wobble;
-    public DMotor shooter, ingester;
+    public DMotor shooter;
+    public DEncoderlessMotor ingester;
     public List<DOdometryPod> pods;
     public List<DMotor> motors;
     private List<LynxModule> allHubs;
@@ -137,7 +138,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         gripper = new DServo(vals, hwMap, "gripper", i++);
         wobble = new DServo(vals, hwMap, "wobble", i++);
         shooter = new DMotor(vals, hwMap, "shooter", i++);
-        ingester = new DMotor(vals, hwMap, "ingester", i++);
+        ingester = new DEncoderlessMotor(vals, hwMap, "ingester", i++);
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
         pods = Arrays.asList(leftEncoder, rightEncoder, frontEncoder);
         imu = new DIMU(vals, hwMap, i++);
