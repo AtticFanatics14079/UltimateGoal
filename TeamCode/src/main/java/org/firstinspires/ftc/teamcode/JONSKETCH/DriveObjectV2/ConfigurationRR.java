@@ -138,7 +138,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         gripper = new DServo(vals, hwMap, "gripper", i++);
         wobble = new DServo(vals, hwMap, "wobble", i++);
         shooter = new DMotor(vals, hwMap, "shooter", i++);
-        ingester = new DEncoderlessMotor(vals, hwMap, "ingester", i++);
+        ingester = new DEncoderlessMotor(vals, hwMap, "frontEncoder", i++);
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
         pods = Arrays.asList(leftEncoder, rightEncoder, frontEncoder);
         imu = new DIMU(vals, hwMap, i++);

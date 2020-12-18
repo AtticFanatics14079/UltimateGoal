@@ -18,6 +18,7 @@ public class DEncoderlessMotor implements Active, DcMotor {
 
     public DEncoderlessMotor(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum) {
         motor = hwMap.get(DcMotor.class, objectName);
+        motor.setMode(RunMode.RUN_WITHOUT_ENCODER);
         this.partNum = partNum;
         this.vals = vals;
         //Goal: use super and hwMap.get() in a way that doesn't
