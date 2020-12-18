@@ -10,6 +10,8 @@ public class ValueStorage {
 
     private double[] runValues; //Values to for the robot to be set to (e.g. velocity for a DMotor).
 
+    private final Double hardwareSync = 0.0, runSync = 0.0;
+
     public void setup(int size){
         runValues = new double[size];
         hardwareValues = new double[size][1]; //Potentially later change to a large value, currently (9/4/20) having issues with premature calls to hardware.
@@ -39,7 +41,7 @@ public class ValueStorage {
 
     //Branched programming to allow for synchronous access to hardwareValues
     public double[] hardware(boolean writing, double[][] values, int partNum){
-        synchronized(hardwareValues) {
+        synchronized(hardwareSync) {
             if (writing) {
                 for (int i = 0; i < values.length; i++) hardwareValues[i] = values[i].clone();
                 return null;
@@ -51,7 +53,7 @@ public class ValueStorage {
     }
 
     public synchronized double[] runValues(boolean Writing, double value, int partNum){
-        synchronized (runValues) {
+        synchronized (runSync) {
             if (Writing) {
                 runValues[partNum] = value;
                 return null;
