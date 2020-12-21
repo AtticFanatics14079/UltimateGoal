@@ -79,6 +79,8 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
     private List<Pose2d> poseHistory;
 
+    private Pose2d lastPoseOnTurn;
+
     public DMotor leftFront, leftRear, rightRear, rightFront;
     public DOdometryPod leftEncoder, rightEncoder, frontEncoder;
     public DServo loader, gripper, wobble;
@@ -139,9 +141,9 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         wobble = new DServo(vals, hwMap, "wobble", i++);
         shooter = new DMotor(vals, hwMap, "shooter", i++);
         ingester = new DEncoderlessMotor(vals, hwMap, "frontEncoder", i++);
+        imu = new DIMU(vals, hwMap, i++);
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
         pods = Arrays.asList(leftEncoder, rightEncoder, frontEncoder);
-        imu = new DIMU(vals, hwMap, i++);
         hardware.add(motors.get(0));
         hardware.add(motors.get(1));
         hardware.add(motors.get(2));
@@ -149,11 +151,12 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         hardware.add(leftEncoder);
         hardware.add(rightEncoder);
         hardware.add(frontEncoder);
-        hardware.add(imu);
         hardware.add(loader);
         hardware.add(gripper);
         hardware.add(wobble);
         hardware.add(shooter);
+        hardware.add(ingester);
+        hardware.add(imu);
 
         // TODO: if your hub is mounted vertically, remap the IMU axes so that the z-axis points
         // upward (normal to the floor) using a command like the following:
@@ -177,8 +180,11 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         }
 
         // TODO: reverse any motors using DcMotor.setDirection()
-        motors.get(2).reverse(true);
-        motors.get(3).reverse(true);
+        motors.get(0).reverse(true);
+        motors.get(1).reverse(true);
+
+        rightEncoder.reverse(true);
+        frontEncoder.reverse(true);
         // TODO: if desired, use setLocalizer() to change the localization method
         setLocalizer(new DriveObjectTrackingWheelLocalizer(hwMap, this));
     }
@@ -212,6 +218,9 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
     public void turnAsync(double angle) {
         double heading = getPoseEstimate().getHeading();
+
+        lastPoseOnTurn = getPoseEstimate();
+
         turnProfile = MotionProfileGenerator.generateSimpleMotionProfile(
                 new MotionState(heading, 0, 0, 0),
                 new MotionState(heading + angle, 0, 0, 0),
@@ -219,8 +228,9 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
                 constraints.maxAngAccel,
                 constraints.maxAngJerk
         );
+
         turnStart = clock.seconds();
-        mode = Mode.TURN;
+        mode = ConfigurationRR.Mode.TURN;
     }
 
     public void turn(double angle) {
@@ -292,8 +302,13 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
                         0, 0, targetAlpha
                 )));
 
+                Pose2d newPose = lastPoseOnTurn.copy(lastPoseOnTurn.getX(), lastPoseOnTurn.getY(), targetState.getX());
+
+                fieldOverlay.setStroke("#4CAF50");
+                DashboardUtil.drawRobot(fieldOverlay, newPose);
+
                 if (t >= turnProfile.duration()) {
-                    mode = Mode.IDLE;
+                    mode = ConfigurationRR.Mode.IDLE;
                     setDriveSignal(new DriveSignal());
                 }
 
@@ -305,23 +320,25 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
                 Trajectory trajectory = follower.getTrajectory();
 
                 fieldOverlay.setStrokeWidth(1);
-                fieldOverlay.setStroke("4CAF50");
+                fieldOverlay.setStroke("#4CAF50");
                 DashboardUtil.drawSampledPath(fieldOverlay, trajectory.getPath());
                 double t = follower.elapsedTime();
                 DashboardUtil.drawRobot(fieldOverlay, trajectory.get(t));
 
                 fieldOverlay.setStroke("#3F51B5");
                 DashboardUtil.drawPoseHistory(fieldOverlay, poseHistory);
-                DashboardUtil.drawRobot(fieldOverlay, currentPose);
 
                 if (!follower.isFollowing()) {
-                    mode = Mode.IDLE;
+                    mode = ConfigurationRR.Mode.IDLE;
                     setDriveSignal(new DriveSignal());
                 }
 
                 break;
             }
         }
+
+        fieldOverlay.setStroke("#3F51B5");
+        DashboardUtil.drawRobot(fieldOverlay, currentPose);
 
         dashboard.sendTelemetryPacket(packet);
     }
@@ -357,7 +374,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
     public void setPIDCoefficients(PIDCoefficients coefficients) { //Removed DcMotor.RunMode runMode,
         for (DMotor motor : motors) {
-            motor.setPID(coefficients.kP, coefficients.kI, coefficients.kD, getMotorVelocityF());
+            motor.setInternalPID(coefficients.kP, coefficients.kI, coefficients.kD, getMotorVelocityF());
         }
     }
 
@@ -390,6 +407,6 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     //Fix later
     @Override
     public double getRawExternalHeading() {
-        return 0.0; //imu.getAngularOrientation().firstAngle;
+        return imu.getAngularOrientation().secondAngle;
     }
 }

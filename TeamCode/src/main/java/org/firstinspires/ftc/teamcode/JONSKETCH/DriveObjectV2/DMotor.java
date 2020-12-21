@@ -5,20 +5,24 @@ import com.qualcomm.robotcore.hardware.DcMotorController;
 import com.qualcomm.robotcore.hardware.DcMotorImplEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
+
+import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants.getMotorVelocityF;
 
 public class DMotor implements Active, DcMotor {
 
     DcMotorImplEx motor;
     private double[] pid = new double[]{30.0, 0.0, 0.0, 2700};
     private int partNum;
-    private double powerToVelocity = 2700; //MODIFY WITH THE EXACT VALUE
+    private double powerToVelocity = 2000; //MODIFY WITH THE EXACT VALUE
 
     private DThread thread = new NullThread();
     private ValueStorage vals;
 
     public DMotor(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum) {
         motor = hwMap.get(DcMotorImplEx.class, objectName);
+        motor.setMode(RunMode.RUN_USING_ENCODER);
         this.partNum = partNum;
         this.vals = vals;
         //Goal: use super and hwMap.get() in a way that doesn't
@@ -43,6 +47,7 @@ public class DMotor implements Active, DcMotor {
     }
 
     public void setHardware(double velocity) {
+        System.out.println("DMotor setting " + velocity);
         motor.setVelocity(velocity);
     }
 
@@ -189,6 +194,12 @@ public class DMotor implements Active, DcMotor {
     public void setPID(double... pid) {
         if(pid.length != 4) return; //Potentially change
         this.pid = pid;
+    }
+
+    public void setInternalPID(double... pid) {
+        motor.setPIDFCoefficients(RunMode.RUN_USING_ENCODER, new PIDFCoefficients(
+                pid[0], pid[1], pid[2], pid[3]
+        ));
     }
 
     public void reverse(boolean reverse) {

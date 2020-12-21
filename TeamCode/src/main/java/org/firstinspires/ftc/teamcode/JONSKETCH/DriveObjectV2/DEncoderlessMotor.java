@@ -2,22 +2,22 @@ package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorController;
+import com.qualcomm.robotcore.hardware.DcMotorImpl;
 import com.qualcomm.robotcore.hardware.DcMotorImplEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
 public class DEncoderlessMotor implements Active, DcMotor {
 
-    DcMotor motor;
-    private double[] pid = new double[]{30.0, 0.0, 0.0, 2700};
+    DcMotorImpl motor;
     private int partNum;
-    private double powerToVelocity = 2700; //MODIFY WITH THE EXACT VALUE
 
     private DThread thread = new NullThread();
     private ValueStorage vals;
 
     public DEncoderlessMotor(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum) {
-        motor = hwMap.get(DcMotor.class, objectName);
+        motor = hwMap.get(DcMotorImpl.class, objectName);
         motor.setMode(RunMode.RUN_WITHOUT_ENCODER);
         this.partNum = partNum;
         this.vals = vals;
@@ -43,7 +43,9 @@ public class DEncoderlessMotor implements Active, DcMotor {
     }
 
     public void setHardware(double power) {
+        System.out.println("Setting " + power);
         motor.setPower(power);
+        System.out.println(motor.getPower());
     }
 
     public double[] getHardware() {
@@ -67,7 +69,7 @@ public class DEncoderlessMotor implements Active, DcMotor {
     }
 
     public void setPower(double power) {
-        set(power * powerToVelocity);
+        set(power);
     }
 
     @Override
@@ -167,12 +169,11 @@ public class DEncoderlessMotor implements Active, DcMotor {
     }
 
     public double[] getPID() {
-        return pid;
+        return null;
     }
 
     public void setPID(double... pid) {
         if(pid.length != 4) return; //Potentially change
-        this.pid = pid;
     }
 
     public void reverse(boolean reverse) {

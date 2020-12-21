@@ -68,7 +68,7 @@ public class HardwareThread extends Thread {
         for(int i = 0; i < this.hardwareVals.length; i++) {
             if(config.hardware.get(i) instanceof Active && lastRun[i] != Values[i]) {
                 System.out.println(i + " and " + Values[i]);
-                ((Active) config.hardware.get(i)).setHardware(Values[i]);
+                ((Active) (config.hardware.get(i))).setHardware(Values[i]);
             }
             //instanceof and typecasting allows for sensors to not include setHardware.
         }

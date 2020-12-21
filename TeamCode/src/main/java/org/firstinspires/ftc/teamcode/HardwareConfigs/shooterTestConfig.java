@@ -18,10 +18,10 @@ public class shooterTestConfig {
 
         hwMap = ahwMap;
 
-        shooter = hwMap.get(DcMotorImplEx.class,"motor");
-        shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        shooter = hwMap.get(DcMotorImplEx.class,"frontEncoder");
+        shooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        loader = hwMap.get(Servo.class, "servo");
+        //loader = hwMap.get(Servo.class, "servo");
 
         return hwMap;
     }

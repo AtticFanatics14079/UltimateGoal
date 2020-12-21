@@ -12,6 +12,7 @@ import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants;
 import org.firstinspires.ftc.teamcode.HardwareConfigs.UltimateGoalConfig;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.Configuration;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ConfigurationRR;
+import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DMotor;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DThread;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.HardwareThread;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.Sequence;
@@ -25,7 +26,8 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     ValueStorage vals = new ValueStorage();
     HardwareThread hardware;
     Thread returnToShoot, powerShots;
-    public static double wobbleUp = 0.22, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, load = 0.6, reload = 0.25;
+    private double header;
+    public static double wobbleUp = 0.22, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, load = 0.6, reload = 0.24, shooterSpeed = -1700;
 
     private Pose2d highGoalShoot = new Pose2d(-16.0, -32.0, 0);
     private Pose2d powerShotShoot = new Pose2d(-24.0, -18.0, 0);
@@ -34,8 +36,8 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     public void runOpMode() throws InterruptedException {
         try{
             config = new ConfigurationRR(hardwareMap);
-            //config.Configure(hardwareMap, vals);
             hardware = new HardwareThread(hardwareMap, vals, config);
+            for(DMotor d : config.motors) d.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             configureMacros();
             waitForStart();
             hardware.start();
@@ -55,12 +57,23 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
     public void getInput(){
         //Main loop
-        config.shooter.set(1600);
+        config.update();
+        telemetry.addData("Pose: ", config.getPoseEstimate());
+        telemetry.update();
+        config.shooter.set(shooterSpeed);
         if(gamepad1.x) {
-            config.setPoseEstimate(new Pose2d(5.0, -56.0, 0.0));
+            header = Math.toRadians(config.getPoseEstimate().getHeading());
+            config.setPoseEstimate(new Pose2d(5.0, -56.0, header));
         }
         if(gamepad1.start) {
-            returnToShoot.start();
+            //returnToShoot.start();
+            //config.setPoseEstimate(config.getPoseEstimate());
+            Trajectory goToShoot = config.trajectoryBuilder(config.getPoseEstimate())
+                    .lineToLinearHeading(new Pose2d(highGoalShoot.getX(), highGoalShoot.getY(), header), new DriveConstraints(
+                            45.0, 30.0, 0.0,
+                            Math.toRadians(120.0), Math.toRadians(120.0), 0.0))
+                    .build();
+            config.followTrajectory(goToShoot);
             while(returnToShoot.isAlive());
         }
         else if(gamepad1.back) {
@@ -75,38 +88,30 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         if(gamepad1.left_trigger > 0.2) config.wobble.set(wobbleDown);
         else if(gamepad1.right_trigger > 0.2) config.wobble.set(wobbleUp);
         if(gamepad1.y) config.ingester.set(0);
-        else config.ingester.set(1);
+        else config.ingester.set(-1);
     }
 
     public void configureMacros() {
-        Sequence tripleShoot = new Sequence(() -> {
-            for(int i = 0; i < 3; i++) {
-                shootOnce();
-                sleep(200);
-            }
-            return null;
-        });
         Sequence returnToHighGoal = new Sequence(() -> {
             config.setPoseEstimate(config.getPoseEstimate());
             Trajectory goToShoot = config.trajectoryBuilder(config.getPoseEstimate())
-                    .lineToLinearHeading(highGoalShoot, new DriveConstraints(
+                    .lineToLinearHeading(new Pose2d(highGoalShoot.getX(), highGoalShoot.getY(), header), new DriveConstraints(
                             45.0, 30.0, 0.0,
                             Math.toRadians(120.0), Math.toRadians(120.0), 0.0))
                     .build();
             config.followTrajectory(goToShoot);
             return null;
-        }, tripleShoot);
-        returnToShoot = new Thread(returnToHighGoal);
-
-        Sequence pivotShoot = new Sequence(() -> {
-            for(int i = 0; i < 2; i++) {
-                shootOnce();
-                config.turn(Math.toRadians(8));
-                sleep(200);
-            }
-            shootOnce();
-            return null;
         });
+        Sequence tripleShoot = new Sequence(() -> {
+            for(int i = 0; i < 3; i++) {
+                shootOnce();
+                sleep(400);
+            }
+            return null;
+        }, returnToHighGoal);
+        returnToShoot = new Thread(tripleShoot);
+
+
         Sequence returnToPowerShot = new Sequence(() -> {
             config.setPoseEstimate(config.getPoseEstimate());
             Trajectory goToShoot = config.trajectoryBuilder(config.getPoseEstimate())
@@ -116,8 +121,17 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
                     .build();
             config.followTrajectory(goToShoot);
             return null;
-        }, pivotShoot);
-        powerShots = new Thread(returnToPowerShot);
+        });
+        Sequence pivotShoot = new Sequence(() -> {
+            for(int i = 0; i < 2; i++) {
+                shootOnce();
+                config.turn(Math.toRadians(8));
+                sleep(200);
+            }
+            shootOnce();
+            return null;
+        }, returnToPowerShot);
+        powerShots = new Thread(pivotShoot);
     }
 
     public void shootOnce() {
@@ -127,9 +141,9 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     }
 
     public void setPower(double x, double y, double a){
-        config.leftRear.setPower(-x + y + a);
-        config.leftFront.setPower(x + y + a);
-        config.rightFront.setPower(-x + y - a);
-        config.rightRear.setPower(x + y - a);
+        config.leftRear.setPower(x + y + a);
+        config.leftFront.setPower(-x + y + a);
+        config.rightFront.setPower(x + y - a);
+        config.rightRear.setPower(-x + y - a);
     }
 }

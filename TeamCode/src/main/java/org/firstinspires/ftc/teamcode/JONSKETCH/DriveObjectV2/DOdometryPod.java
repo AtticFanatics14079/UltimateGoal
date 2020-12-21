@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorImplEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.Utils.Encoder;
@@ -34,5 +35,9 @@ public class DOdometryPod implements Sensor {
 
     public void endThreads() {
         //Do nothing
+    }
+
+    public void reverse(boolean reverse) {
+        odoPod.setDirection(reverse ? Encoder.Direction.REVERSE : Encoder.Direction.FORWARD);
     }
 }
