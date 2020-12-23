@@ -12,7 +12,7 @@ import java.util.ArrayList;
 public class RobotMovement {
     Point robotPosition = new Point(0,0);//NEED TO UPDATE ROBOT WORLD POSITION
     double worldAngle = 0;  //NEED TO UPDATE WORLD ANGLE
-    DcMotorImplEx[] Motors = new DcMotorImplEx[4];
+    public DcMotorImplEx[] Motors = new DcMotorImplEx[4];
     private CurvePoint[] pointsInReference = null;
     private int targetPoint = 1;
 
@@ -99,7 +99,7 @@ public class RobotMovement {
         return followMe;
     }
 
-    public void goToPosition(double x, double y, double movementSpeed,double preferredAngle, double turnSpeed){
+    public void goToPosition(double x, double y, double movementSpeed, double preferredAngle, double turnSpeed){
         Point point1 = new Point(x,y);
         double distanceToTarget = Geometry.distanceBetweenPoints(robotPosition, point1);
 

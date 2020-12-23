@@ -31,6 +31,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants;
@@ -90,6 +91,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     public List<DMotor> motors;
     private List<LynxModule> allHubs;
     public DIMU imu;
+    private VoltageSensor batteryVoltageSensor;
 
     public ConfigurationRR(HardwareMap hardwareMap) {
         super(DriveConstants.kV, DriveConstants.kA, DriveConstants.kStatic, TRACK_WIDTH);
@@ -114,6 +116,8 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         poseHistory = new ArrayList<>();
 
         LynxModuleUtil.ensureMinimumFirmwareVersion(hardwareMap);
+
+        batteryVoltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         allHubs = hardwareMap.getAll(LynxModule.class);
 
@@ -172,7 +176,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         setBulkCachingManual(true);
 
         if (RUN_USING_ENCODER && MOTOR_VELO_PID != null) {
-            setPIDCoefficients(MOTOR_VELO_PID);
+            setPIDFCoefficients(MOTOR_VELO_PID);
         }
 
         if (RUN_USING_ENCODER) {
@@ -366,15 +370,15 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         }
     }
 
-    public PIDCoefficients getPIDCoefficients() { //Removed DcMotor.RunMode runMode
+    public PIDFCoefficients getPIDFCoefficients() { //Removed DcMotor.RunMode runMode
         double[] temp = motors.get(0).getPID();
         PIDFCoefficients coefficients = new PIDFCoefficients(temp[0], temp[1], temp[2], temp[3]); //Change last value later
-        return new PIDCoefficients(coefficients.p, coefficients.i, coefficients.d);
+        return new PIDFCoefficients(coefficients.p, coefficients.i, coefficients.d, coefficients.f);
     }
 
-    public void setPIDCoefficients(PIDCoefficients coefficients) { //Removed DcMotor.RunMode runMode,
+    public void setPIDFCoefficients(PIDFCoefficients coefficients) { //Removed DcMotor.RunMode runMode,
         for (DMotor motor : motors) {
-            motor.setInternalPID(coefficients.kP, coefficients.kI, coefficients.kD, getMotorVelocityF());
+            motor.setInternalPID(coefficients.p, coefficients.p, coefficients.d, coefficients.f * 12 / batteryVoltageSensor.getVoltage());
         }
     }
 

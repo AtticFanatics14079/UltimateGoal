@@ -1,12 +1,16 @@
 package org.firstinspires.ftc.teamcode.Autonomous.RRTests;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.Utils.DashboardUtil;
 
 /*
  * Op mode for tuning follower PID coefficients (located in the drive base classes). The robot
@@ -34,9 +38,18 @@ public class FollowerPIDTuner extends LinearOpMode {
                     .forward(DISTANCE)
                     .build();
             drive.followTrajectory(traj);
-            drive.turn(Math.toRadians(90));
+            TelemetryPacket packet = new TelemetryPacket();
 
-            startPose = traj.end().plus(new Pose2d(0, 0, Math.toRadians(90)));
+            Pose2d estimate = drive.getPoseEstimate();
+            packet.put("x", estimate.getX());
+            packet.put("y", estimate.getY());
+            packet.put("heading", Math.toDegrees(estimate.getHeading()));
+            packet.put("imu", Math.toDegrees(drive.getRawExternalHeading()));
+
+            FtcDashboard.getInstance().sendTelemetryPacket(packet);
+            //drive.turn(Math.toRadians(90));
+
+            //startPose = traj.end().plus(new Pose2d(0, 0, Math.toRadians(90)));
         }
     }
 }
