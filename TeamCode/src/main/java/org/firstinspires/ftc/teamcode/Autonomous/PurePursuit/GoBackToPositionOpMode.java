@@ -28,7 +28,7 @@ public class GoBackToPositionOpMode extends LinearOpMode {
             Pose2d currentPose = odometry.getPoseEstimate();
             Pose2d targetPose = new Pose2d(0,0, Math.toRadians(0));
             drive.updatePose(new Point(currentPose.getX(), currentPose.getY()),currentPose.getHeading());
-            setPower(-gamepad1.left_stick_x,-gamepad1.left_stick_y,gamepad1.right_stick_x);
+            setPower(0*-gamepad1.left_stick_x,-gamepad1.left_stick_y,gamepad1.right_stick_x);
             if(gamepad1.start){
                 while((Math.hypot(Math.abs(targetPose.getX()-currentPose.getX()),Math.abs(targetPose.getY()-currentPose.getY()))>0.5)&&!isStopRequested()){
                     odometry.update();

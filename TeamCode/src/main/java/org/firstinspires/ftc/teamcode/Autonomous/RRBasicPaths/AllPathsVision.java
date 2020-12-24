@@ -34,9 +34,9 @@ public class AllPathsVision extends LinearOpMode {
     private Pose2d powerShotShoot = new Pose2d(-24.0, -24.0);
     private Pose2d highGoalShoot = new Pose2d(-12.0, -35.0);
     private Pose2d path4dropoff = new Pose2d(43.0, -56.0);
-    private Pose2d pickup4 = new Pose2d(-56.0, -61.0);
+    private Pose2d pickup4 = new Pose2d(-52.0, -62.0);
     private Pose2d path1dropoff = new Pose2d(20.0, -37.0);
-    private Pose2d pickup1 = new Pose2d(-38.5, -40);
+    private Pose2d pickup1 = new Pose2d(-56.5, -46); //Was x = -38.5, y = -40 before moving to back of tape
     private Pose2d path0dropoff = new Pose2d(10.0, -60.0);
     private Pose2d pickup0 = new Pose2d(-46.0, -51.0);
     private Pose2d endLocation = new Pose2d(5.0, -56.0, 0.0);
@@ -87,7 +87,7 @@ public class AllPathsVision extends LinearOpMode {
 
         drive.setPoseEstimate(startPose);
 
-        drive.shooter.setVelocity(-1640);
+        drive.shooter.setVelocity(-1600);
 
         switch(stackSize) {
             case 0: {
@@ -100,12 +100,12 @@ public class AllPathsVision extends LinearOpMode {
                 sleep(900);
                 drive.loader.setPosition(0.15);
                 drive.turn(Math.toRadians(8));
-                sleep(200);
+                sleep(300);
                 drive.loader.setPosition(0.7);
                 sleep(900);
                 drive.loader.setPosition(0.15);
                 drive.turn(Math.toRadians(9));
-                sleep(200);
+                sleep(300);
                 drive.loader.setPosition(0.6);
                 sleep(900);
                 drive.loader.setPosition(0.15);
@@ -140,9 +140,10 @@ public class AllPathsVision extends LinearOpMode {
             }
             break;
             case 1: {
+
                 Trajectory goToShoot = drive.trajectoryBuilder(startPose)
                         //.splineTo(midwayShoot.vec(), Math.toRadians(5))
-                        .splineTo(powerShotShoot.vec(), Math.toRadians(-5))
+                        .splineTo(powerShotShoot.vec(), Math.toRadians(-5.5))
                         .build();
                 drive.followTrajectory(goToShoot);
 
@@ -150,7 +151,7 @@ public class AllPathsVision extends LinearOpMode {
 
                 drive.loader.setPosition(0.6);
                 sleep(800);
-                drive.shooter.setVelocity(-1600);
+                drive.shooter.setVelocity(-1520);
                 drive.loader.setPosition(0.15);
                 drive.turn(Math.toRadians(4));
                 sleep(200);
@@ -177,27 +178,23 @@ public class AllPathsVision extends LinearOpMode {
                 System.out.println("2. Off target: " + (drive.getPoseEstimate().getX() - path1dropoff.getX()) + ", " + (drive.getPoseEstimate().getY() - path1dropoff.getY()));
 
                 Trajectory rings = drive.trajectoryBuilder(drive.getPoseEstimate(), true)
-                        .lineToLinearHeading(new Pose2d(highGoalShoot.getX() + 4, highGoalShoot.getY(), Math.toRadians(180)))
+                        .lineToLinearHeading(new Pose2d(highGoalShoot.getX() + 4, highGoalShoot.getY() + 2, Math.toRadians(180)))
                         //.splineTo(new Vector2d(highGoalShoot.getX() + 4, highGoalShoot.getY()), Math.toRadians(180.0))
                         .build();
                 drive.followTrajectory(rings);
 
-                drive.ingester.setPower(-1);
+                drive.ingester.setPower(1);
 
-                System.out.println("3. Off target: " + (drive.getPoseEstimate().getX() - highGoalShoot.getX() - 4) + ", " + (drive.getPoseEstimate().getY() - highGoalShoot.getY()));
-
-                Trajectory wobble2 = drive.trajectoryBuilder(drive.getPoseEstimate(), false)
-                        .splineTo(new Vector2d(pickup1.getX(), pickup1.getY()), Math.toRadians(215.0))
+                Trajectory wobble2 = drive.trajectoryBuilder(drive.getPoseEstimate())
+                        .addDisplacementMarker(() -> drive.ingester.setPower(1))
+                        .splineTo(new Vector2d(pickup1.getX(), pickup1.getY()), Math.toRadians(180)) //Was Math.toRadians(215) before moving to back of tape
                         .build();
                 drive.followTrajectory(wobble2);
 
                 drive.gripper.setPosition(gripperClosed);
                 sleep(800);
                 drive.wobble.setPosition(wobbleMid);
-                sleep(100); //To keep from dragging
                 drive.shooter.setVelocity(-1700);
-
-                drive.ingester.setPower(0);
 
                 System.out.println("4. Off target: " + (drive.getPoseEstimate().getX() - pickup1.getX()) + ", " + (drive.getPoseEstimate().getY() - pickup1.getY()));
 
@@ -205,6 +202,8 @@ public class AllPathsVision extends LinearOpMode {
                         .lineToLinearHeading(new Pose2d(highGoalShoot.getX(), highGoalShoot.getY(), Math.toRadians(-10.0)))
                         .build();
                 drive.followTrajectory(shoot);
+
+                drive.ingester.setPower(0);
 
                 drive.loader.setPosition(0.6);
                 sleep(800);

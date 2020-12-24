@@ -88,7 +88,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         if(gamepad1.left_trigger > 0.2) config.wobble.set(wobbleDown);
         else if(gamepad1.right_trigger > 0.2) config.wobble.set(wobbleUp);
         if(gamepad1.y) config.ingester.set(0);
-        else config.ingester.set(-1);
+        else config.ingester.set(1);
     }
 
     public void configureMacros() {

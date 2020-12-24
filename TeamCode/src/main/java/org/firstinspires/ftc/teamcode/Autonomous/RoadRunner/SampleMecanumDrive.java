@@ -25,6 +25,7 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorImpl;
 import com.qualcomm.robotcore.hardware.DcMotorImplEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -82,7 +83,7 @@ public class SampleMecanumDrive extends MecanumDrive {
     public Servo loader, wobble, gripper;
     private DcMotorEx leftFront, leftRear, rightRear, rightFront;
     public List<DcMotorEx> motors;
-    public DcMotor ingester;
+    public DcMotorSimple ingester;
     public BNO055IMU imu;
     private VoltageSensor batteryVoltageSensor;
 
@@ -135,7 +136,7 @@ public class SampleMecanumDrive extends MecanumDrive {
         loader = hardwareMap.get(Servo.class, "loader");
         wobble = hardwareMap.get(Servo.class, "wobble");
         gripper = hardwareMap.get(Servo.class, "gripper");
-        ingester = hardwareMap.get(DcMotor.class, "frontEncoder");
+        ingester = hardwareMap.get(DcMotorSimple.class, "frontEncoder");
 
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
 

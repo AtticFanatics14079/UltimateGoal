@@ -83,6 +83,9 @@ public class StandardTrackingWheelLocalizer extends FanaticsThreeWheelTrackingLo
     @NonNull
     @Override
     public List<Double> getWheelPositions() {
+        System.out.println("Left: " + leftEncoder.getCurrentPosition());
+        System.out.println("Right: " + rightEncoder.getCurrentPosition());
+        System.out.println("Front: " + frontEncoder.getCurrentPosition());
         return Arrays.asList(
                 encoderTicksToInches(leftEncoder.getCurrentPosition() * X_MULTIPLIER),
                 encoderTicksToInches(rightEncoder.getCurrentPosition() * X_MULTIPLIER),
@@ -95,6 +98,7 @@ public class StandardTrackingWheelLocalizer extends FanaticsThreeWheelTrackingLo
         // TODO: If your encoder velocity can exceed 32767 counts / second (such as the REV Through Bore and other
         //  competing magnetic encoders), change Encoder.getRawVelocity() to Encoder.getCorrectedVelocity() to enable a
         //  compensation method
+
 
         return Arrays.asList(
                 encoderTicksToInches(leftEncoder.getCorrectedVelocity()),
