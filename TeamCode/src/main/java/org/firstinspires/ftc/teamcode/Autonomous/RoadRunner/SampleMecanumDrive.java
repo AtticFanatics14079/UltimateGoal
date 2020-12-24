@@ -82,7 +82,8 @@ public class SampleMecanumDrive extends MecanumDrive {
     public Servo loader, wobble, gripper;
     private DcMotorEx leftFront, leftRear, rightRear, rightFront;
     public List<DcMotorEx> motors;
-    private BNO055IMU imu;
+    public DcMotor ingester;
+    public BNO055IMU imu;
     private VoltageSensor batteryVoltageSensor;
 
     private Pose2d lastPoseOnTurn;
@@ -134,6 +135,7 @@ public class SampleMecanumDrive extends MecanumDrive {
         loader = hardwareMap.get(Servo.class, "loader");
         wobble = hardwareMap.get(Servo.class, "wobble");
         gripper = hardwareMap.get(Servo.class, "gripper");
+        ingester = hardwareMap.get(DcMotor.class, "frontEncoder");
 
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
 

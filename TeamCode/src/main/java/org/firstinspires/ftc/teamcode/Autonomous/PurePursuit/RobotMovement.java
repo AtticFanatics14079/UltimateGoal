@@ -122,9 +122,7 @@ public class RobotMovement {
         if(distanceToTarget < 5) {
             movement_Turn = 0;
         }
-        System.out.println("Distance to target: " + distanceToTarget);
         setPower(-movement_x, -movement_y, -movement_Turn);
-
     }
 
     public void updatePose(Point pos, double worldAng){
