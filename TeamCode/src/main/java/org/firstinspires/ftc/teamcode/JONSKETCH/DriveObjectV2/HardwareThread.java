@@ -33,12 +33,10 @@ public class HardwareThread extends Thread {
 
         try {
             while(!stop) {
-
-                readHardware(); //Longest section by a ridiculous margin (about 90% of time)
-
                 System.out.println("Hardware cycle: " + time.milliseconds());
-                vals.updateCycle();
-                //Should allow every other thread to simply wait for cycle. Consider moving this or adding a sleep to prevent runValues being off by a cycle.
+                vals.updateCycle(); //Should allow every other thread to simply wait for cycle. Consider moving this or adding a sleep to prevent runValues being off by a cycle.
+
+                readHardware(); //Longest section by a ridiculous margin (about 90% of time).
 
                 runHardware(vals.runValues(false, 0, 0));
             }

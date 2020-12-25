@@ -10,7 +10,7 @@ public class ValueStorage {
 
     private double[] runValues; //Values to for the robot to be set to (e.g. velocity for a DMotor).
 
-    private final Double hardwareSync = 0.0, runSync = 0.0;
+    private final Double hardwareSync = 0.0, runSync = 0.0, notifySync = 0.0;
 
     public void setup(int size){
         runValues = new double[size];
@@ -22,20 +22,24 @@ public class ValueStorage {
         Arrays.fill(hardwareValues, null);
     }
 
-    public synchronized void updateCycle() {
-        notifyAll();
+    public void updateCycle() {
+        synchronized(runSync) {
+            runSync.notifyAll();
+        }
     }
 
-    public synchronized void waitForCycle() {
-        try {
-            wait();
-            Thread.sleep(0, 300000);
-            //Allows HardwareThread to access runValues first, however this approach puts every
-            //thread exactly 1 cycle behind HardwareThread at all times.
+    public void waitForCycle() {
+        synchronized(runSync) {
+            try {
+                runSync.wait();
+                Thread.sleep(0, 300000);
+                //Allows HardwareThread to access runValues first, however this approach puts every
+                //thread exactly 1 cycle behind HardwareThread at all times.
 
-            //Have confirmed that some delay is necessary, <= 0.2 leads to inconsistency.
-        } catch(Exception e) {
-            System.out.println(e);
+                //Have confirmed that some delay is necessary, <= 0.2 leads to inconsistency.
+            } catch (Exception e) {
+                System.out.println(e);
+            }
         }
     }
 
