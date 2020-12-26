@@ -187,6 +187,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         motors.get(0).reverse(true);
         motors.get(1).reverse(true);
 
+        leftEncoder.reverse(true);
         rightEncoder.reverse(true);
         frontEncoder.reverse(true);
         // TODO: if desired, use setLocalizer() to change the localization method

@@ -43,9 +43,7 @@ public class DEncoderlessMotor implements Active, DcMotor {
     }
 
     public void setHardware(double power) {
-        System.out.println("Setting " + power);
         motor.setPower(power);
-        System.out.println(motor.getPower());
     }
 
     public double[] getHardware() {

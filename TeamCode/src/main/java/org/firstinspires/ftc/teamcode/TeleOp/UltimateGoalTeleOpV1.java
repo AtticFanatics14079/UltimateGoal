@@ -8,6 +8,9 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
+import org.firstinspires.ftc.teamcode.Autonomous.PurePursuit.DriveObjectRobotMovement;
+import org.firstinspires.ftc.teamcode.Autonomous.PurePursuit.Point;
+import org.firstinspires.ftc.teamcode.Autonomous.PurePursuit.RobotMovement;
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants;
 import org.firstinspires.ftc.teamcode.HardwareConfigs.UltimateGoalConfig;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.Configuration;
@@ -23,19 +26,22 @@ import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ValueStorage;
 public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
     ConfigurationRR config;
+    DriveObjectRobotMovement drive;
     ValueStorage vals = new ValueStorage();
     HardwareThread hardware;
     Thread returnToShoot, powerShots;
     private double header;
     public static double wobbleUp = 0.22, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, load = 0.6, reload = 0.24, shooterSpeed = -1700;
 
-    private Pose2d highGoalShoot = new Pose2d(-16.0, -32.0, 0);
-    private Pose2d powerShotShoot = new Pose2d(-24.0, -18.0, 0);
+    Pose2d highGoalShoot = new Pose2d(-12.0, -25.0, 0);
+    Pose2d powerShotShoot = new Pose2d(-24.0, -18.0, 0);
 
     @Override
     public void runOpMode() throws InterruptedException {
         try{
             config = new ConfigurationRR(hardwareMap);
+            config.Configure(hardwareMap, vals);
+            drive = new DriveObjectRobotMovement(config);
             hardware = new HardwareThread(hardwareMap, vals, config);
             for(DMotor d : config.motors) d.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             configureMacros();
@@ -59,22 +65,57 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         //Main loop
         config.update();
         telemetry.addData("Pose: ", config.getPoseEstimate());
+        telemetry.addData("Header: ", header);
         telemetry.update();
         config.shooter.set(shooterSpeed);
         if(gamepad1.x) {
-            header = Math.toRadians(config.getPoseEstimate().getHeading());
+            header = config.getPoseEstimate().getHeading();
             config.setPoseEstimate(new Pose2d(5.0, -56.0, header));
         }
         if(gamepad1.start) {
-            //returnToShoot.start();
+            returnToShoot.start();
             //config.setPoseEstimate(config.getPoseEstimate());
-            Trajectory goToShoot = config.trajectoryBuilder(config.getPoseEstimate())
+            /*Trajectory goToShoot = config.trajectoryBuilder(config.getPoseEstimate())
                     .lineToLinearHeading(new Pose2d(highGoalShoot.getX(), highGoalShoot.getY(), header), new DriveConstraints(
                             45.0, 30.0, 0.0,
                             Math.toRadians(120.0), Math.toRadians(120.0), 0.0))
                     .build();
             config.followTrajectory(goToShoot);
+             */
             while(returnToShoot.isAlive());
+        }
+        else if(gamepad1.dpad_down) {
+            drive.runWithEncoder(false);
+            config.motors.get(0).reverse(false);
+            config.motors.get(1).reverse(false);
+            config.motors.get(2).reverse(true);
+            config.motors.get(3).reverse(true);
+            Pose2d currentPose = config.getPoseEstimate();
+            drive.updatePose(new Point(currentPose.getX(), currentPose.getY()), currentPose.getHeading());
+            while((Math.hypot(Math.abs(highGoalShoot.getX()-currentPose.getX()),Math.abs(highGoalShoot.getY()-currentPose.getY()))>0.75)&&!isStopRequested()){
+                config.update();
+                currentPose = config.getPoseEstimate();
+                drive.updatePose(new Point(currentPose.getX(), currentPose.getY()), currentPose.getHeading());
+                telemetry.addData("Positiom: ", currentPose);
+                telemetry.addData("Pose: ", drive.robotPosition + " " + drive.worldAngle);
+                telemetry.update();
+                drive.goToPosition(highGoalShoot.getX(),highGoalShoot.getY(),0.8,270,0.8);
+            }
+            drive.setPower(0,0,0);
+            sleep(200);
+            double imuHeading = config.imu.get()[0];
+            while((Math.abs(imuHeading-header)>Math.toRadians(2)) && !isStopRequested()){
+                config.update();
+                imuHeading = config.imu.get()[0];
+                int invert = (imuHeading + (360 - header)) % 360 > 180 ? -1 : 1;
+                double p = 0.2, f = 0.15;
+                drive.setPower(0,0, invert * (f+(p*Math.abs(imuHeading-header))));
+            }
+            drive.runWithEncoder(true);
+            config.motors.get(0).reverse(true);
+            config.motors.get(1).reverse(true);
+            config.motors.get(2).reverse(false);
+            config.motors.get(3).reverse(false);
         }
         else if(gamepad1.back) {
             powerShots.start();
@@ -92,7 +133,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     }
 
     public void configureMacros() {
-        Sequence returnToHighGoal = new Sequence(() -> {
+        /*Sequence returnToHighGoal = new Sequence(() -> {
             config.setPoseEstimate(config.getPoseEstimate());
             Trajectory goToShoot = config.trajectoryBuilder(config.getPoseEstimate())
                     .lineToLinearHeading(new Pose2d(highGoalShoot.getX(), highGoalShoot.getY(), header), new DriveConstraints(
@@ -100,6 +141,11 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
                             Math.toRadians(120.0), Math.toRadians(120.0), 0.0))
                     .build();
             config.followTrajectory(goToShoot);
+            return null;
+        });
+         */
+        Sequence returnToHighGoal = new Sequence(() -> {
+            purePursuitToPosition(new Pose2d(highGoalShoot.getX(), highGoalShoot.getY(), header));
             return null;
         });
         Sequence tripleShoot = new Sequence(() -> {
@@ -112,7 +158,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         returnToShoot = new Thread(tripleShoot);
 
 
-        Sequence returnToPowerShot = new Sequence(() -> {
+        /*Sequence returnToPowerShot = new Sequence(() -> {
             config.setPoseEstimate(config.getPoseEstimate());
             Trajectory goToShoot = config.trajectoryBuilder(config.getPoseEstimate())
                     .lineToLinearHeading(powerShotShoot, new DriveConstraints(
@@ -122,16 +168,61 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             config.followTrajectory(goToShoot);
             return null;
         });
+         */
+        Sequence returnToPowerShot = new Sequence(() -> {
+            purePursuitToPosition(new Pose2d(powerShotShoot.getX(), powerShotShoot.getY(), header));
+            return null;
+        });
         Sequence pivotShoot = new Sequence(() -> {
             for(int i = 0; i < 2; i++) {
                 shootOnce();
-                config.turn(Math.toRadians(8));
+                double targetHeading = config.getPoseEstimate().getHeading() + Math.toRadians(8);
+                while(Math.abs(config.getPoseEstimate().getHeading() - targetHeading) > Math.toRadians(3)) {
+                    double currentHeading = config.getPoseEstimate().getHeading();
+                    int invert = (currentHeading + (360 - targetHeading)) % 360 > 180 ? -1 : 1;
+                    double p = 0.2, f = 0.15;
+                    drive.setPower(0,0, invert * (f+(p*Math.abs(currentHeading-targetHeading))));
+                }
                 sleep(200);
             }
             shootOnce();
             return null;
         }, returnToPowerShot);
         powerShots = new Thread(pivotShoot);
+    }
+
+    public void purePursuitToPosition(Pose2d targetPose) {
+        drive.runWithEncoder(false);
+        config.motors.get(0).reverse(false);
+        config.motors.get(1).reverse(false);
+        config.motors.get(2).reverse(true);
+        config.motors.get(3).reverse(true);
+        Pose2d currentPose = config.getPoseEstimate();
+        drive.updatePose(new Point(currentPose.getX(), currentPose.getY()), currentPose.getHeading());
+        while((Math.hypot(Math.abs(targetPose.getX()-currentPose.getX()),Math.abs(targetPose.getY()-currentPose.getY()))>0.7)&&!isStopRequested()){
+            config.update();
+            currentPose = config.getPoseEstimate();
+            drive.updatePose(new Point(currentPose.getX(), currentPose.getY()), currentPose.getHeading());
+            telemetry.addData("Positiom: ", currentPose);
+            telemetry.addData("Pose: ", drive.robotPosition + " " + drive.worldAngle);
+            telemetry.update();
+            drive.goToPosition(targetPose.getX(),targetPose.getY(),1,270,0.8);
+        }
+        drive.setPower(0,0,0);
+        sleep(200);
+        double imuHeading = config.imu.get()[0];
+        while((Math.abs(imuHeading-targetPose.getHeading())>Math.toRadians(2)) && !isStopRequested()){
+            config.update();
+            imuHeading = config.imu.get()[0];
+            int invert = (imuHeading + (360 - targetPose.getHeading())) % 360 > 180 ? -1 : 1;
+            double p = 0.2, f = 0.15;
+            drive.setPower(0,0, invert * (f+(p*Math.abs(imuHeading-targetPose.getHeading()))));
+        }
+        drive.runWithEncoder(true);
+        config.motors.get(0).reverse(true);
+        config.motors.get(1).reverse(true);
+        config.motors.get(2).reverse(false);
+        config.motors.get(3).reverse(false);
     }
 
     public void shootOnce() {
