@@ -34,7 +34,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     public static double wobbleUp = 0.22, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, load = 0.6, reload = 0.24, shooterSpeed = -1700;
 
     Pose2d highGoalShoot = new Pose2d(-12.0, -25.0, 0);
-    Pose2d powerShotShoot = new Pose2d(-24.0, -18.0, 0);
+    Pose2d powerShotShoot = new Pose2d(-30.0, -36.0, 0);
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -65,12 +65,13 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         //Main loop
         config.update();
         telemetry.addData("Pose: ", config.getPoseEstimate());
-        telemetry.addData("Header: ", header);
+        telemetry.addData("Heading: ", config.imu.get()[0]);
         telemetry.update();
         config.shooter.set(shooterSpeed);
         if(gamepad1.x) {
-            header = config.getPoseEstimate().getHeading();
-            config.setPoseEstimate(new Pose2d(5.0, -56.0, header));
+            config.imu.resetIMU();
+            header = 0;
+            config.setPoseEstimate(new Pose2d(5.0, -63.0, 0.0));
         }
         if(gamepad1.start) {
             returnToShoot.start();
@@ -96,10 +97,10 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
                 config.update();
                 currentPose = config.getPoseEstimate();
                 drive.updatePose(new Point(currentPose.getX(), currentPose.getY()), currentPose.getHeading());
-                telemetry.addData("Positiom: ", currentPose);
+                telemetry.addData("Position: ", currentPose);
                 telemetry.addData("Pose: ", drive.robotPosition + " " + drive.worldAngle);
                 telemetry.update();
-                drive.goToPosition(highGoalShoot.getX(),highGoalShoot.getY(),0.8,270,0.8);
+                drive.goToPosition(highGoalShoot.getX(),highGoalShoot.getY(),0.8,270,0.7);
             }
             drive.setPower(0,0,0);
             sleep(200);
@@ -118,6 +119,8 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             config.motors.get(3).reverse(false);
         }
         else if(gamepad1.back) {
+            //config.setPoseEstimate(config.getPoseEstimate());
+            //config.turn(Math.toRadians(12));
             powerShots.start();
             while(powerShots.isAlive());
         }
@@ -145,13 +148,13 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         });
          */
         Sequence returnToHighGoal = new Sequence(() -> {
-            purePursuitToPosition(new Pose2d(highGoalShoot.getX(), highGoalShoot.getY(), header));
+            purePursuitToPosition(highGoalShoot);
             return null;
         });
         Sequence tripleShoot = new Sequence(() -> {
             for(int i = 0; i < 3; i++) {
                 shootOnce();
-                sleep(400);
+                sleep(500);
             }
             return null;
         }, returnToHighGoal);
@@ -170,20 +173,15 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         });
          */
         Sequence returnToPowerShot = new Sequence(() -> {
-            purePursuitToPosition(new Pose2d(powerShotShoot.getX(), powerShotShoot.getY(), header));
+            purePursuitToPosition(powerShotShoot);
             return null;
         });
         Sequence pivotShoot = new Sequence(() -> {
+            config.shooter.set(-1500);
             for(int i = 0; i < 2; i++) {
                 shootOnce();
-                double targetHeading = config.getPoseEstimate().getHeading() + Math.toRadians(8);
-                while(Math.abs(config.getPoseEstimate().getHeading() - targetHeading) > Math.toRadians(3)) {
-                    double currentHeading = config.getPoseEstimate().getHeading();
-                    int invert = (currentHeading + (360 - targetHeading)) % 360 > 180 ? -1 : 1;
-                    double p = 0.2, f = 0.15;
-                    drive.setPower(0,0, invert * (f+(p*Math.abs(currentHeading-targetHeading))));
-                }
-                sleep(200);
+                config.turn(Math.toRadians(-8));
+                sleep(400);
             }
             shootOnce();
             return null;
@@ -218,6 +216,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             double p = 0.2, f = 0.15;
             drive.setPower(0,0, invert * (f+(p*Math.abs(imuHeading-targetPose.getHeading()))));
         }
+        for(DMotor d : drive.Motors) d.setPower(0);
         drive.runWithEncoder(true);
         config.motors.get(0).reverse(true);
         config.motors.get(1).reverse(true);

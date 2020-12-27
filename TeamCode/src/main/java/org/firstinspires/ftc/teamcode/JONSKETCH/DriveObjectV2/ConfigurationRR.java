@@ -133,6 +133,8 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         //In this example, "left_back_motor" is whatever your configuration says.
         int i = 0;
 
+        hardware.clear();
+
         leftFront = new DMotor(vals, hwMap, "front_left_motor", i++);
         leftRear = new DMotor(vals, hwMap, "back_left_motor", i++);
         rightRear = new DMotor(vals, hwMap, "back_right_motor", i++);
@@ -203,8 +205,9 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     public void clearBulkCache(){
         for (LynxModule module : allHubs) {
             if(module.getBulkCachingMode() == LynxModule.BulkCachingMode.MANUAL) {
+                System.out.println("Clearing");
                 module.clearBulkCache();
-                module.getBulkData();
+                //module.getBulkData();
             }
         }
     }

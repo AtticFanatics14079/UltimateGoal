@@ -22,6 +22,8 @@ public class DIMU implements Sensor, BNO055IMU {
     private BNO055IMU imu;
     private ValueStorage vals;
 
+    private double imuOffset = 0;
+
     private DThread thread = new NullThread();
 
     private int partNum;
@@ -45,7 +47,13 @@ public class DIMU implements Sensor, BNO055IMU {
     }
 
     public double[] getHardware() {
-        return new double[]{imu.getAngularOrientation().firstAngle, imu.getAngularOrientation().secondAngle, imu.getAngularOrientation().thirdAngle};
+        return new double[]{calculateOffset(imu.getAngularOrientation().firstAngle), imu.getAngularOrientation().secondAngle, imu.getAngularOrientation().thirdAngle};
+    }
+
+    private double calculateOffset(double input) {
+        double val = input - imuOffset;
+        val += (val < -Math.PI) ? 2 * Math.PI : 0;
+        return val;
     }
 
     public void endThreads() {
@@ -56,6 +64,10 @@ public class DIMU implements Sensor, BNO055IMU {
         BNO055IMU.Parameters param = new BNO055IMU.Parameters();
         param.angleUnit = unit;
         initialize(param);
+    }
+
+    public void resetIMU() {
+        imuOffset += get()[0];
     }
 
     @Override

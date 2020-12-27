@@ -37,7 +37,7 @@ public class GoBackToPositionOpMode extends LinearOpMode {
                     t.addData("Current Position (Odo): ", currentPose);
                     t.addData("Target Point: ", targetPose);
                     t.update();
-                    drive.goToPosition(targetPose.getX(),targetPose.getY(),0.7,270,0.4);
+                    drive.goToPosition(targetPose.getX(),targetPose.getY(),0.7,90,0.3);
                 }
                 drive.setPower(0,0,0);
                 sleep(500);

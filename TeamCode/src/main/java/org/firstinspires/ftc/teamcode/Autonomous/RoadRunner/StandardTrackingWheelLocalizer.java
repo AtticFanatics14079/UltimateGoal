@@ -35,7 +35,7 @@ import java.util.List;
  *
  */
 @Config
-public class StandardTrackingWheelLocalizer extends FanaticsThreeWheelTrackingLocalizer {
+public class StandardTrackingWheelLocalizer extends ThreeTrackingWheelLocalizer {
     public static double TICKS_PER_REV = 8192;
     public static double WHEEL_RADIUS = 0.75; // in
     public static double GEAR_RATIO = 1; // output (wheel) speed / input (encoder) speed
@@ -53,7 +53,7 @@ public class StandardTrackingWheelLocalizer extends FanaticsThreeWheelTrackingLo
                 new Pose2d(0, LATERAL_DISTANCE / 2, 0), // left
                 new Pose2d(0, -LATERAL_DISTANCE / 2, 0), // right
                 new Pose2d(FORWARD_OFFSET, 0, Math.toRadians(90)) // front
-        ), hardwareMap.get(BNO055IMU.class, "imu"));
+        ));//, hardwareMap.get(BNO055IMU.class, "imu"));
 
 
         DcMotorImplEx d = hardwareMap.get(DcMotorImplEx.class, "leftEncoder");

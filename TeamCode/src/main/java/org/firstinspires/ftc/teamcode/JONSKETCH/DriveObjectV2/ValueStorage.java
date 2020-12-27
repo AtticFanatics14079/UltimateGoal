@@ -32,7 +32,7 @@ public class ValueStorage {
         synchronized(runSync) {
             try {
                 runSync.wait();
-                Thread.sleep(0, 300000);
+                //Thread.sleep(0, 300000);
                 //Allows HardwareThread to access runValues first, however this approach puts every
                 //thread exactly 1 cycle behind HardwareThread at all times.
 

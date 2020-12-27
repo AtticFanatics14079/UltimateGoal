@@ -11,7 +11,7 @@ public class HardwareThread extends Thread {
     double[][] hardwareVals; //Holds the values received from hardware of each part.
     double[] lastRun; //Previous run values.
     public Configuration config;
-    private volatile boolean stop;
+    private volatile boolean stop, resetIMU = false;
     private boolean setTime = false; //Vestigial variable
     public double voltMult = 1, lastTime = 0; //Vestigial variables
 
@@ -35,10 +35,15 @@ public class HardwareThread extends Thread {
             while(!stop) {
                 System.out.println("Hardware cycle: " + time.milliseconds());
                 vals.updateCycle(); //Should allow every other thread to simply wait for cycle. Consider moving this or adding a sleep to prevent runValues being off by a cycle.
+                System.out.println("After update: " + time.milliseconds());
 
                 readHardware(); //Longest section by a ridiculous margin (about 90% of time).
+                System.out.println("After read: " + time.milliseconds());
 
                 runHardware(vals.runValues(false, 0, 0));
+                System.out.println("After run: " + time.milliseconds());
+
+                updateHardware();
             }
         }
         catch(Exception e) {}
@@ -53,10 +58,14 @@ public class HardwareThread extends Thread {
     private void readHardware(){
 
         config.clearBulkCache(); //Miniscule time
+        System.out.println("After clearing cache: " + time.milliseconds());
 
         for(int i = 0; i < hardwareVals.length; i++) {
             hardwareVals[i] = config.hardware.get(i).getHardware(); //Majority of time in this loop
+            System.out.println("After reading part " + i + ": " + time.milliseconds());
         }
+
+        System.out.println("After reading: " + time.milliseconds());
 
         vals.hardware(true, hardwareVals, 0);
     }
@@ -71,6 +80,20 @@ public class HardwareThread extends Thread {
         }
 
         lastRun = Values;
+    }
+
+    private void updateHardware() {
+        for(int i = 0; i < this.hardwareVals.length; i++) {
+            if(config.hardware.get(i) instanceof DIMU && resetIMU) {
+                ((DIMU) config.hardware.get(i)).resetIMU();
+                resetIMU = false;
+            }
+            //instanceof and typecasting allows for sensors to not include setHardware.
+        }
+    }
+
+    public void resetIMU() {
+        resetIMU = true;
     }
 
     public void Stop(){
