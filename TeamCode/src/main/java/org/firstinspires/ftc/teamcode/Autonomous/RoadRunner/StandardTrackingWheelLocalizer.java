@@ -83,9 +83,6 @@ public class StandardTrackingWheelLocalizer extends ThreeTrackingWheelLocalizer 
     @NonNull
     @Override
     public List<Double> getWheelPositions() {
-        System.out.println("Left: " + leftEncoder.getCurrentPosition());
-        System.out.println("Right: " + rightEncoder.getCurrentPosition());
-        System.out.println("Front: " + frontEncoder.getCurrentPosition());
         return Arrays.asList(
                 encoderTicksToInches(leftEncoder.getCurrentPosition() * X_MULTIPLIER),
                 encoderTicksToInches(rightEncoder.getCurrentPosition() * X_MULTIPLIER),

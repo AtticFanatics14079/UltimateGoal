@@ -136,7 +136,7 @@ public class SampleMecanumDrive extends MecanumDrive {
         loader = hardwareMap.get(Servo.class, "loader");
         wobble = hardwareMap.get(Servo.class, "wobble");
         gripper = hardwareMap.get(Servo.class, "gripper");
-        ingester = hardwareMap.get(DcMotorSimple.class, "frontEncoder");
+        ingester = hardwareMap.get(DcMotorSimple.class, "rightEncoder");
 
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
 
