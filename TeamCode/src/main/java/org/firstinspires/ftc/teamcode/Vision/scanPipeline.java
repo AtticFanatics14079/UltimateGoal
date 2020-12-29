@@ -15,6 +15,7 @@ import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvPipeline;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 
@@ -79,6 +80,8 @@ public class scanPipeline extends LinearOpMode {
     //detection pipeline
     static class StageSwitchingPipeline extends OpenCvPipeline
     {
+        private double middle = -1, offset = 0;
+
         Mat rawMat = new Mat();
         Mat YCRCBMat = new Mat();
         Mat ExtractMat = new Mat();
@@ -164,15 +167,22 @@ public class scanPipeline extends LinearOpMode {
                 Core.extractChannel(YCRCBMat, ExtractMat, extract);
                 Imgproc.cvtColor(ExtractMat, MediumRareMat, Imgproc.COLOR_GRAY2RGB);
                 Imgproc.line(MediumRareMat, new Point(0, row), new Point(640, row), new Scalar(255,0,0), 3);
+                double wobbleLeft = -1, wobbleRight = -1;
                 for(int x = 0; x < MediumRareMat.cols(); x++){
                     int counter = 0;
                     double[] pixel = ExtractMat.get(row,x);
                     if(pixel[0]>wobbleThresh){
                         Imgproc.line(MediumRareMat, new Point(x, 300), new Point(x, 340), new Scalar(0,255,0), 3);
                         if((x<630 && x>10) && (ExtractMat.get(row, x-8)[0]>wobbleThresh) && (ExtractMat.get(row, x+8)[0]>wobbleThresh)){
+                            if(wobbleLeft == -1) wobbleLeft = x;
+                            wobbleRight = x;
                             Imgproc.line(MediumRareMat, new Point(x, 0), new Point(x, 480), new Scalar(0,0,255), 5);
                         }
                     }
+                }
+                if(wobbleLeft != wobbleRight) {
+                    middle = (wobbleLeft + wobbleRight) / 2.0;
+                    offset = (320 - middle) / 12;
                 }
             }
             switch (stageToRenderToViewport){

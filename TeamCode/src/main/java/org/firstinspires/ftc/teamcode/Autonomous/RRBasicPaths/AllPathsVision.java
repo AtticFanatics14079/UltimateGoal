@@ -48,14 +48,23 @@ public class AllPathsVision extends LinearOpMode {
 
     private final int rows = 640;
     private final int cols = 480;
-    public static int sampleWidth = 3;
-    public static int sampleHeight = 2;
+    public static int sampleWidth = 30;
+    public static int sampleHeight = 3;
     public static Point topCenter = new Point(510, 420);
     public static Point bottomCenter = new Point(510, 350);
-    public static int thresh = 155;
-    public static int stackSize = 5; //For testing, choose whatever path + disable camera
-    public static boolean usingCamera = false;
+    public static int thresh = 140;
+    public static int wobbleThresh = 145;
+    public static int stackSize = -1;
     private static double color1, color2;
+    public static boolean initDetect = true;
+
+    public static int extract = 1;
+    public static int row = 320;
+
+    private StageSwitchingPipeline pipeline = new StageSwitchingPipeline();
+
+    public static boolean usingCamera = false;
+
     OpenCvCamera webCam;
 
     @Override
@@ -63,11 +72,13 @@ public class AllPathsVision extends LinearOpMode {
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
+
+
         if(usingCamera) {
             int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
             webCam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam1"), cameraMonitorViewId);
             webCam.openCameraDevice();//open camera
-            webCam.setPipeline(new StageSwitchingPipeline());//different stages
+            webCam.setPipeline(pipeline);//different stages
             webCam.startStreaming(rows, cols, OpenCvCameraRotation.UPRIGHT);//display on RC
         }
 
@@ -328,74 +339,77 @@ public class AllPathsVision extends LinearOpMode {
                 drive.shooter.setVelocity(0);
                 drive.ingester.setPower(1);
 
-//                Trajectory wobble1 = drive.trajectoryBuilder(drive.getPoseEstimate())
-//                        .splineTo(ingestStack.vec(), ingestStack.getHeading())
-//                        .splineToConstantHeading(new Vector2d(path4dropoff.getX()-44, path4dropoff.getY()-7), Math.toRadians(0))
-//                        .splineToConstantHeading(new Vector2d(path4dropoff.getX()+8, path4dropoff.getY()-7), Math.toRadians(0))
-//                        .build();
-//                drive.followTrajectory(wobble1);
-//
-//                drive.wobble.setPosition(wobbleDown);
-//                drive.gripper.setPosition(gripperOpen);
-//                sleep(1000);
-//
-//                Trajectory wobble2 = drive.trajectoryBuilder(drive.getPoseEstimate(), true)
-//                        .lineToLinearHeading(new Pose2d(pickup4.getX() + 24, pickup4.getY(), Math.toRadians(180.0)))
-//                        .build();
-//                drive.followTrajectory(wobble2);
-//
-//                Trajectory pickupWobble = drive.trajectoryBuilder(drive.getPoseEstimate())
-//                        .strafeTo(new Vector2d(pickup4.getX(), pickup4.getY()))
-//                        .build();
-//                drive.followTrajectory(pickupWobble);
-//
-//                drive.gripper.setPosition(gripperClosed);
-//                sleep(800);
-//                drive.wobble.setPosition(wobbleMid);
-//                drive.shooter.setVelocity(-1700);
-//
-//                Trajectory shootdrop = drive.trajectoryBuilder(drive.getPoseEstimate())
-//                        .lineToLinearHeading(new Pose2d(path5highgoalX, path5highgoalY, 0))
-//                        .build();
-//                drive.followTrajectory(shootdrop);
-//
-//                drive.loader.setPosition(0.15);
-//                sleep(800);
-//                drive.loader.setPosition(0.55);
-//                sleep(800);
-//                drive.loader.setPosition(0.15);
-//                sleep(800);
-//                drive.loader.setPosition(0.55);
-//                sleep(800);
-//                drive.loader.setPosition(0.15);
-//                drive.shooter.setVelocity(-1680);
-//                sleep(800);
-//                drive.loader.setPosition(0.55);
-//                sleep(800);
-//                drive.shooter.setVelocity(0);
-//
-//                Trajectory drop = drive.trajectoryBuilder(drive.getPoseEstimate())
-//                        .splineTo(new Vector2d(path4dropoff.getX()-40, path4dropoff.getY()+12), path4dropoff.getHeading())
-//                        .splineTo(new Vector2d(path4dropoff.getX(), path4dropoff.getY()+12), path4dropoff.getHeading())
-//                        .build();
-//                drive.followTrajectory(drop);
-//
-//                drive.wobble.setPosition(wobbleDown);
-//                drive.gripper.setPosition(gripperOpen);
-//                sleep(1000);
-//                drive.shooter.setVelocity(-1700);
-//
-//                Trajectory toPark = drive.trajectoryBuilder(drive.getPoseEstimate(), true)
-//                        .splineTo(new Vector2d(-1, -36), Math.toRadians(180))
-//                        .build();
-//                drive.followTrajectory(toPark);
-//
-//                drive.loader.setPosition(0.15);
-//                sleep(800);
-//                drive.loader.setPosition(0.55);
-//                sleep(800);
-//                drive.loader.setPosition(0.15);
-//                drive.shooter.setVelocity(0);
+                Trajectory wobble1 = drive.trajectoryBuilder(drive.getPoseEstimate())
+                        .splineTo(ingestStack.vec(), ingestStack.getHeading())
+                        .splineToConstantHeading(new Vector2d(path4dropoff.getX()-44, path4dropoff.getY()-7), Math.toRadians(0))
+                        .splineToConstantHeading(new Vector2d(path4dropoff.getX()+8, path4dropoff.getY()-7), Math.toRadians(0))
+                        .build();
+                drive.followTrajectory(wobble1);
+
+                drive.wobble.setPosition(wobbleDown);
+                drive.gripper.setPosition(gripperOpen);
+                sleep(1000);
+
+                Trajectory wobble2 = drive.trajectoryBuilder(drive.getPoseEstimate(), true)
+                        .lineToLinearHeading(new Pose2d(pickup4.getX() + 24, pickup4.getY(), Math.toRadians(180.0)))
+                        .build();
+                drive.followTrajectory(wobble2);
+
+                Pose2d currentPose = drive.getPoseEstimate();
+                drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY() + pipeline.offset, currentPose.getHeading()));
+
+                Trajectory pickupWobble = drive.trajectoryBuilder(drive.getPoseEstimate())
+                        .splineTo(new Vector2d(pickup4.getX(), pickup4.getY()), Math.toRadians(180.0))
+                        .build();
+                drive.followTrajectory(pickupWobble);
+
+                drive.gripper.setPosition(gripperClosed);
+                sleep(800);
+                drive.wobble.setPosition(wobbleMid);
+                drive.shooter.setVelocity(-1700);
+
+                Trajectory shootdrop = drive.trajectoryBuilder(drive.getPoseEstimate())
+                        .lineToLinearHeading(new Pose2d(path5highgoalX, path5highgoalY, 0))
+                        .build();
+                drive.followTrajectory(shootdrop);
+
+                drive.loader.setPosition(0.15);
+                sleep(800);
+                drive.loader.setPosition(0.55);
+                sleep(800);
+                drive.loader.setPosition(0.15);
+                sleep(800);
+                drive.loader.setPosition(0.55);
+                sleep(800);
+                drive.loader.setPosition(0.15);
+                drive.shooter.setVelocity(-1680);
+                sleep(800);
+                drive.loader.setPosition(0.55);
+                sleep(800);
+                drive.shooter.setVelocity(0);
+
+                Trajectory drop = drive.trajectoryBuilder(drive.getPoseEstimate())
+                        .splineTo(new Vector2d(path4dropoff.getX()-40, path4dropoff.getY()+12), path4dropoff.getHeading())
+                        .splineTo(new Vector2d(path4dropoff.getX(), path4dropoff.getY()+12), path4dropoff.getHeading())
+                        .build();
+                drive.followTrajectory(drop);
+
+                drive.wobble.setPosition(wobbleDown);
+                drive.gripper.setPosition(gripperOpen);
+                sleep(1000);
+                drive.shooter.setVelocity(-1700);
+
+                Trajectory toPark = drive.trajectoryBuilder(drive.getPoseEstimate(), true)
+                        .splineTo(new Vector2d(-1, -36), Math.toRadians(180))
+                        .build();
+                drive.followTrajectory(toPark);
+
+                drive.loader.setPosition(0.15);
+                sleep(800);
+                drive.loader.setPosition(0.55);
+                sleep(800);
+                drive.loader.setPosition(0.15);
+                drive.shooter.setVelocity(0);
             }
             break;
             case 69: {
@@ -429,12 +443,16 @@ public class AllPathsVision extends LinearOpMode {
     }
 
     static class StageSwitchingPipeline extends OpenCvPipeline {
+
+        public  double middle = -1, offset = 0;
+
         Mat rawMat = new Mat();
         Mat YCRCBMat = new Mat();
         Mat ExtractMat = new Mat();
         Mat MediumRareMat = new Mat();
 
-        enum Stage {
+        enum Stage
+        {
             RAW,
             YCRCB,
             EXTRACT,
@@ -445,7 +463,8 @@ public class AllPathsVision extends LinearOpMode {
         private StageSwitchingPipeline.Stage[] stages = StageSwitchingPipeline.Stage.values();
 
         @Override
-        public void onViewportTapped() {
+        public void onViewportTapped()
+        {
             /*
              * Note that this method is invoked from the UI thread
              * so whatever we do here, we must do quickly.
@@ -455,7 +474,8 @@ public class AllPathsVision extends LinearOpMode {
 
             int nextStageNum = currentStageNum + 1;
 
-            if (nextStageNum >= stages.length) {
+            if(nextStageNum >= stages.length)
+            {
                 nextStageNum = 0;
             }
 
@@ -463,56 +483,83 @@ public class AllPathsVision extends LinearOpMode {
         }
 
         @Override
-        public Mat processFrame(Mat input) {
-            rawMat = input;
-            Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2HSV);
-            Core.extractChannel(YCRCBMat, ExtractMat, 1);
-            Imgproc.cvtColor(ExtractMat, MediumRareMat, Imgproc.COLOR_GRAY2RGB);
+        public Mat processFrame(Mat input)
+        {
+            if (initDetect) {
+                rawMat = input;
+                //Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2YCrCb);
+                //YCRCBMat = rawMat;
+                Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2HSV);
+                Core.extractChannel(YCRCBMat, ExtractMat, extract);
+                Imgproc.cvtColor(ExtractMat, MediumRareMat, Imgproc.COLOR_GRAY2RGB);
 
-            Point topLeft1 = new Point(topCenter.x - sampleWidth, topCenter.y - sampleHeight);
-            Point bottomRight1 = new Point(topCenter.x + sampleWidth, topCenter.y + sampleHeight);
-            Point topLeft2 = new Point(bottomCenter.x - sampleWidth, bottomCenter.y - sampleHeight);
-            Point bottomRight2 = new Point(bottomCenter.x + sampleWidth, bottomCenter.y + sampleHeight);
+                Point topLeft1 = new Point(topCenter.x - sampleWidth,topCenter.y - sampleHeight);
+                Point bottomRight1 = new Point(topCenter.x + sampleWidth, topCenter.y + sampleHeight);
+                Point topLeft2 = new Point(bottomCenter.x - sampleWidth,bottomCenter.y - sampleHeight);
+                Point bottomRight2 = new Point(bottomCenter.x +sampleWidth, bottomCenter.y + sampleHeight);
 
-            color1 = 0;
-            color2 = 0;
+                color1 = 0;
+                color2 = 0;
 
-            for (int i = (int) (topLeft1.x); i <= (int) (bottomRight1.x); i++) {
-                for (int j = (int) topLeft1.y; j <= (int) bottomRight1.y; j++) {
-                    color1 += ExtractMat.get(j, i)[0];
+                for(int i = (int)(topLeft1.x); i <= (int)(bottomRight1.x); i++){
+                    for(int j = (int)topLeft1.y;  j <= (int)bottomRight1.y; j++){
+                        color1 += ExtractMat.get(j, i)[0];
+                    }
+                }
+                color1 /= (2*sampleWidth + 1)*(2*sampleHeight + 1);
+
+                for(int i = (int)(topLeft2.x); i <= (int)(bottomRight2.x); i++){
+                    for(int j = (int)(topLeft2.y);  j <= (int)(bottomRight2.y); j++){
+                        color2 += ExtractMat.get(j, i)[0];
+                    }
+                }
+                color2 /= (2*sampleWidth + 1)*(2*sampleHeight + 1);
+
+                boolean yellowness1 = color1 > thresh;
+                boolean yellowness2 = color2 > thresh;
+
+                stackSize = yellowness1 ? 4 : yellowness2 ? 1 : 0;
+
+                Imgproc.rectangle(MediumRareMat, topLeft1, bottomRight1, yellowness1 ? new Scalar(0, 255, 0) : new Scalar(255, 0, 0));
+                Imgproc.rectangle(MediumRareMat, topLeft2, bottomRight2, yellowness2 ? new Scalar(0, 255, 0) : new Scalar(255, 0, 0));
+            }
+            else{
+                rawMat = input;
+                //Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2YCrCb);
+                //YCRCBMat = rawMat;
+                Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2HSV);
+                Core.extractChannel(YCRCBMat, ExtractMat, extract);
+                Imgproc.cvtColor(ExtractMat, MediumRareMat, Imgproc.COLOR_GRAY2RGB);
+                Imgproc.line(MediumRareMat, new Point(0, row), new Point(640, row), new Scalar(255,0,0), 3);
+                double wobbleLeft = -1, wobbleRight = -1;
+                for(int x = 0; x < MediumRareMat.cols(); x++){
+                    int counter = 0;
+                    double[] pixel = ExtractMat.get(row,x);
+                    if(pixel[0]>wobbleThresh){
+                        Imgproc.line(MediumRareMat, new Point(x, 300), new Point(x, 340), new Scalar(0,255,0), 3);
+                        if((x<630 && x>10) && (ExtractMat.get(row, x-8)[0]>wobbleThresh) && (ExtractMat.get(row, x+8)[0]>wobbleThresh)){
+                            if(wobbleLeft == -1) wobbleLeft = x;
+                            wobbleRight = x;
+                            Imgproc.line(MediumRareMat, new Point(x, 0), new Point(x, 480), new Scalar(0,0,255), 5);
+                        }
+                    }
+                }
+                if(wobbleLeft != wobbleRight) {
+                    middle = (wobbleLeft + wobbleRight) / 2.0;
+                    offset = (320 - middle) / 12;
                 }
             }
-            color1 /= (2 * sampleWidth + 1) * (2 * sampleHeight + 1);
-
-            for (int i = (int) (topLeft2.x); i <= (int) (bottomRight2.x); i++) {
-                for (int j = (int) (topLeft2.y); j <= (int) (bottomRight2.y); j++) {
-                    color2 += ExtractMat.get(j, i)[0];
-                }
-            }
-            color2 /= (2 * sampleWidth + 1) * (2 * sampleHeight + 1);
-
-            boolean yellowness1 = color1 > thresh;
-            boolean yellowness2 = color2 > thresh;
-
-            stackSize = yellowness1 ? 4 : yellowness2 ? 1 : 0;
-
-            Imgproc.rectangle(MediumRareMat, topLeft1, bottomRight1, yellowness1 ? new Scalar(0, 255, 0) : new Scalar(255, 0, 0));
-            Imgproc.rectangle(MediumRareMat, topLeft2, bottomRight2, yellowness2 ? new Scalar(0, 255, 0) : new Scalar(255, 0, 0));
-
-            switch (stageToRenderToViewport) {
-                case RAW: {
+            switch (stageToRenderToViewport){
+                case RAW:
+                {
                     return MediumRareMat;
                 }
-                case YCRCB: {
-                    return YCRCBMat;
-                }
-                case EXTRACT: {
+                case EXTRACT:
+                {
                     return ExtractMat;
                 }
-                case MEDIUMRARE: {
-                    return MediumRareMat;
-                }
-                default: {
+                default:
+                {
                     return input;
                 }
             }
