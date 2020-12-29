@@ -15,6 +15,8 @@ import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvPipeline;
 
+import java.util.Arrays;
+
 
 /**
  * Created by maryjaneb  on 11/13/2016.
@@ -38,10 +40,13 @@ public class scanPipeline extends LinearOpMode {
     public static Point topCenter = new Point(510, 420);
     public static Point bottomCenter = new Point(510, 350);
     public static int thresh = 140;
+    public static int wobbleThresh = 145;
     public static int stackSize = -1;
     private static double color1, color2;
+    public static boolean initDetect = true;
 
     public static int extract = 1;
+    public static int row = 320;
 
     OpenCvCamera webCam;
 
@@ -57,6 +62,7 @@ public class scanPipeline extends LinearOpMode {
         //width = height in this case, because camera is in portrait mode.
 
         waitForStart();
+        initDetect = false;
         //all of our movement jazz
         while (opModeIsActive()) {
             telemetry.addData("Height", rows);
@@ -112,60 +118,71 @@ public class scanPipeline extends LinearOpMode {
         @Override
         public Mat processFrame(Mat input)
         {
-            rawMat = input;
-            //Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2YCrCb);
-            //YCRCBMat = rawMat;
-            Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2HSV);
-            Core.extractChannel(YCRCBMat, ExtractMat, extract);
-            Imgproc.cvtColor(ExtractMat, MediumRareMat, Imgproc.COLOR_GRAY2RGB);
+            if (initDetect) {
+                rawMat = input;
+                //Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2YCrCb);
+                //YCRCBMat = rawMat;
+                Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2HSV);
+                Core.extractChannel(YCRCBMat, ExtractMat, extract);
+                Imgproc.cvtColor(ExtractMat, MediumRareMat, Imgproc.COLOR_GRAY2RGB);
 
-            Point topLeft1 = new Point(topCenter.x - sampleWidth,topCenter.y - sampleHeight);
-            Point bottomRight1 = new Point(topCenter.x + sampleWidth, topCenter.y + sampleHeight);
-            Point topLeft2 = new Point(bottomCenter.x - sampleWidth,bottomCenter.y - sampleHeight);
-            Point bottomRight2 = new Point(bottomCenter.x +sampleWidth, bottomCenter.y + sampleHeight);
+                Point topLeft1 = new Point(topCenter.x - sampleWidth,topCenter.y - sampleHeight);
+                Point bottomRight1 = new Point(topCenter.x + sampleWidth, topCenter.y + sampleHeight);
+                Point topLeft2 = new Point(bottomCenter.x - sampleWidth,bottomCenter.y - sampleHeight);
+                Point bottomRight2 = new Point(bottomCenter.x +sampleWidth, bottomCenter.y + sampleHeight);
 
-            color1 = 0;
-            color2 = 0;
+                color1 = 0;
+                color2 = 0;
 
-            for(int i = (int)(topLeft1.x); i <= (int)(bottomRight1.x); i++){
-                for(int j = (int)topLeft1.y;  j <= (int)bottomRight1.y; j++){
-                    color1 += ExtractMat.get(j, i)[0];
+                for(int i = (int)(topLeft1.x); i <= (int)(bottomRight1.x); i++){
+                    for(int j = (int)topLeft1.y;  j <= (int)bottomRight1.y; j++){
+                        color1 += ExtractMat.get(j, i)[0];
+                    }
+                }
+                color1 /= (2*sampleWidth + 1)*(2*sampleHeight + 1);
+
+                for(int i = (int)(topLeft2.x); i <= (int)(bottomRight2.x); i++){
+                    for(int j = (int)(topLeft2.y);  j <= (int)(bottomRight2.y); j++){
+                        color2 += ExtractMat.get(j, i)[0];
+                    }
+                }
+                color2 /= (2*sampleWidth + 1)*(2*sampleHeight + 1);
+
+                boolean yellowness1 = color1 > thresh;
+                boolean yellowness2 = color2 > thresh;
+
+                stackSize = yellowness1 ? 4 : yellowness2 ? 1 : 0;
+
+                Imgproc.rectangle(MediumRareMat, topLeft1, bottomRight1, yellowness1 ? new Scalar(0, 255, 0) : new Scalar(255, 0, 0));
+                Imgproc.rectangle(MediumRareMat, topLeft2, bottomRight2, yellowness2 ? new Scalar(0, 255, 0) : new Scalar(255, 0, 0));
+            }
+            else{
+                rawMat = input;
+                //Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2YCrCb);
+                //YCRCBMat = rawMat;
+                Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2HSV);
+                Core.extractChannel(YCRCBMat, ExtractMat, extract);
+                Imgproc.cvtColor(ExtractMat, MediumRareMat, Imgproc.COLOR_GRAY2RGB);
+                Imgproc.line(MediumRareMat, new Point(0, row), new Point(640, row), new Scalar(255,0,0), 3);
+                for(int x = 0; x < MediumRareMat.cols(); x++){
+                    int counter = 0;
+                    double[] pixel = ExtractMat.get(row,x);
+                    if(pixel[0]>wobbleThresh){
+                        Imgproc.line(MediumRareMat, new Point(x, 300), new Point(x, 340), new Scalar(0,255,0), 3);
+                        if((x<630 && x>10) && (ExtractMat.get(row, x-8)[0]>wobbleThresh) && (ExtractMat.get(row, x+8)[0]>wobbleThresh)){
+                            Imgproc.line(MediumRareMat, new Point(x, 0), new Point(x, 480), new Scalar(0,0,255), 5);
+                        }
+                    }
                 }
             }
-            color1 /= (2*sampleWidth + 1)*(2*sampleHeight + 1);
-
-            for(int i = (int)(topLeft2.x); i <= (int)(bottomRight2.x); i++){
-                for(int j = (int)(topLeft2.y);  j <= (int)(bottomRight2.y); j++){
-                    color2 += ExtractMat.get(j, i)[0];
-                }
-            }
-            color2 /= (2*sampleWidth + 1)*(2*sampleHeight + 1);
-
-            boolean yellowness1 = color1 > thresh;
-            boolean yellowness2 = color2 > thresh;
-
-            stackSize = yellowness1 ? 4 : yellowness2 ? 1 : 0;
-
-            Imgproc.rectangle(MediumRareMat, topLeft1, bottomRight1, yellowness1 ? new Scalar(0, 255, 0) : new Scalar(255, 0, 0));
-            Imgproc.rectangle(MediumRareMat, topLeft2, bottomRight2, yellowness2 ? new Scalar(0, 255, 0) : new Scalar(255, 0, 0));
-
-            switch (stageToRenderToViewport)
-            {
+            switch (stageToRenderToViewport){
                 case RAW:
                 {
                     return MediumRareMat;
                 }
-                case YCRCB:
-                {
-                    return YCRCBMat;
-                }
                 case EXTRACT:
                 {
                     return ExtractMat;
-                }
-                case MEDIUMRARE:
-                {
-                    return MediumRareMat;
                 }
                 default:
                 {
