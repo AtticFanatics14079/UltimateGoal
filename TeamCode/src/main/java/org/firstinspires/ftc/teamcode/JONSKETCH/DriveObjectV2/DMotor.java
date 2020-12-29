@@ -15,7 +15,7 @@ public class DMotor implements Active, DcMotor {
     DcMotorImplEx motor;
     private double[] pid = new double[]{30.0, 0.0, 0.0, 2700};
     private int partNum;
-    private double powerToVelocity = 1700; //MODIFY WITH THE EXACT VALUE
+    private double powerToVelocity = 2700; //MODIFY WITH THE EXACT VALUE
 
     private DThread thread = new NullThread();
     private ValueStorage vals;
