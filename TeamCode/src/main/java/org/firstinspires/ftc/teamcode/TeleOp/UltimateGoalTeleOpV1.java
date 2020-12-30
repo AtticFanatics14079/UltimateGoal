@@ -7,6 +7,7 @@ import com.acmerobotics.roadrunner.trajectory.constraints.DriveConstraints;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.Autonomous.PurePursuit.DriveObjectRobotMovement;
 import org.firstinspires.ftc.teamcode.Autonomous.PurePursuit.Point;
@@ -39,6 +40,8 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
     private boolean lockedLoader = false, pressedLock = false;
 
+    private ElapsedTime time;
+
     @Override
     public void runOpMode() throws InterruptedException {
         try{
@@ -49,6 +52,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             for(DMotor d : config.motors) d.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             configureMacros();
             waitForStart();
+            time = new ElapsedTime();
             hardware.start();
             if(!isStopRequested()) {
                 while(opModeIsActive()){
@@ -67,17 +71,18 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     public void getInput(){
         //Main loop
         config.update();
+        config.imu.retrievingHardware(false);
         telemetry.addData("Pose: ", config.getPoseEstimate());
         telemetry.addData("Heading: ", config.imu.get()[0]);
         telemetry.update();
         config.shooter.set(shooterSpeed);
         if(gamepad1.x) {
             //config.imu.resetIMU();
-            Pose2d currentPose = config.getPoseEstimate();
-            config.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), 0.0));
+            //if(time.seconds() < 5) config.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), 0.0));
+            config.setPoseEstimate(new Pose2d(-63, -63, 0.0)); //In corner, AKA after dropping off wobble goal.
         }
         if(gamepad1.start && !shootMacro.isAlive()) {
-            returnToShoot.start();
+            //returnToShoot.start();
             //config.setPoseEstimate(config.getPoseEstimate());
             /*Trajectory goToShoot = config.trajectoryBuilder(config.getPoseEstimate())
                     .lineToLinearHeading(new Pose2d(highGoalShoot.getX(), highGoalShoot.getY(), header), new DriveConstraints(
@@ -86,7 +91,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
                     .build();
             config.followTrajectory(goToShoot);
              */
-            while(returnToShoot.isAlive());
+            //while(returnToShoot.isAlive());
         }
         else if(gamepad1.a && !shootMacro.isAlive()) {
             shootMacro.start();
@@ -252,6 +257,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             drive.goToPosition(targetPose.getX(),targetPose.getY(), speed,270,0.8);
         }
         drive.setPower(0,0,0);
+        config.imu.retrievingHardware(true);
         sleep(200);
         double imuHeading = config.imu.get()[0];
         while((Math.abs(imuHeading-targetPose.getHeading())>Math.toRadians(2)) && !isStopRequested()){
@@ -267,6 +273,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         config.motors.get(1).reverse(true);
         config.motors.get(2).reverse(false);
         config.motors.get(3).reverse(false);
+        config.imu.retrievingHardware(false);
     }
 
     public void shootOnce() {

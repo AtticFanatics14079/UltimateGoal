@@ -22,6 +22,8 @@ public class DIMU implements Sensor, BNO055IMU {
     private BNO055IMU imu;
     private ValueStorage vals;
 
+    public volatile boolean gettingInput = true;
+
     private double imuOffset = 0;
 
     private DThread thread = new NullThread();
@@ -68,6 +70,10 @@ public class DIMU implements Sensor, BNO055IMU {
 
     public void resetIMU() {
         imuOffset += get()[0];
+    }
+
+    public void retrievingHardware(boolean retrieving) {
+        gettingInput = retrieving;
     }
 
     @Override
