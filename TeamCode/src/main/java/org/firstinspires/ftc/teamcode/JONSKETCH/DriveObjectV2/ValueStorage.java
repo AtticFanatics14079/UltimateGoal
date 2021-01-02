@@ -56,7 +56,7 @@ public class ValueStorage {
         }
     }
 
-    public synchronized double[] runValues(boolean Writing, double value, int partNum){
+    public double[] runValues(boolean Writing, double value, int partNum){
         synchronized (runSync) {
             if (Writing) {
                 runValues[partNum] = value;

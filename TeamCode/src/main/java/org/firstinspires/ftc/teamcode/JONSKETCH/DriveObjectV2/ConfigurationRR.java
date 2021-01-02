@@ -82,13 +82,13 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
     private Pose2d lastPoseOnTurn;
 
-    public DMotor leftFront, leftRear, rightRear, rightFront;
+    public DEncoderlessMotor leftFront, leftRear, rightRear, rightFront;
     public DOdometryPod leftEncoder, rightEncoder, frontEncoder;
     public DServo loader, gripper, wobble;
     public DMotor shooter;
     public DEncoderlessMotor ingester;
     public List<DOdometryPod> pods;
-    public List<DMotor> motors;
+    public List<DEncoderlessMotor> motors;
     private List<LynxModule> allHubs;
     public DIMU imu;
     private VoltageSensor batteryVoltageSensor;
@@ -123,8 +123,6 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
         // TODO: adjust the names of the following hardware devices to match your configuration
 
-
-
     }
 
     public void Configure(HardwareMap hwMap, ValueStorage vals){
@@ -135,10 +133,10 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
         hardware.clear();
 
-        leftFront = new DMotor(vals, hwMap, "front_left_motor", i++);
-        leftRear = new DMotor(vals, hwMap, "back_left_motor", i++);
-        rightRear = new DMotor(vals, hwMap, "back_right_motor", i++);
-        rightFront = new DMotor(vals, hwMap, "front_right_motor", i++);
+        leftFront = new DEncoderlessMotor(vals, hwMap, "front_left_motor", i++);
+        leftRear = new DEncoderlessMotor(vals, hwMap, "back_left_motor", i++);
+        rightRear = new DEncoderlessMotor(vals, hwMap, "back_right_motor", i++);
+        rightFront = new DEncoderlessMotor(vals, hwMap, "front_right_motor", i++);
         leftEncoder = new DOdometryPod(vals, hwMap, "leftEncoder", i++);
         rightEncoder = new DOdometryPod(vals, hwMap, "rightEncoder", i++);
         frontEncoder = new DOdometryPod(vals, hwMap, "frontEncoder", i++);
@@ -169,7 +167,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         // BNO055IMUUtil.remapAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);
 
         //Not sure what the next part does so if stuff is wonky check it.
-        for (DMotor motor : motors) {
+        for (DEncoderlessMotor motor : motors) {
             MotorConfigurationType motorConfigurationType = motor.getMotorType().clone();
             motorConfigurationType.setAchieveableMaxRPMFraction(1.0);
             motor.setMotorType(motorConfigurationType);
@@ -363,13 +361,13 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
     //Need to fix these at some point
     public void setMode(DcMotor.RunMode runMode) {
-        for (DMotor motor : motors) {
+        for (DEncoderlessMotor motor : motors) {
             motor.setMode(runMode);
         }
     }
 
     public void setZeroPowerBehavior(DcMotor.ZeroPowerBehavior zeroPowerBehavior) {
-        for (DMotor motor : motors) {
+        for (DEncoderlessMotor motor : motors) {
             motor.setZeroPowerBehavior(zeroPowerBehavior);
         }
     }
@@ -381,8 +379,11 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     }
 
     public void setPIDFCoefficients(PIDFCoefficients coefficients) { //Removed DcMotor.RunMode runMode,
-        for (DMotor motor : motors) {
-            motor.setInternalPID(coefficients.p, coefficients.p, coefficients.d, coefficients.f * 12 / batteryVoltageSensor.getVoltage());
+        for (DEncoderlessMotor motor : motors) {
+
+            //ONLY ENCODERLESS FOR THIS SPECIFIC SCRIM
+
+            //motor.setInternalPID(coefficients.p, coefficients.p, coefficients.d, coefficients.f * 12 / batteryVoltageSensor.getVoltage());
         }
     }
 

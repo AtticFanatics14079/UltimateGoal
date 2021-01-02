@@ -16,13 +16,14 @@ import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants;
 import org.firstinspires.ftc.teamcode.HardwareConfigs.UltimateGoalConfig;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.Configuration;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ConfigurationRR;
+import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DEncoderlessMotor;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DMotor;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DThread;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.HardwareThread;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.Sequence;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ValueStorage;
 
-@Config
+//@Config
 @TeleOp
 public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
@@ -30,15 +31,15 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     DriveObjectRobotMovement drive;
     ValueStorage vals = new ValueStorage();
     HardwareThread hardware;
-    Thread returnToShoot, powerShots, shootMacro, grabWobble, dropWobble;
-    public static double wobbleUp = 0.22, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, load = 0.6, reload = 0.24, shooterSpeed = -1600;
+    Thread returnToShoot, powerShots, shootMacro, grabWobble, dropWobble, lowerWobble;
+    public static double wobbleUp = 0.22, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, load = 0.6, reload = 0.2, shooterSpeed = -1700;
 
     public static double highGoalX = -6, highGoalY = -42, powerShotX = -24, powerShotY = -34;
 
     Pose2d highGoalShoot = new Pose2d(highGoalX, highGoalY, 0);
     Pose2d powerShotShoot = new Pose2d(powerShotX, powerShotY, 0);
 
-    private boolean lockedLoader = false, pressedLock = false;
+    private boolean lockedLoader = false, pressedLock = false, pressedShooter = false, shooterFast = true;
 
     private ElapsedTime time;
 
@@ -49,7 +50,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             config.Configure(hardwareMap, vals);
             drive = new DriveObjectRobotMovement(config);
             hardware = new HardwareThread(hardwareMap, vals, config);
-            for(DMotor d : config.motors) d.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            for(DEncoderlessMotor d : config.motors) d.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             configureMacros();
             waitForStart();
             time = new ElapsedTime();
@@ -75,11 +76,18 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         telemetry.addData("Pose: ", config.getPoseEstimate());
         telemetry.addData("Heading: ", config.imu.get()[0]);
         telemetry.update();
-        config.shooter.set(shooterSpeed);
-        if(gamepad1.x) {
+        if(gamepad2.a && !pressedShooter) {
+            pressedShooter = true;
+            shooterFast = !shooterFast;
+        }
+        else if(pressedShooter && !gamepad2.a) pressedShooter = false;
+        if(gamepad2.dpad_down) shooterSpeed = -1540;
+        else if(gamepad2.dpad_up) shooterSpeed = -1700;
+        config.shooter.set(shooterFast ? shooterSpeed : 0);
+        if(gamepad1.start) { //Will be changed later
             //config.imu.resetIMU();
             //if(time.seconds() < 5) config.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), 0.0));
-            config.setPoseEstimate(new Pose2d(-63, -63, 0.0)); //In corner, AKA after dropping off wobble goal.
+            config.setPoseEstimate(new Pose2d(-63, -63, Math.PI)); //In corner, AKA after dropping off wobble goal.
         }
         if(gamepad1.start && !shootMacro.isAlive()) {
             //returnToShoot.start();
@@ -135,27 +143,28 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             while(powerShots.isAlive());
         }
         double multiplier = 1;
-        if(gamepad1.left_bumper || shootMacro.isAlive()) multiplier = 0.2;
-        setPower(multiplier * gamepad1.left_stick_x, multiplier * gamepad1.left_stick_y, multiplier * gamepad1.right_stick_x);
+        if(gamepad1.left_bumper) multiplier = 0.2;
+        setPower(multiplier * gamepad1.left_stick_x, multiplier * gamepad1.left_stick_y, (multiplier == 0.2 ? 0.1 : multiplier) * gamepad1.right_stick_x);
         if(shootMacro.isAlive()) {}
-        else if(gamepad1.right_bumper && !pressedLock) {
+        else if((gamepad1.right_bumper || gamepad2.back) && !pressedLock) {
             lockedLoader = !lockedLoader;
             pressedLock = true;
         }
-        else if(pressedLock && !gamepad1.right_bumper) pressedLock = false;
+        else if(pressedLock && !gamepad1.right_bumper && !gamepad2.back) pressedLock = false;
         else if(gamepad1.b || lockedLoader) config.loader.set(load);
         else config.loader.set(reload);
 
-        if(gamepad1.x && !grabWobble.isAlive() && !dropWobble.isAlive()) grabWobble.start();
-        else if(gamepad2.x && !grabWobble.isAlive() && !dropWobble.isAlive()) dropWobble.start();
+        if(gamepad1.x && !grabWobble.isAlive() && !dropWobble.isAlive() && !lowerWobble.isAlive()) grabWobble.start();
+        else if(gamepad2.x && !grabWobble.isAlive() && !dropWobble.isAlive() && !lowerWobble.isAlive()) dropWobble.start();
+        else if(gamepad2.y && !grabWobble.isAlive() && !dropWobble.isAlive() && !lowerWobble.isAlive()) lowerWobble.start();
 
         if(grabWobble.isAlive() || dropWobble.isAlive()) {}
         else if(gamepad2.left_bumper && !grabWobble.isAlive()) config.gripper.set(gripperClosed); //Change to g2
         else if(gamepad2.right_bumper) config.gripper.set(gripperOpen); //Change to g2
 
-        if(grabWobble.isAlive() || dropWobble.isAlive()) {}
-        else if(gamepad2.left_trigger > 0.2) config.wobble.set(wobbleDown); //Change to g2
-        else if(gamepad2.right_trigger > 0.2) config.wobble.set(wobbleUp); //Change to g2
+        if(grabWobble.isAlive() || dropWobble.isAlive() || lowerWobble.isAlive()) {}
+        else if(gamepad2.left_trigger > 0.2) config.wobble.set(wobbleUp); //Change to g2
+        else if(gamepad2.right_trigger > 0.2) config.wobble.set(wobbleDown); //Change to g2
         if(gamepad1.y) config.ingester.set(-1);
 
         else config.ingester.set(1);
@@ -187,10 +196,16 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         returnToShoot = new Thread(tripleShoot);
 
         Sequence shootThrice = new Sequence(() -> {
-            for(int i = 0; i < 3; i++) {
-                shootOnce();
-                sleep(700);
+            if(lockedLoader) {
+                config.loader.set(reload);
+                lockedLoader = false;
+                sleep(600);
             }
+            for(int i = 0; i < 2; i++) {
+                shootOnce();
+                sleep(600);
+            }
+            shootOnce();
             return null;
         });
         shootMacro = new Thread(shootThrice);
@@ -224,7 +239,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
         Sequence grab = new Sequence(() -> {
             config.gripper.set(gripperClosed);
-            sleep(800);
+            sleep(1200);
             config.wobble.set(wobbleUp);
             return null;
         });
@@ -237,10 +252,18 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             return null;
         });
         dropWobble = new Thread(drop);
+
+        Sequence lowerToGrab = new Sequence(() -> {
+            config.wobble.set(wobbleDown);
+            sleep(400);
+            config.gripper.set(gripperOpen);
+            return null;
+        });
+        lowerWobble = new Thread(lowerToGrab);
     }
 
     public void purePursuitToPosition(Pose2d targetPose, double speed) {
-        drive.runWithEncoder(false);
+        //drive.runWithEncoder(false);
         config.motors.get(0).reverse(false);
         config.motors.get(1).reverse(false);
         config.motors.get(2).reverse(true);
@@ -267,8 +290,8 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             double p = 0.2, f = 0.15;
             drive.setPower(0,0, invert * (f+(p*Math.abs(imuHeading-targetPose.getHeading()))));
         }
-        for(DMotor d : drive.Motors) d.setPower(0);
-        drive.runWithEncoder(true);
+        for(DEncoderlessMotor d : drive.Motors) d.setPower(0);
+        //drive.runWithEncoder(true);
         config.motors.get(0).reverse(true);
         config.motors.get(1).reverse(true);
         config.motors.get(2).reverse(false);
@@ -278,7 +301,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
     public void shootOnce() {
         config.loader.set(load);
-        sleep(700);
+        sleep(600);
         config.loader.set(reload);
     }
 
