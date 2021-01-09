@@ -101,7 +101,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
              */
             //while(returnToShoot.isAlive());
         }
-        else if(gamepad1.a && !shootMacro.isAlive()) {
+        else if(gamepad1.a && !shootMacro.isAlive() && config.ingester.get()[0] >= shooterSpeed - 500) { //Just making sure we don't shoot until after shooter reaches speed, may add this check to the macro.
             shootMacro.start();
             /*drive.runWithEncoder(false);
             config.motors.get(0).reverse(false);
@@ -151,7 +151,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             pressedLock = true;
         }
         else if(pressedLock && !gamepad1.right_bumper && !gamepad2.back) pressedLock = false;
-        else if(gamepad1.b || lockedLoader) config.loader.set(load);
+        else if(gamepad1.b || lockedLoader && config.ingester.get()[0] >= shooterSpeed - 500) config.loader.set(load);
         else config.loader.set(reload);
 
         if(gamepad1.x && !grabWobble.isAlive() && !dropWobble.isAlive() && !lowerWobble.isAlive()) grabWobble.start();
@@ -191,6 +191,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
                 shootOnce();
                 sleep(700);
             }
+            config.loader.set(load);
             return null;
         }, returnToHighGoal);
         returnToShoot = new Thread(tripleShoot);
@@ -206,6 +207,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
                 sleep(600);
             }
             shootOnce();
+            config.loader.set(load);
             return null;
         });
         shootMacro = new Thread(shootThrice);
@@ -233,6 +235,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
                 sleep(400);
             }
             shootOnce();
+            config.loader.set(load);
             return null;
         }, returnToPowerShot);
         powerShots = new Thread(pivotShoot);

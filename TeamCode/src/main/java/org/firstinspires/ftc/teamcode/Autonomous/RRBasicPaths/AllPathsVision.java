@@ -11,8 +11,10 @@ import com.acmerobotics.roadrunner.trajectory.TrajectoryBuilderKt;
 import com.acmerobotics.roadrunner.trajectory.constraints.DriveConstraints;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDrive;
 import org.firstinspires.ftc.teamcode.Vision.scanPipeline;
 import org.opencv.core.Core;
@@ -44,17 +46,19 @@ public class AllPathsVision extends LinearOpMode {
     private Pose2d powerShotBackShoot = new Pose2d(-39.0,-35.0, Math.toRadians(1));
     private Pose2d ingestStack = new Pose2d(-16.0, -35.0, Math.toRadians(0));
 
-    public static double wobbleUp = 0.17, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, path5highgoalX = -34, path5highgoalY = -34, offsetDivisor = 50;
+    public static double wobbleUp = 0.17, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, loaded = 0.45, reload = 0.15, path5highgoalX = -34, path5highgoalY = -34, offsetDivisor = 50;
 
     private final int rows = 640;
     private final int cols = 480;
     public static int sampleWidth = 30;
     public static int sampleHeight = 3;
-    public static Point topCenter = new Point(200, 110);
-    public static Point bottomCenter = new Point(140, 42);
+    public static Point topCenter = new Point(260, 130);
+    public static Point bottomCenter = new Point(260, 60);
+    public static Point leftBar1 = new Point(425, 358), leftBar2 = new Point(435, 436), rightBar1 = new Point(178, 357), rightBar2 = new Point(189, 434);
     public static int thresh = 130;
-    public static int wobbleThresh = 145;
+    public static int wobbleThresh = 145, initThresh = 33;
     public static int stackSize = -1;
+    public static boolean properSetup = false;
     private static double color1, color2;
 
     public static int extract = 1;
@@ -71,6 +75,8 @@ public class AllPathsVision extends LinearOpMode {
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
+        DistanceSensor leSense = hardwareMap.get(DistanceSensor.class, "distanceRight");
+
         if(usingCamera) {
             int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
             webCam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam1"), cameraMonitorViewId);
@@ -79,7 +85,7 @@ public class AllPathsVision extends LinearOpMode {
             webCam.startStreaming(rows, cols, OpenCvCameraRotation.UPRIGHT);//display on RC
         }
 
-        drive.loader.setPosition(0.25);
+        drive.loader.setPosition(reload);
 
         drive.wobble.setPosition(wobbleDown);
 
@@ -95,6 +101,8 @@ public class AllPathsVision extends LinearOpMode {
 
         while(!isStarted() && !isStopRequested()) {
             telemetry.addData("Le stack: ", stackSize);
+            telemetry.addData("Setup: ", properSetup);
+            telemetry.addData("Distance from wall: ", leSense.getDistance(DistanceUnit.INCH));
             telemetry.update();
         }
 
@@ -162,7 +170,29 @@ public class AllPathsVision extends LinearOpMode {
 
                 currentPose = drive.getPoseEstimate();
                 imuHeading = drive.imu.getAngularOrientation().firstAngle;
-                drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY() - offset + 2, currentPose.getHeading()));
+                //drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY() - offset + 2, currentPose.getHeading()));
+
+                while((Math.abs(imuHeading - Math.PI)>Math.toRadians(5)) && !isStopRequested()){
+                    drive.update();
+                    imuHeading = drive.imu.getAngularOrientation().firstAngle;
+                    currentPose = drive.getPoseEstimate();
+                    double p = 0.2, f = 0.15;
+                    double power = f+(p*(imuHeading - Math.PI));
+                    drive.setMotorPowers(-power, -power, power, power);
+
+                    telemetry.addData("IMU Heading: ", imuHeading);
+                    telemetry.update();
+                }
+                drive.setMotorPowers(0, 0, 0, 0);
+                double correctedY = 65.5 - leSense.getDistance(DistanceUnit.INCH);
+
+                telemetry.addData("Pose: ", drive.getPoseEstimate());
+                telemetry.addData("Corrected Y: ", correctedY);
+                drive.update();
+
+                while(!isStopRequested()){}
+
+                drive.setPoseEstimate(new Pose2d(currentPose.getX(), correctedY, imuHeading));
 
                 Trajectory pickupWobble = drive.trajectoryBuilder(drive.getPoseEstimate())
                         .splineToConstantHeading(new Vector2d(pickup0.getX() + 6, pickup0.getY()), Math.toRadians(180))
@@ -431,11 +461,12 @@ public class AllPathsVision extends LinearOpMode {
         Mat YCRCBMat = new Mat();
         Mat ExtractMat = new Mat();
         Mat MediumRareMat = new Mat();
+        Mat redMat = new Mat();
 
         enum Stage
         {
             RAW,
-            YCRCB,
+            RED,
             EXTRACT,
             MEDIUMRARE
         }
@@ -474,6 +505,8 @@ public class AllPathsVision extends LinearOpMode {
                 Core.extractChannel(YCRCBMat, ExtractMat, extract);
                 Imgproc.cvtColor(ExtractMat, MediumRareMat, Imgproc.COLOR_GRAY2RGB);
 
+                Core.extractChannel(rawMat, redMat, 0);
+
                 Point topLeft1 = new Point(topCenter.x - sampleWidth,topCenter.y - sampleHeight);
                 Point bottomRight1 = new Point(topCenter.x + sampleWidth, topCenter.y + sampleHeight);
                 Point topLeft2 = new Point(bottomCenter.x - sampleWidth,bottomCenter.y - sampleHeight);
@@ -501,8 +534,36 @@ public class AllPathsVision extends LinearOpMode {
 
                 stackSize = yellowness1 ? 4 : yellowness2 ? 1 : 0;
 
+                int numPixels = 0;
+
+                for(int i = (int)(leftBar1.x); i <= (int)(leftBar2.x); i++){
+                    for(int j = (int)leftBar1.y;  j <= (int)leftBar2.y; j++){
+                        color1 += redMat.get(j, i)[0];
+                        numPixels++;
+                    }
+                }
+                color1 /= numPixels;
+
+                numPixels = 0;
+
+                for(int i = (int)(topLeft2.x); i <= (int)(bottomRight2.x); i++){
+                    for(int j = (int)(topLeft2.y);  j <= (int)(bottomRight2.y); j++){
+                        color2 += redMat.get(j, i)[0];
+                        numPixels++;
+                    }
+                }
+                color2 /= numPixels;
+
+                properSetup = color1 > initThresh && color2 > initThresh;
+
                 Imgproc.rectangle(MediumRareMat, topLeft1, bottomRight1, yellowness1 ? new Scalar(0, 255, 0) : new Scalar(255, 0, 0));
                 Imgproc.rectangle(MediumRareMat, topLeft2, bottomRight2, yellowness2 ? new Scalar(0, 255, 0) : new Scalar(255, 0, 0));
+
+                Imgproc.rectangle(MediumRareMat, leftBar1, leftBar2, properSetup ? new Scalar(255, 0, 200) : new Scalar(50, 100, 255));
+                Imgproc.rectangle(MediumRareMat, rightBar1, rightBar2, properSetup ? new Scalar(255, 0, 200) : new Scalar(50, 100, 255));
+
+                Core.flip(MediumRareMat, MediumRareMat, -1);
+                Core.flip(redMat, redMat, -1);
             }
             else{
                 rawMat = input;
@@ -538,6 +599,10 @@ public class AllPathsVision extends LinearOpMode {
                 case EXTRACT:
                 {
                     return ExtractMat;
+                }
+                case RED:
+                {
+                    return redMat;
                 }
                 default:
                 {
