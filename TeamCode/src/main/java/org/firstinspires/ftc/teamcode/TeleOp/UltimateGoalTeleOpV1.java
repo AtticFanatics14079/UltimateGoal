@@ -32,14 +32,14 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     ValueStorage vals = new ValueStorage();
     HardwareThread hardware;
     Thread returnToShoot, powerShots, shootMacro, grabWobble, dropWobble, lowerWobble;
-    public static double wobbleUp = 0.22, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, load = 0.6, reload = 0.2, shooterSpeed = -1700;
+    public static double wobbleUp = 0.22, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, load = 0.46, reload = 0.11, shooterSpeed = -1700;
 
     public static double highGoalX = -6, highGoalY = -42, powerShotX = -24, powerShotY = -34;
 
     Pose2d highGoalShoot = new Pose2d(highGoalX, highGoalY, 0);
     Pose2d powerShotShoot = new Pose2d(powerShotX, powerShotY, 0);
 
-    private boolean lockedLoader = false, pressedLock = false, pressedShooter = false, shooterFast = true;
+    private boolean lockedLoader = false, pressedLock = false, pressedShooter = false, shooterFast = true, pressedOdoAdjust = false;
 
     private ElapsedTime time;
 
@@ -145,6 +145,12 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         double multiplier = 1;
         if(gamepad1.left_bumper) multiplier = 0.2;
         setPower(multiplier * gamepad1.left_stick_x, multiplier * gamepad1.left_stick_y, (multiplier == 0.2 ? 0.1 : multiplier) * gamepad1.right_stick_x);
+        if(!pressedOdoAdjust && (gamepad2.dpad_left || gamepad2.dpad_right || gamepad2.dpad_up || gamepad2.dpad_down)) {
+            Pose2d currentPose = config.getPoseEstimate();
+            config.setPoseEstimate(new Pose2d(currentPose.getX() + (gamepad2.dpad_left ? -1 : (gamepad2.dpad_right ? 1 : 0)), currentPose.getY() + (gamepad2.dpad_down ? -1 : (gamepad2.dpad_up ? 1 : 0)), currentPose.getHeading()));
+            pressedOdoAdjust = true;
+        }
+        else if(pressedOdoAdjust && !(gamepad2.dpad_left || gamepad2.dpad_right || gamepad2.dpad_up || gamepad2.dpad_down)) pressedOdoAdjust = false;
         if(shootMacro.isAlive()) {}
         else if((gamepad1.right_bumper || gamepad2.back) && !pressedLock) {
             lockedLoader = !lockedLoader;
@@ -200,11 +206,11 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             if(lockedLoader) {
                 config.loader.set(reload);
                 lockedLoader = false;
-                sleep(600);
+                sleep(300);
             }
             for(int i = 0; i < 2; i++) {
                 shootOnce();
-                sleep(600);
+                sleep(300);
             }
             shootOnce();
             config.loader.set(load);
@@ -304,7 +310,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
     public void shootOnce() {
         config.loader.set(load);
-        sleep(600);
+        sleep(450);
         config.loader.set(reload);
     }
 
