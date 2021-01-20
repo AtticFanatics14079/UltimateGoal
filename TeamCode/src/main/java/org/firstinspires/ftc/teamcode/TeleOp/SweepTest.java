@@ -24,10 +24,10 @@ public class SweepTest extends LinearOpMode {
         while(!isStopRequested()) {
             setPower(gamepad1.left_stick_x, -gamepad1.left_stick_y, gamepad1.right_stick_x);
 
-            //config.sweep.setPower(gamepad1.a ? 1 : (gamepad1.b ? -1 : 0)); //In case it's the wrong way
+            config.sweep.setPower(gamepad1.a ? 1 : (gamepad1.b ? -1 : 0)); //In case it's the wrong way
 
-            config.wiperRight.setPosition(gamepad1.x ? open : (gamepad1.y ? closed : resting));
-            config.wiperLeft.setPosition(gamepad1.x ? closed : (gamepad1.y ? open : resting)); //Just trust the sketch, I think the servos are symmetric but mirrored.
+            //config.wiperRight.setPosition(gamepad1.x ? open : (gamepad1.y ? closed : resting));
+            //config.wiperLeft.setPosition(gamepad1.x ? closed : (gamepad1.y ? open : resting)); //Just trust the sketch, I think the servos are symmetric but mirrored.
         }
     }
 

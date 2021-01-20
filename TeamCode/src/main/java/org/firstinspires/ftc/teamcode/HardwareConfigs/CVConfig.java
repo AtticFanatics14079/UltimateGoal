@@ -29,8 +29,8 @@ public class CVConfig {
 
         sweep = hwMap.get(DcMotorImplEx.class, "sweep");
 
-        wiperRight = hwMap.get(Servo.class, "wiperRight");
-        wiperLeft = hwMap.get(Servo.class, "wiperLeft");
+        //wiperRight = hwMap.get(Servo.class, "wiperRight");
+        //wiperLeft = hwMap.get(Servo.class, "wiperLeft");
 
         backRight.setDirection(DcMotorSimple.Direction.REVERSE);
         frontRight.setDirection(DcMotorSimple.Direction.REVERSE);

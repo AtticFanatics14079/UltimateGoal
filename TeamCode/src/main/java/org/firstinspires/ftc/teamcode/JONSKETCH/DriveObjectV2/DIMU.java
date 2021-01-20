@@ -69,7 +69,22 @@ public class DIMU implements Sensor, BNO055IMU {
     }
 
     public void resetIMU() {
-        imuOffset += get()[0];
+        if(gettingInput) imuOffset += get()[0];
+        else {
+            gettingInput = true;
+            Sequence delay = new Sequence(() -> {
+                try {
+                    Thread.sleep(30);
+                    imuOffset += get()[0];
+                    gettingInput = false;
+                } catch (Exception e) {
+
+                }
+                return null;
+            });
+            Thread reset = new Thread(delay);
+            reset.start();
+        }
     }
 
     public void retrievingHardware(boolean retrieving) {

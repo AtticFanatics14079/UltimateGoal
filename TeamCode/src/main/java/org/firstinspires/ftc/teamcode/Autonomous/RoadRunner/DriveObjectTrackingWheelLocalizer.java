@@ -34,7 +34,7 @@ import java.util.List;
  *
  */
 @Config
-public class DriveObjectTrackingWheelLocalizer extends FanaticsThreeWheelTrackingLocalizer {
+public class DriveObjectTrackingWheelLocalizer extends ThreeTrackingWheelLocalizer {
     public static double TICKS_PER_REV = 8192;
     public static double WHEEL_RADIUS = 0.75; // in
     public static double GEAR_RATIO = 1; // output (wheel) speed / input (encoder) speed
@@ -47,17 +47,21 @@ public class DriveObjectTrackingWheelLocalizer extends FanaticsThreeWheelTrackin
 
     private DOdometryPod leftEncoder, rightEncoder, frontEncoder;
 
-    public DriveObjectTrackingWheelLocalizer(HardwareMap hardwareMap, ConfigurationRR config) {
+    ValueStorage vals;
+
+    public DriveObjectTrackingWheelLocalizer(ValueStorage vals, ConfigurationRR config) {
 
         super(Arrays.asList(
                 new Pose2d(0, LATERAL_DISTANCE / 2, 0), // left
                 new Pose2d(0, -LATERAL_DISTANCE / 2, 0), // right
                 new Pose2d(FORWARD_OFFSET, 0, Math.toRadians(90)) // front
-        ), config.imu);
+        ));
 
         leftEncoder = config.leftEncoder;
         rightEncoder = config.rightEncoder;
         frontEncoder = config.frontEncoder;
+
+        this.vals = vals;
     }
 
     public static double encoderTicksToInches(double ticks) {
@@ -80,6 +84,8 @@ public class DriveObjectTrackingWheelLocalizer extends FanaticsThreeWheelTrackin
         // TODO: If your encoder velocity can exceed 32767 counts / second (such as the REV Through Bore and other
         //  competing magnetic encoders), change Encoder.getRawVelocity() to Encoder.getCorrectedVelocity() to enable a
         //  compensation method
+
+        vals.waitForCycle();
 
         return Arrays.asList(
                 encoderTicksToInches(leftEncoder.get()[1]),

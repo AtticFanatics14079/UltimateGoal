@@ -191,7 +191,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         rightEncoder.reverse(true);
         frontEncoder.reverse(true);
         // TODO: if desired, use setLocalizer() to change the localization method
-        setLocalizer(new DriveObjectTrackingWheelLocalizer(hwMap, this));
+        setLocalizer(new DriveObjectTrackingWheelLocalizer(vals, this));
     }
 
     public void setBulkCachingManual(boolean manual){
@@ -416,6 +416,6 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     //Fix later
     @Override
     public double getRawExternalHeading() {
-        return imu.getAngularOrientation().secondAngle;
+        return imu.get()[0];
     }
 }

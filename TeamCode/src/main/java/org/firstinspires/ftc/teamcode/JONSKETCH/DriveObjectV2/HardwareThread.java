@@ -32,6 +32,7 @@ public class HardwareThread extends Thread {
         time = new ElapsedTime();
 
         try {
+
             while(!stop) {
                 System.out.println("Hardware cycle: " + time.milliseconds());
                 vals.updateCycle(); //Should allow every other thread to simply wait for cycle. Consider moving this or adding a sleep to prevent runValues being off by a cycle.
