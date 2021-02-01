@@ -6,8 +6,6 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
-import com.acmerobotics.roadrunner.trajectory.TrajectoryBuilder;
-import com.acmerobotics.roadrunner.trajectory.TrajectoryBuilderKt;
 import com.acmerobotics.roadrunner.trajectory.constraints.DriveConstraints;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -15,9 +13,8 @@ import com.qualcomm.robotcore.hardware.DistanceSensor;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants;
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDrive;
-import org.firstinspires.ftc.teamcode.Vision.scanPipeline;
+import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDriveDistance;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
@@ -30,7 +27,7 @@ import org.openftc.easyopencv.OpenCvPipeline;
 
 @Config
 @Autonomous
-public class AllPathsVision extends LinearOpMode {
+public class AllPathsVisionDistance extends LinearOpMode {
 
     private DriveConstraints verySlow = new DriveConstraints(
             30.0, 20.0, 0.0,
@@ -91,11 +88,11 @@ public class AllPathsVision extends LinearOpMode {
 
     OpenCvCamera webCam;
 
-    SampleMecanumDrive drive;
+    SampleMecanumDriveDistance drive;
 
     @Override
     public void runOpMode() throws InterruptedException {
-        drive = new SampleMecanumDrive(hardwareMap);
+        drive = new SampleMecanumDriveDistance(hardwareMap);
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         DistanceSensor leSense = hardwareMap.get(DistanceSensor.class, "distanceRight");
@@ -163,7 +160,7 @@ public class AllPathsVision extends LinearOpMode {
 
         drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
 
-        //drive.ingester.setPower(1);
+        drive.setPoseEstimate(sensorPose());
 
         switch(stackSize2) {
             case 0: {
@@ -171,9 +168,8 @@ public class AllPathsVision extends LinearOpMode {
                 drive.ingester.setPower(0);
 
                 imuTurn(0);
-                currentPose = drive.getPoseEstimate();
-                imuHeading = drive.imu.getAngularOrientation().firstAngle;
-                drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
+
+                drive.setPoseEstimate(sensorPose());
 
                 Trajectory wobble1 = drive.trajectoryBuilder(drive.getPoseEstimate())
                         .strafeTo(new Vector2d(path0dropoff.getX(), path0dropoff.getY()), slow)
@@ -182,9 +178,7 @@ public class AllPathsVision extends LinearOpMode {
 
                 drive.loader.setPosition(reload);
 
-                currentPose = drive.getPoseEstimate();
-                imuHeading = drive.imu.getAngularOrientation().firstAngle;
-                drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
+                drive.setPoseEstimate(sensorPose());
 
                 drive.wobble.setPosition(wobbleDown);
                 drive.gripper.setPosition(gripperOpen);
@@ -196,6 +190,7 @@ public class AllPathsVision extends LinearOpMode {
                 drive.followTrajectory(wobble2);
 
                 pipeline.initDetect = false;
+                drive.setPoseEstimate(sensorPose());
 
                 sleep(300);
 
@@ -211,9 +206,7 @@ public class AllPathsVision extends LinearOpMode {
                         .build();
                 drive.followTrajectory(pickupWobble);
 
-                currentPose = drive.getPoseEstimate();
-                imuHeading = drive.imu.getAngularOrientation().firstAngle;
-                drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY() + offset + 1, imuHeading));
+                drive.setPoseEstimate(sensorPose());
 
                 drive.gripper.setPosition(gripperClosed);
                 sleep(1200);
@@ -223,6 +216,8 @@ public class AllPathsVision extends LinearOpMode {
                         .lineToLinearHeading(new Pose2d(path0dropoff.getX() - 7, path0dropoff.getY() + 9, 0.0), slow)
                         .build();
                 drive.followTrajectory(dropoff);
+
+                drive.setPoseEstimate(sensorPose());
 
                 drive.wobble.setPosition(wobbleDown);
                 drive.gripper.setPosition(gripperOpen);
@@ -236,10 +231,14 @@ public class AllPathsVision extends LinearOpMode {
                         .build();
                 drive.followTrajectory(park1);
 
+                drive.setPoseEstimate(sensorPose());
+
                 Trajectory park2 = drive.trajectoryBuilder(drive.getPoseEstimate())
                         .forward(14)
                         .build();
                 drive.followTrajectory(park2);
+
+                drive.setPoseEstimate(sensorPose());
             }
             break;
             case 1: {
@@ -492,6 +491,32 @@ public class AllPathsVision extends LinearOpMode {
         pipeline.initDetect = true;
     }
 
+    //Currently, this assumes the robot is close to either heading 0 or heading 180, as I don't know how to account for distance sensors seeing the wrong wall.
+    public Pose2d sensorPose() {
+        double imuHeading = drive.imu.getAngularOrientation().firstAngle;
+        Pose2d currentPose = drive.getPoseEstimate();
+        double left = drive.distanceLeft.getDistance(DistanceUnit.INCH);
+        left *= Math.abs(Math.cos(imuHeading));
+        double right = drive.distanceRight.getDistance(DistanceUnit.INCH);
+        right *= Math.abs(Math.cos(imuHeading));
+        double front = drive.distanceForward.getDistance(DistanceUnit.INCH);
+        front *= Math.abs(Math.cos(imuHeading));
+        double back = drive.distanceBack.getDistance(DistanceUnit.INCH);
+        back *= Math.abs(Math.cos(imuHeading));
+
+        double distanceYLeft = Math.abs(imuHeading - Math.PI) < Math.PI / 2 ? right : left;
+        double distanceYRight = Math.abs(imuHeading - Math.PI) < Math.PI / 2 ? left : right;
+        double distanceXFront = Math.abs(imuHeading - Math.PI) < Math.PI / 2 ? back : front;
+        double distanceXBack = Math.abs(imuHeading - Math.PI) < Math.PI / 2 ? front : back;
+
+        double poseX = currentPose.getX(), poseY = currentPose.getY();
+
+        poseY = (distanceYLeft < 100) ? 17 - distanceYLeft : (distanceYRight < 100) ? - 65 + distanceYRight : poseY;
+        poseX = (distanceXFront < 100) ? 17 - distanceXFront : (distanceXBack < 100) ? - 65 + distanceXBack : poseX;
+
+        return new Pose2d(poseX, poseY, imuHeading);
+    }
+
     public void imuTurn(double angle) {
 
         double imuHeading = drive.imu.getAngularOrientation().firstAngle;
@@ -536,8 +561,8 @@ public class AllPathsVision extends LinearOpMode {
             MEDIUMRARE
         }
 
-        private StageSwitchingPipeline.Stage stageToRenderToViewport = StageSwitchingPipeline.Stage.RAW;
-        private StageSwitchingPipeline.Stage[] stages = StageSwitchingPipeline.Stage.values();
+        private Stage stageToRenderToViewport = Stage.RAW;
+        private Stage[] stages = Stage.values();
 
         @Override
         public void onViewportTapped()

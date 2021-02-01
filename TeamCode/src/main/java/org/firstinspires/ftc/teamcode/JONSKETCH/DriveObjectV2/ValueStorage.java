@@ -32,7 +32,7 @@ public class ValueStorage {
         synchronized(runSync) {
             try {
                 runSync.wait();
-                //Thread.sleep(0, 300000);
+                Thread.sleep(1);
                 //Allows HardwareThread to access runValues first, however this approach puts every
                 //thread exactly 1 cycle behind HardwareThread at all times.
 
@@ -47,7 +47,7 @@ public class ValueStorage {
     public double[] hardware(boolean writing, double[][] values, int partNum){
         synchronized(hardwareSync) {
             if (writing) {
-                for (int i = 0; i < values.length; i++) hardwareValues[i] = values[i].clone();
+                for (int i = 0; i < values.length; i++) if(values[i].length != 0) hardwareValues[i] = values[i].clone();
                 return null;
             }
 

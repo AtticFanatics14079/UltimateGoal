@@ -27,19 +27,11 @@ public class DDigitalSensor implements Sensor, DigitalChannel {
         return partNum;
     }
 
-    public void set(double value) {
-        //Do nothing
-    }
-
     public double[] get() {
         return vals.hardware(false, null, partNum);
     }
 
-    public void setHardware(double value) {
-        //Do nothing
-    }
-
-    //Binarizes boolean
+    //Binarizes boolean for easier math
     public double[] getHardware() { return new double[]{sensor.getState() ? 1 : 0}; }
 
     public void endThreads() {

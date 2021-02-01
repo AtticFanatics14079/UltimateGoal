@@ -36,25 +36,23 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     ValueStorage vals = new ValueStorage();
     HardwareThread hardware;
     Thread returnToShoot, powerShots, shootMacro, grabWobble, dropWobble, lowerWobble;
-    public static double wobbleUp = 0.22, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, load = 0.46, reload = 0.11, shooterSpeed = -1660;
+    public static double wobbleUp = 0.22, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, load = 0.46, reload = 0.13, shooterSpeed = -1640, multiplier = 0.96, sensorOffset = 6.375; //Sheets had 1.15 as multiplier, seeing if just my house that's off
 
     public static double highGoalX = 0, highGoalY = 0, powerShotX = 0, powerShotY = 0, wallDistance = 18, distanceLeft = 21, distanceRight = 15;
-
-    private
 
     Pose2d highGoalShoot = new Pose2d(highGoalX, highGoalY, 0);
     Pose2d powerShotShoot = new Pose2d(powerShotX, powerShotY, 0);
 
     DistanceSensor leSense;
 
-    private boolean lockedLoader = false, pressedLock = false, pressedShooter = false, shooterFast = true, pressedOdoAdjust = false;
+    private boolean lockedLoader = false, pressedLock = false, pressedShooter = false, shooterFast = false, pressedOdoAdjust = false;
 
-    double intakeSpeed = 1;
+    double intakeSpeed = 0;
 
     @Override
     public void runOpMode() throws InterruptedException {
         try{
-            leSense = hardwareMap.get(DistanceSensor.class, "distanceRight");
+            leSense = hardwareMap.get(DistanceSensor.class, "distanceLeft");
             config = new ConfigurationRR(hardwareMap);
             config.Configure(hardwareMap, vals);
             drive = new DriveObjectRobotMovement(config);
@@ -80,9 +78,16 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     public void getInput(){
         //Main loop
         config.update();
-        config.imu.retrievingHardware(false);
+        config.imu.retrievingHardware(true);
+        config.leftDist.pingSensor();
         telemetry.addData("Pose: ", config.getPoseEstimate());
+        double head = config.imu.get()[0];
         telemetry.addData("Heading: ", config.imu.get()[0]);
+        double dist = config.leftDist.getDistance(DistanceUnit.MM);
+        dist *= multiplier; //(dist > 800) ? multiplier : 1;
+        dist *= Math.cos(head);
+        telemetry.addData("Center distance: ", dist / 25.4 + Math.cos(head) * sensorOffset);
+        telemetry.addData("Distance: ", dist / 25.4);
         telemetry.update();
         if(gamepad2.a && !pressedShooter) {
             pressedShooter = true;
@@ -94,7 +99,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             config.imu.resetIMU();
         }
         if(gamepad2.left_stick_y > 0.5) shooterSpeed = -1540;
-        else if(gamepad2.left_stick_y < -0.5) shooterSpeed = -1660;
+        else if(gamepad2.left_stick_y < -0.5) shooterSpeed = -1640;
         config.shooter.set(shooterFast ? shooterSpeed : 0);
         //if(gamepad1.start) { //Will be changed later
             //config.imu.resetIMU();
@@ -174,7 +179,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
         if(gamepad1.x && !grabWobble.isAlive() && !dropWobble.isAlive() && !lowerWobble.isAlive()) grabWobble.start();
         else if(gamepad2.x && !grabWobble.isAlive() && !dropWobble.isAlive() && !lowerWobble.isAlive()) dropWobble.start();
-        else if(gamepad2.y && !grabWobble.isAlive() && !dropWobble.isAlive() && !lowerWobble.isAlive()) lowerWobble.start();
+        else if((gamepad2.y || gamepad1.y) && !grabWobble.isAlive() && !dropWobble.isAlive() && !lowerWobble.isAlive()) lowerWobble.start();
 
         if(grabWobble.isAlive() || dropWobble.isAlive()) {}
         else if(gamepad2.left_bumper && !grabWobble.isAlive()) config.gripper.set(gripperClosed); //Change to g2
@@ -188,6 +193,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         else if(gamepad2.b) intakeSpeed = 0;
         else if(gamepad2.left_stick_button) intakeSpeed = 1;
         config.ingester.set(intakeSpeed);
+        config.preIngest.set(intakeSpeed);
 
         if(gamepad1.right_stick_button) {
             config.imu.retrievingHardware(true);
@@ -224,15 +230,18 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         });
          */
         Sequence returnToHighGoal = new Sequence(() -> {
+            //imuTurn();
+            //Pose2d currentPose = config.getPoseEstimate();
+            //config.setPoseEstimate(currentPose.getX(), leSense.getDistance(DistanceUnit.INCH));
             roadRunnerToPosition(highGoalShoot, 0.8);
             highGoalWallAdjust();
             return null;
         });
         Sequence tripleShoot = new Sequence(() -> {
-            config.shooter.set(-1660);
+            config.shooter.set(-1640);
             for(int i = 0; i < 3; i++) {
                 shootOnce();
-                config.shooter.set(-1600);
+                config.shooter.set(-1580);
                 sleep(300);
             }
             config.loader.set(load);
@@ -361,6 +370,32 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         config.motors.get(1).reverse(true);
         config.motors.get(2).reverse(false);
         config.motors.get(3).reverse(false);
+    }
+
+    public void imuTurn() {
+        config.imu.retrievingHardware(true);
+        sleep(40);
+        double imuHeading = config.imu.get()[0];
+        config.motors.get(0).reverse(false);
+        config.motors.get(1).reverse(false);
+        config.motors.get(2).reverse(true);
+        config.motors.get(3).reverse(true);
+        drive.runWithEncoder(true);
+        Pose2d currentPose = config.getPoseEstimate();
+        while((Math.abs(imuHeading)>Math.toRadians(0.5)) && !isStopRequested() && opModeIsActive()){
+            config.update();
+            imuHeading = config.imu.get()[0];
+            if(imuHeading < 0) imuHeading += 2 * Math.PI;
+            currentPose = config.getPoseEstimate();
+            double p = 0.35, f = 0.04;
+            int invert = ((2 * Math.PI - imuHeading)) % (2 * Math.PI) > Math.PI ? 1 : -1;
+            double power = invert * p * (Math.abs(imuHeading) > Math.PI ? (Math.abs((imuHeading > Math.PI ? 2 * Math.PI : 0) - imuHeading) + Math.abs((0 > Math.PI ? 2 * Math.PI : 0) - 0)) : Math.abs(imuHeading - 0)); //Long line, but the gist is if you're calculating speed in the wrong direction, git gud.
+            power += (power > 0 ? f : -f);
+            drive.setPower(0, 0, power);
+        }
+        drive.setPower(0, 0, 0);
+        config.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
+        config.imu.retrievingHardware(false);
     }
 
     public void roadRunnerToPosition(Pose2d targetPose, double speed) {

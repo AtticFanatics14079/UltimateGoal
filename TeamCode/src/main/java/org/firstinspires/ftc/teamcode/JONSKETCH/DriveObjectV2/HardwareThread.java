@@ -62,7 +62,8 @@ public class HardwareThread extends Thread {
         System.out.println("After clearing cache: " + time.milliseconds());
 
         for(int i = 0; i < hardwareVals.length; i++) {
-            if(config.hardware.get(i) instanceof DIMU && !((DIMU) config.hardware.get(i)).gettingInput) hardwareVals[i] = new double[]{0, 0, 0};
+            if(config.hardware.get(i) instanceof DIMU && !((DIMU) config.hardware.get(i)).gettingInput) hardwareVals[i] = new double[]{};
+            else if(config.hardware.get(i) instanceof DDistanceSensor && !((DDistanceSensor) config.hardware.get(i)).gettingInput) hardwareVals[i] = new double[]{};
             else hardwareVals[i] = config.hardware.get(i).getHardware(); //Majority of time in this loop
             System.out.println("After reading part " + i + ": " + time.milliseconds());
         }

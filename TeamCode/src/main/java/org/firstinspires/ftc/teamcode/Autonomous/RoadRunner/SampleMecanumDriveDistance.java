@@ -25,19 +25,17 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorImpl;
 import com.qualcomm.robotcore.hardware.DcMotorImplEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
-import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.teamcode.Utils.AxesSigns;
 import org.firstinspires.ftc.teamcode.Utils.BNO055IMUUtil;
-import org.firstinspires.ftc.teamcode.Utils.LynxModuleUtil;
 import org.firstinspires.ftc.teamcode.Utils.DashboardUtil;
 import org.firstinspires.ftc.teamcode.Utils.LynxModuleUtil;
 
@@ -45,13 +43,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants.*;
+import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants.BASE_CONSTRAINTS;
+import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants.MOTOR_VELO_PID;
+import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants.RUN_USING_ENCODER;
+import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants.TRACK_WIDTH;
+import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants.encoderTicksToInches;
+import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants.kA;
+import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants.kStatic;
+import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants.kV;
 
 /*
  * Simple mecanum drive hardware implementation for REV hardware.
  */
 @Config
-public class SampleMecanumDrive extends MecanumDrive {
+public class SampleMecanumDriveDistance extends MecanumDrive {
     public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(6, 0, 0);
     public static PIDCoefficients HEADING_PID = new PIDCoefficients(10, 0, 0);
 
@@ -83,13 +88,14 @@ public class SampleMecanumDrive extends MecanumDrive {
     public Servo loader, wobble, gripper;
     private DcMotorEx leftFront, leftRear, rightRear, rightFront;
     public List<DcMotorEx> motors;
-    public DcMotorSimple ingester, preIngest;
+    public DcMotorSimple ingester;
     public BNO055IMU imu;
+    public DistanceSensor distanceLeft, distanceRight, distanceForward, distanceBack;
     private VoltageSensor batteryVoltageSensor;
 
     private Pose2d lastPoseOnTurn;
 
-    public SampleMecanumDrive(HardwareMap hardwareMap) {
+    public SampleMecanumDriveDistance(HardwareMap hardwareMap) {
         super(kV, kA, kStatic, TRACK_WIDTH, TRACK_WIDTH, LATERAL_MULTIPLIER);
 
         dashboard = FtcDashboard.getInstance();
@@ -136,8 +142,11 @@ public class SampleMecanumDrive extends MecanumDrive {
         loader = hardwareMap.get(Servo.class, "loader");
         wobble = hardwareMap.get(Servo.class, "wobble");
         gripper = hardwareMap.get(Servo.class, "gripper");
-        ingester = hardwareMap.get(DcMotorSimple.class, "frontEncoder");
-        preIngest = hardwareMap.get(DcMotorSimple.class, "leftEncoder");
+        ingester = hardwareMap.get(DcMotorSimple.class, "rightEncoder");
+        distanceLeft = hardwareMap.get(DistanceSensor.class, "distanceLeft");
+        distanceRight = hardwareMap.get(DistanceSensor.class, "distanceRight");
+        distanceForward = hardwareMap.get(DistanceSensor.class, "distanceForward");
+        distanceBack = hardwareMap.get(DistanceSensor.class, "distanceBack");
 
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
 
@@ -167,7 +176,7 @@ public class SampleMecanumDrive extends MecanumDrive {
 
         // TODO: if desired, use setLocalizer() to change the localization method
         // for instance, setLocalizer(new ThreeTrackingWheelLocalizer(...));
-        setLocalizer(new StandardTrackingWheelLocalizer(hardwareMap));
+        //setLocalizer(new StandardTrackingWheelLocalizer(hardwareMap));
     }
 
     public TrajectoryBuilder trajectoryBuilder(Pose2d startPose) {

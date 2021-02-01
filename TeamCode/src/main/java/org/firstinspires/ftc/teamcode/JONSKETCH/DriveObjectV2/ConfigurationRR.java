@@ -29,6 +29,7 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
@@ -86,7 +87,8 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     public DOdometryPod leftEncoder, rightEncoder, frontEncoder;
     public DServo loader, gripper, wobble;
     public DMotor shooter;
-    public DEncoderlessMotor ingester;
+    public DDistanceSensor leftDist, rightDist;
+    public DEncoderlessMotor ingester, preIngest;
     public List<DOdometryPod> pods;
     public List<DEncoderlessMotor> motors;
     private List<LynxModule> allHubs;
@@ -144,7 +146,10 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         gripper = new DServo(vals, hwMap, "gripper", i++);
         wobble = new DServo(vals, hwMap, "wobble", i++);
         shooter = new DMotor(vals, hwMap, "shooter", i++);
-        ingester = new DEncoderlessMotor(vals, hwMap, "rightEncoder", i++);
+        ingester = new DEncoderlessMotor(vals, hwMap, "frontEncoder", i++);
+        preIngest = new DEncoderlessMotor(vals, hwMap, "leftEncoder", i++);
+        leftDist = new DDistanceSensor(vals, hwMap, "distanceLeft", i++);
+        rightDist = new DDistanceSensor(vals, hwMap, "distanceRight", i++);
         imu = new DIMU(vals, hwMap, i++);
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
         pods = Arrays.asList(leftEncoder, rightEncoder, frontEncoder);
@@ -160,6 +165,9 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         hardware.add(wobble);
         hardware.add(shooter);
         hardware.add(ingester);
+        hardware.add(preIngest);
+        hardware.add(leftDist);
+        hardware.add(rightDist);
         hardware.add(imu);
 
         // TODO: if your hub is mounted vertically, remap the IMU axes so that the z-axis points
