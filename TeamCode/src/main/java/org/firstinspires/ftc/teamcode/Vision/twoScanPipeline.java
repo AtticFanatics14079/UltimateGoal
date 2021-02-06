@@ -15,9 +15,6 @@ import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvPipeline;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
 
 /**
  * Created by maryjaneb  on 11/13/2016.
@@ -32,7 +29,7 @@ import java.util.Arrays;
  */
 @Config
 @Autonomous
-public class scanPipeline extends LinearOpMode {
+public class twoScanPipeline extends LinearOpMode {
 
     private final int rows = 640;
     private final int cols = 480;
@@ -44,21 +41,28 @@ public class scanPipeline extends LinearOpMode {
     public static int wobbleThresh = 145;
     public static int stackSize = -1;
     private static double color1, color2;
-    public static boolean initDetect = true;
+    public static boolean initDetect = true, lameMode = true;
 
     public static int extract = 1;
     public static int row = 320;
 
-    OpenCvCamera webCam;
+    OpenCvCamera webCam, webcam2;
 
     @Override
     public void runOpMode() throws InterruptedException {
 
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-        webCam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam1"), cameraMonitorViewId);
+        int[] viewportContainerIds = OpenCvCameraFactory.getInstance()
+                .splitLayoutForMultipleViewports(cameraMonitorViewId, 2, OpenCvCameraFactory.ViewportSplitMethod.HORIZONTALLY);
+
+        webCam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam1"), viewportContainerIds[0]);
+        webcam2 = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam2"), viewportContainerIds[1]);
         webCam.openCameraDevice();//open camera
+        webcam2.openCameraDevice();//open camera
         webCam.setPipeline(new StageSwitchingPipeline());//different stages
+        webcam2.setPipeline(new StageSwitchingPipeline());//different stages
         webCam.startStreaming(rows, cols, OpenCvCameraRotation.UPRIGHT);//display on RC
+        webcam2.startStreaming(rows, cols, OpenCvCameraRotation.UPRIGHT);//display on RC
         //width, height
         //width = height in this case, because camera is in portrait mode.
 
@@ -121,6 +125,9 @@ public class scanPipeline extends LinearOpMode {
         @Override
         public Mat processFrame(Mat input)
         {
+            if(lameMode) {
+                return input;
+            }
             if (initDetect) {
                 rawMat = input;
                 //Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2YCrCb);

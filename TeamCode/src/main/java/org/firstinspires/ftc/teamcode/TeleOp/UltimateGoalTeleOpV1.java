@@ -47,7 +47,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
     private boolean lockedLoader = false, pressedLock = false, pressedShooter = false, shooterFast = false, pressedOdoAdjust = false;
 
-    double intakeSpeed = 0;
+    double intakeSpeed = 1;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -62,6 +62,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             configureMacros();
             waitForStart();
             if(!isStopRequested()) {
+                config.setPoseEstimate(new Pose2d(-1, 0, 0));
                 while(opModeIsActive()){
                     vals.waitForCycle();
                     getInput();
@@ -161,9 +162,16 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         }
         double multiplier = 1;
         if(gamepad1.left_bumper) multiplier = 0.2;
+        Pose2d currentPose = config.getPoseEstimate();
+        double arctan = Math.atan(currentPose.getY() / currentPose.getX());
+        int inverse = ((2 * Math.PI - head) + arctan) % (2 * Math.PI) > Math.PI ? 1 : -1;
+        double angPower = -0.4 * inverse * ((Math.abs(head - arctan)) > Math.PI ? (Math.abs((head > Math.PI ? 2 * Math.PI : 0) - head) + Math.abs((arctan > Math.PI ? 2 * Math.PI : 0) - arctan)) : Math.abs(head - arctan)); //Long line, but the gist is if you're calculating speed in the wrong direction, git gud.
+        angPower *= (Math.abs(arctan - head) < 1) ? 0 : 1;
+        //telemetry.addData("Ang power: ", angPower);
+        //telemetry.update();
         setPower(multiplier * gamepad1.left_stick_x, multiplier * gamepad1.left_stick_y, multiplier * gamepad1.right_stick_x);
         if(!pressedOdoAdjust && (gamepad2.dpad_left || gamepad2.dpad_right || gamepad2.dpad_up || gamepad2.dpad_down)) {
-            Pose2d currentPose = config.getPoseEstimate();
+           currentPose = config.getPoseEstimate();
             config.setPoseEstimate(new Pose2d(currentPose.getX() + (gamepad2.dpad_up ? -2 : (gamepad2.dpad_down ? 2 : 0)), currentPose.getY() + (gamepad2.dpad_left ? -2 : (gamepad2.dpad_right ? 2 : 0)), currentPose.getHeading()));
             pressedOdoAdjust = true;
         }
@@ -211,7 +219,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
                 drive.setPower(0, 0, -power);
             }
             drive.setPower(0, 0, 0);
-            Pose2d currentPose = config.getPoseEstimate();
+            currentPose = config.getPoseEstimate();
             config.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
             config.imu.retrievingHardware(false);
         }

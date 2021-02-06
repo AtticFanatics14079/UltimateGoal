@@ -36,13 +36,10 @@ public class HardwareThread extends Thread {
             while(!stop) {
                 System.out.println("Hardware cycle: " + time.milliseconds());
                 vals.updateCycle(); //Should allow every other thread to simply wait for cycle. Consider moving this or adding a sleep to prevent runValues being off by a cycle.
-                System.out.println("After update: " + time.milliseconds());
 
                 readHardware(); //Longest section by a ridiculous margin (about 90% of time).
-                System.out.println("After read: " + time.milliseconds());
 
                 runHardware(vals.runValues(false, 0, 0));
-                System.out.println("After run: " + time.milliseconds());
 
                 //updateHardware();
             }
@@ -59,16 +56,12 @@ public class HardwareThread extends Thread {
     private void readHardware(){
 
         config.clearBulkCache(); //Miniscule time
-        System.out.println("After clearing cache: " + time.milliseconds());
 
         for(int i = 0; i < hardwareVals.length; i++) {
             if(config.hardware.get(i) instanceof DIMU && !((DIMU) config.hardware.get(i)).gettingInput) hardwareVals[i] = new double[]{};
             else if(config.hardware.get(i) instanceof DDistanceSensor && !((DDistanceSensor) config.hardware.get(i)).gettingInput) hardwareVals[i] = new double[]{};
             else hardwareVals[i] = config.hardware.get(i).getHardware(); //Majority of time in this loop
-            System.out.println("After reading part " + i + ": " + time.milliseconds());
         }
-
-        System.out.println("After reading: " + time.milliseconds());
 
         vals.hardware(true, hardwareVals, 0);
     }
