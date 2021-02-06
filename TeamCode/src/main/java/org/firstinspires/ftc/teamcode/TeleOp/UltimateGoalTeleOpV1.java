@@ -36,7 +36,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     ValueStorage vals = new ValueStorage();
     HardwareThread hardware;
     Thread returnToShoot, powerShots, shootMacro, grabWobble, dropWobble, lowerWobble;
-    public static double wobbleUp = 0.22, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, load = 0.46, reload = 0.13, shooterSpeed = -1640, multiplier = 0.96, sensorOffset = 6.375; //Sheets had 1.15 as multiplier, seeing if just my house that's off
+    public static double wobbleUp = 0.22, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, load = 0.46, reload = 0.13, shooterSpeed = -1640, multiplier = 0.96, sensorYOffset = 6.375, sensorXOffset = 4.5, sensorOffset = 7; //Sheets had 1.15 as multiplier, seeing if just my house that's off
 
     public static double highGoalX = 0, highGoalY = 0, powerShotX = 0, powerShotY = 0, wallDistance = 18, distanceLeft = 21, distanceRight = 15;
 
@@ -47,7 +47,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
     private boolean lockedLoader = false, pressedLock = false, pressedShooter = false, shooterFast = false, pressedOdoAdjust = false;
 
-    double intakeSpeed = 1;
+    double intakeSpeed = 0;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -81,14 +81,15 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         config.update();
         config.imu.retrievingHardware(true);
         config.leftDist.pingSensor();
+        config.setPoseEstimate(sensorPose());
         telemetry.addData("Pose: ", config.getPoseEstimate());
         double head = config.imu.get()[0];
         telemetry.addData("Heading: ", config.imu.get()[0]);
         double dist = config.leftDist.getDistance(DistanceUnit.MM);
         dist *= multiplier; //(dist > 800) ? multiplier : 1;
-        dist *= Math.cos(head);
-        telemetry.addData("Center distance: ", dist / 25.4 + Math.cos(head) * sensorOffset);
-        telemetry.addData("Distance: ", dist / 25.4);
+        //dist *= Math.cos(head);
+        //telemetry.addData("Center distance: ", dist / 25.4 + Math.cos(head) * sensorXOffset + Math.sin(sensorYOffset));
+        //telemetry.addData("Distance: ", dist / 25.4);
         telemetry.update();
         if(gamepad2.a && !pressedShooter) {
             pressedShooter = true;
@@ -494,6 +495,33 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         config.motors.get(1).reverse(true);
         config.motors.get(2).reverse(false);
         config.motors.get(3).reverse(false);
+    }
+
+    public Pose2d sensorPose() {
+        double imuHeading = config.imu.get()[0];
+        Pose2d currentPose = config.getPoseEstimate();
+        double left = config.leftDist.getDistance(DistanceUnit.INCH);
+        left *= Math.abs(Math.cos(imuHeading)) * multiplier;
+        double right = config.rightDist.getDistance(DistanceUnit.INCH);
+        right *= Math.abs(Math.cos(imuHeading)) * multiplier;
+        //double front = drive.distanceForward.getDistance(DistanceUnit.INCH);
+        //front *= Math.abs(Math.cos(imuHeading));
+        //double back = drive.distanceBack.getDistance(DistanceUnit.INCH);
+        //back *= Math.abs(Math.cos(imuHeading));
+
+        double distanceYLeft = Math.abs(imuHeading - Math.PI) < Math.PI / 2 ? right : left;
+        double distanceYRight = Math.abs(imuHeading - Math.PI) < Math.PI / 2 ? left : right;
+        //double distanceXFront = Math.abs(imuHeading - Math.PI) < Math.PI / 2 ? back : front;
+        //double distanceXBack = Math.abs(imuHeading - Math.PI) < Math.PI / 2 ? front : back;
+
+        double poseX = currentPose.getX(), poseY = currentPose.getY();
+
+        //poseY = (distanceYRight < 100) ? - 98.5 - sensorYOffset + distanceYRight + Math.cos(imuHeading) * sensorYOffset + Math.sin(imuHeading) * sensorXOffset : (distanceYLeft < 100) ? 2.5 + sensorYOffset - (distanceYLeft + Math.cos(imuHeading) * sensorYOffset + Math.sin(imuHeading) * sensorXOffset) : poseY;
+        poseY = (distanceYRight < 100) ? - 98.5 - distanceYRight * Math.cos(imuHeading) + sensorOffset * Math.sin(imuHeading) : (distanceYLeft < 100) ? 2.5 + sensorYOffset - (distanceYLeft * Math.cos(imuHeading) + sensorOffset * Math.sin(imuHeading)) : poseY;
+
+        //poseX = (distanceXFront < 100) ? 17 - distanceXFront : (distanceXBack < 100) ? - 65 + distanceXBack : poseX;
+
+        return new Pose2d(currentPose.getX(), poseY, imuHeading);
     }
 
     public void shootOnce() {
