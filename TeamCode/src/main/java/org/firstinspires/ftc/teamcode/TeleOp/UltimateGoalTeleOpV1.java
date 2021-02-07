@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Autonomous.PurePursuit.DriveObjectRobotMovement;
 import org.firstinspires.ftc.teamcode.Autonomous.PurePursuit.Point;
@@ -26,10 +27,48 @@ import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DThread;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.HardwareThread;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.Sequence;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ValueStorage;
+import org.firstinspires.ftc.teamcode.Vision.twoScanPipeline;
+import org.opencv.core.Core;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
+import org.openftc.easyopencv.OpenCvCamera;
+import org.openftc.easyopencv.OpenCvCameraFactory;
+import org.openftc.easyopencv.OpenCvCameraRotation;
+import org.openftc.easyopencv.OpenCvPipeline;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Config
 @TeleOp
 public class UltimateGoalTeleOpV1 extends LinearOpMode {
+
+    private final int rows = 640;
+    private final int cols = 480;
+    public static int sampleWidth = 30;
+    public static int sampleHeight = 3;
+    public static org.opencv.core.Point topCenter = new org.opencv.core.Point(510, 420);
+    public static org.opencv.core.Point bottomCenter = new org.opencv.core.Point(510, 350);
+    public static org.opencv.core.Point leftBar1 = new org.opencv.core.Point(442, 360), leftBar2 = new org.opencv.core.Point(451, 436), rightBar1 = new org.opencv.core.Point(198, 359), rightBar2 = new org.opencv.core.Point(207, 435);
+    public static int thresh = 140, redThresh = 137;
+    public static int wobbleThresh = 145, initThresh = 133;
+    public static int stackSize = -1;
+    private static double color1, color2;
+    public static boolean initDetect = true, lameMode = true;
+    public static boolean properSetup = false;
+    public static double offsetDivisor = 50;
+    public static double rotateAngle = 195;
+
+    public static int extract = 1;
+    public static int row = 320;
+
+    OpenCvCamera webCam, webcam2;
+
 
     ConfigurationRR config;
     DriveObjectRobotMovement drive;
@@ -52,6 +91,15 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         try{
+            int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+
+            webcam2 = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam2"), cameraMonitorViewId);
+            webcam2.openCameraDevice();//open camera
+            webcam2.setPipeline(new upperCameraPipeline());//different stages
+            webcam2.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);//display on RC
+            //width, height
+            //width = height in this case, because camera is in portrait mode.
+
             leSense = hardwareMap.get(DistanceSensor.class, "distanceLeft");
             config = new ConfigurationRR(hardwareMap);
             config.Configure(hardwareMap, vals);
@@ -171,7 +219,9 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         //telemetry.addData("Ang power: ", angPower);
         //telemetry.update();
         //setPower(multiplier * gamepad1.left_stick_x, multiplier * gamepad1.left_stick_y, multiplier * gamepad1.right_stick_x);
-        setPower(multiplier * (gamepad1.left_stick_x * Math.cos(head) + gamepad1.left_stick_y * Math.sin(head)), multiplier * (gamepad1.left_stick_x * Math.sin(head) + gamepad1.left_stick_y * Math.cos(head)), multiplier * gamepad1.right_stick_x); //Should be field-centric
+        System.out.println("here");
+        setPower(multiplier * (gamepad1.left_stick_x * Math.cos(head) + gamepad1.left_stick_y * Math.sin(head) * -1), multiplier * (gamepad1.left_stick_x * Math.sin(head) + gamepad1.left_stick_y * Math.cos(head)), multiplier * gamepad1.right_stick_x); //Should be field-centric
+        System.out.println("after here");
         if(!pressedOdoAdjust && (gamepad2.dpad_left || gamepad2.dpad_right || gamepad2.dpad_up || gamepad2.dpad_down)) {
            currentPose = config.getPoseEstimate();
             config.setPoseEstimate(new Pose2d(currentPose.getX() + (gamepad2.dpad_up ? -2 : (gamepad2.dpad_down ? 2 : 0)), currentPose.getY() + (gamepad2.dpad_left ? -2 : (gamepad2.dpad_right ? 2 : 0)), currentPose.getHeading()));
@@ -536,5 +586,99 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         config.leftFront.setPower(-x + y + a);
         config.rightFront.setPower(x + y - a);
         config.rightRear.setPower(-x + y - a);
+    }
+    static class upperCameraPipeline extends OpenCvPipeline
+    {
+
+        Mat inputMat = new Mat();
+        Mat grayMat = new Mat();
+        Mat interMat = new Mat();
+        Mat outputMat = new Mat();
+        Mat hierarchy = new Mat();
+
+        enum Stage
+        {
+            INPUT,
+            INTER,
+            OUTPUT
+        }
+
+        private upperCameraPipeline.Stage stageToRenderToViewport = upperCameraPipeline.Stage.INTER;
+        private upperCameraPipeline.Stage[] stages = upperCameraPipeline.Stage.values();
+
+        @Override
+        public void onViewportTapped()
+        {
+            /*
+             * Note that this method is invoked from the UI thread
+             * so whatever we do here, we must do quickly.
+             */
+
+            int currentStageNum = stageToRenderToViewport.ordinal();
+
+            int nextStageNum = currentStageNum + 1;
+
+            if(nextStageNum >= stages.length)
+            {
+                nextStageNum = 0;
+            }
+
+            stageToRenderToViewport = stages[nextStageNum];
+        }
+
+        @Override
+        public Mat processFrame(Mat input)
+        {
+            inputMat = input;
+            Mat rota = Imgproc.getRotationMatrix2D(new org.opencv.core.Point(160, 120), rotateAngle,1);
+            Imgproc.warpAffine(inputMat, inputMat, rota, new Size(320,240));
+            Imgproc.cvtColor(inputMat, interMat, Imgproc.COLOR_RGB2YCrCb);
+            Core.extractChannel(interMat, interMat, extract);
+            Imgproc.medianBlur(interMat, interMat, 5);
+            grayMat = interMat.clone();
+            Imgproc.threshold(interMat, interMat, redThresh, 255, Imgproc.THRESH_BINARY);
+            Imgproc.cvtColor(interMat, outputMat, Imgproc.COLOR_GRAY2RGB);
+
+            List<MatOfPoint> contours = new ArrayList<>();
+            Imgproc.findContours(interMat, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+
+            MatOfPoint2f[] contoursPoly  = new MatOfPoint2f[contours.size()];
+            Rect[] boundRect = new Rect[contours.size()];
+            org.opencv.core.Point[] centers = new org.opencv.core.Point[contours.size()];
+            float[][] radius = new float[contours.size()][1];
+            for (int i = 0; i < contours.size(); i++) {
+                contoursPoly[i] = new MatOfPoint2f();
+                Imgproc.approxPolyDP(new MatOfPoint2f(contours.get(i).toArray()), contoursPoly[i], 3, true);
+                boundRect[i] = Imgproc.boundingRect(new MatOfPoint(contoursPoly[i].toArray()));
+                centers[i] = new org.opencv.core.Point();
+                Imgproc.minEnclosingCircle(contoursPoly[i], centers[i], radius[i]);
+            }
+            List<MatOfPoint> contoursPolyList = new ArrayList<>(contoursPoly.length);
+            for (MatOfPoint2f poly : contoursPoly) {
+                contoursPolyList.add(new MatOfPoint(poly.toArray()));
+            }
+            for (int i = 0; i < contours.size(); i++) {
+                Imgproc.drawContours(outputMat, contoursPolyList, i, new Scalar(0,255,0), 3);
+                Imgproc.rectangle(outputMat, boundRect[i].tl(), boundRect[i].br(), new Scalar(255,0,0), 2);
+                Imgproc.line(outputMat, new org.opencv.core.Point((boundRect[contours.size()-1].tl().x+boundRect[contours.size()-1].br().x)/2, 0), new org.opencv.core.Point((boundRect[contours.size()-1].tl().x+boundRect[contours.size()-1].br().x)/2, 480), new Scalar(0,0,255), 3);
+                //Imgproc.putText(outputMat, "Points: " + contoursPoly[i].rows(), boundRect[i].tl(), Imgproc.FONT_HERSHEY_DUPLEX, 0.7, new Scalar(255,0,0));
+            }
+
+            switch (stageToRenderToViewport){
+                case INPUT:
+                {
+                    return inputMat;
+                }
+                case INTER:
+                {
+                    return outputMat;
+                }
+                default:
+                {
+                    return input;
+                }
+            }
+        }
+
     }
 }
