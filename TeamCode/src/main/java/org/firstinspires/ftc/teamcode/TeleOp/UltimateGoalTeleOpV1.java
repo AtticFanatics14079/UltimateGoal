@@ -129,12 +129,13 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         config.update();
         config.imu.retrievingHardware(true);
         config.leftDist.pingSensor();
+        config.rightDist.pingSensor();
         config.setPoseEstimate(sensorPose());
         telemetry.addData("Pose: ", config.getPoseEstimate());
         double head = config.imu.get()[0];
         telemetry.addData("Heading: ", config.imu.get()[0]);
-        double dist = config.leftDist.getDistance(DistanceUnit.MM);
-        dist *= multiplier; //(dist > 800) ? multiplier : 1;
+        //double dist = config.leftDist.getDistance(DistanceUnit.MM);
+        //dist *= multiplier; //(dist > 800) ? multiplier : 1;
         //dist *= Math.cos(head);
         //telemetry.addData("Center distance: ", dist / 25.4 + Math.cos(head) * sensorXOffset + Math.sin(sensorYOffset));
         //telemetry.addData("Distance: ", dist / 25.4);
@@ -219,9 +220,8 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         //telemetry.addData("Ang power: ", angPower);
         //telemetry.update();
         //setPower(multiplier * gamepad1.left_stick_x, multiplier * gamepad1.left_stick_y, multiplier * gamepad1.right_stick_x);
-        System.out.println("here");
-        setPower(multiplier * (gamepad1.left_stick_x * Math.cos(head) + gamepad1.left_stick_y * Math.sin(head) * -1), multiplier * (gamepad1.left_stick_x * Math.sin(head) + gamepad1.left_stick_y * Math.cos(head)), multiplier * gamepad1.right_stick_x); //Should be field-centric
-        System.out.println("after here");
+        if(gamepad1.right_bumper) setPower(multiplier * (gamepad1.left_stick_x * Math.cos(head) + gamepad1.left_stick_y * Math.sin(head)), multiplier * (gamepad1.left_stick_x * Math.sin(head) + gamepad1.left_stick_y * Math.cos(head)), multiplier * gamepad1.right_stick_x); //Should be field-centric
+        else setPower(multiplier * gamepad1.left_stick_y, multiplier * gamepad1.left_stick_y, gamepad1.right_stick_x);
         if(!pressedOdoAdjust && (gamepad2.dpad_left || gamepad2.dpad_right || gamepad2.dpad_up || gamepad2.dpad_down)) {
            currentPose = config.getPoseEstimate();
             config.setPoseEstimate(new Pose2d(currentPose.getX() + (gamepad2.dpad_up ? -2 : (gamepad2.dpad_down ? 2 : 0)), currentPose.getY() + (gamepad2.dpad_left ? -2 : (gamepad2.dpad_right ? 2 : 0)), currentPose.getHeading()));
@@ -229,7 +229,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         }
         else if(pressedOdoAdjust && !(gamepad2.dpad_left || gamepad2.dpad_right || gamepad2.dpad_up || gamepad2.dpad_down)) pressedOdoAdjust = false;
         if(shootMacro.isAlive()) {}
-        else if((gamepad1.right_bumper || gamepad2.back) && !pressedLock) {
+        else if(gamepad2.back && !pressedLock) {
             lockedLoader = !lockedLoader;
             pressedLock = true;
         }
@@ -297,6 +297,18 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             highGoalWallAdjust();
             return null;
         });
+        Sequence returnToHighGoalDistance = new Sequence(() -> {
+            Pose2d currentPose = config.getPoseEstimate();
+            config.imu.gettingInput = true;
+            config.rightDist.pingSensor();
+            config.leftDist.pingSensor();
+            sleep(80);
+            config.setPoseEstimate(sensorPose());
+            roadRunnerToPosition(new Pose2d(-48, -48), 0.8);
+            imuTurn();
+            config.imu.gettingInput = false;
+            return null;
+        });
         Sequence tripleShoot = new Sequence(() -> {
             config.shooter.set(-1640);
             for(int i = 0; i < 3; i++) {
@@ -306,7 +318,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             }
             config.loader.set(load);
             return null;
-        }, returnToHighGoal);
+        }, returnToHighGoalDistance);
         returnToShoot = new Thread(tripleShoot);
 
         Sequence shootThrice = new Sequence(() -> {
@@ -549,6 +561,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     }
 
     public Pose2d sensorPose() {
+        //Assumes the sensors are updated
         double imuHeading = config.imu.get()[0];
         Pose2d currentPose = config.getPoseEstimate();
         double left = config.leftDist.getDistance(DistanceUnit.INCH);
