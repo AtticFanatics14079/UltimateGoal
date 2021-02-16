@@ -52,7 +52,7 @@ import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstant
  */
 @Config
 public class SampleMecanumDrive extends MecanumDrive {
-    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(6, 0, 0);
+    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(5, 0, 0);
     public static PIDCoefficients HEADING_PID = new PIDCoefficients(10, 0, 0);
 
     public static AxesOrder axes = AxesOrder.YZX;

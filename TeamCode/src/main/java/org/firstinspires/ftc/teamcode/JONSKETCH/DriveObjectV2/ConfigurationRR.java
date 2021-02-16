@@ -87,7 +87,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     public DOdometryPod leftEncoder, rightEncoder, frontEncoder;
     public DServo loader, gripper, wobble;
     public DMotor shooter;
-    public DDistanceSensor leftDist, rightDist;
+    public DDistanceSensor leftDist, rightDist, frontDist, backDist;
     public DEncoderlessMotor ingester, preIngest;
     public List<DOdometryPod> pods;
     public List<DEncoderlessMotor> motors;
@@ -150,6 +150,8 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         preIngest = new DEncoderlessMotor(vals, hwMap, "leftEncoder", i++);
         leftDist = new DDistanceSensor(vals, hwMap, "distanceLeft", i++);
         rightDist = new DDistanceSensor(vals, hwMap, "distanceRight", i++);
+        frontDist = new DDistanceSensor(vals, hwMap, "distanceFront", i++);
+        backDist = new DDistanceSensor(vals, hwMap, "distanceBack", i++);
         imu = new DIMU(vals, hwMap, i++);
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
         pods = Arrays.asList(leftEncoder, rightEncoder, frontEncoder);
@@ -168,6 +170,8 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         hardware.add(preIngest);
         hardware.add(leftDist);
         hardware.add(rightDist);
+        hardware.add(frontDist);
+        hardware.add(backDist);
         hardware.add(imu);
 
         // TODO: if your hub is mounted vertically, remap the IMU axes so that the z-axis points
@@ -192,12 +196,14 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         }
 
         // TODO: reverse any motors using DcMotor.setDirection()
-        motors.get(0).reverse(true);
-        motors.get(1).reverse(true);
+        motors.get(2).reverse(true);
+        motors.get(3).reverse(true);
 
-        leftEncoder.reverse(true);
+        shooter.reverse(true);
+
+        //leftEncoder.reverse(true);
         rightEncoder.reverse(true);
-        frontEncoder.reverse(true);
+        //frontEncoder.reverse(true);
         // TODO: if desired, use setLocalizer() to change the localization method
         setLocalizer(new DriveObjectTrackingWheelLocalizer(vals, this));
     }

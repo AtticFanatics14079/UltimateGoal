@@ -39,7 +39,7 @@ public class DriveObjectTrackingWheelLocalizer extends ThreeTrackingWheelLocaliz
     public static double WHEEL_RADIUS = 0.75; // in
     public static double GEAR_RATIO = 1; // output (wheel) speed / input (encoder) speed
 
-    public static double LATERAL_DISTANCE = 10.05; // in; distance between the left and right wheels
+    public static double LATERAL_DISTANCE = 10.44; // in; distance between the left and right wheels
     public static double FORWARD_OFFSET = -7.5; // in; offset of the lateral wheel
 
     public static double X_MULTIPLIER = 1.019716;
@@ -85,7 +85,7 @@ public class DriveObjectTrackingWheelLocalizer extends ThreeTrackingWheelLocaliz
         //  competing magnetic encoders), change Encoder.getRawVelocity() to Encoder.getCorrectedVelocity() to enable a
         //  compensation method
 
-        vals.waitForCycle();
+        //vals.waitForCycle();
 
         return Arrays.asList(
                 encoderTicksToInches(leftEncoder.get()[1]),
