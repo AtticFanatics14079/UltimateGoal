@@ -56,13 +56,15 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     public static org.opencv.core.Point bottomCenter = new org.opencv.core.Point(510, 350);
     public static org.opencv.core.Point leftBar1 = new org.opencv.core.Point(442, 360), leftBar2 = new org.opencv.core.Point(451, 436), rightBar1 = new org.opencv.core.Point(198, 359), rightBar2 = new org.opencv.core.Point(207, 435);
     public static int thresh = 140, redThresh = 137;
-    public static int wobbleThresh = 145, initThresh = 133;
+    public static int wobbleThresh = 145, initThresh = 133, targetHighGoalX = 400;
     public static int stackSize = -1;
     private static double color1, color2;
     public static boolean initDetect = true, lameMode = true;
     public static boolean properSetup = false;
     public static double offsetDivisor = 50;
     public static double rotateAngle = 195;
+
+    public static int upperCameraCenter = 0;
 
     public static int extract = 1;
     public static int row = 320;
@@ -152,6 +154,25 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             shooterFast = !shooterFast;
         }
         else if(pressedShooter && !gamepad2.a) pressedShooter = false;
+        if(gamepad1.left_stick_button) {
+            config.setPoseEstimate(sensorPose());
+            Pose2d currentPose = config.getPoseEstimate();
+            System.out.println("Current pose: " + currentPose);
+            System.out.println("Angle: " + Math.atan((currentPose.getY() + 49) / currentPose.getX()));
+            double dist = Math.sqrt(Math.pow((currentPose.getY() + 49), 2) + Math.pow(currentPose.getX(), 2));
+            System.out.println("Distance: " + dist);
+            if(dist < 96) shooterSpeed = -1600;
+            else if(dist < 105) shooterSpeed = -1620;
+            else if(dist < 112) shooterSpeed = -1640;
+            else shooterSpeed = -1660;
+            telemetry.addData("Current Pose: ", currentPose);
+            telemetry.addData("Angle: ", Math.atan((currentPose.getY() + 49) / currentPose.getX()));
+            telemetry.update();
+            //imuTurn();
+            //imuTurnAngle(Math.PI);
+            imuTurnAngle(Math.atan((currentPose.getY() + 49) / currentPose.getX()));
+            turnUntilHighGoal();
+        }
         if(gamepad2.start) {
             config.setPoseEstimate(new Pose2d(0, 0, 0));
             config.imu.resetIMU();
@@ -304,7 +325,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             //imuTurn();
             //Pose2d currentPose = config.getPoseEstimate();
             //config.setPoseEstimate(currentPose.getX(), leSense.getDistance(DistanceUnit.INCH));
-            roadRunnerToPosition(highGoalShoot, 0.8);
+            roadRunnerToPosition(highGoalShoot);
             highGoalWallAdjust();
             return null;
         });
@@ -312,9 +333,10 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             //Pose2d currentPose = config.getPoseEstimate();
             config.setPoseEstimate(sensorPose());
             System.out.println("Pose: " + config.getPoseEstimate());
-            roadRunnerToPosition(new Pose2d(-78, -54), 0.5);
+            roadRunnerToPosition(new Pose2d(-90, -62));
             imuTurn();
             config.setPoseEstimate(sensorPose());
+            turnUntilHighGoal();
             //config.rightDist.pingSensor();
             //config.leftDist.pingSensor();
             //sleep(80);
@@ -322,11 +344,10 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             return null;
         });
         Sequence tripleShoot = new Sequence(() -> {
-            config.shooter.set(-1640);
             for(int i = 0; i < 3; i++) {
                 shootOnce();
-                config.shooter.set(-1580);
-                sleep(300);
+                config.shooter.set(-1620);
+                sleep(500);
             }
             config.loader.set(load);
             return null;
@@ -478,7 +499,37 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         config.imu.retrievingHardware(false);
     }
 
-    public void roadRunnerToPosition(Pose2d targetPose, double speed) {
+    public void imuTurnAngle(double angle) {
+        //Radians
+        config.imu.retrievingHardware(true);
+        vals.waitForCycle();
+        double imuHeading = config.imu.get()[0];
+        drive.runWithEncoder(true);
+        while((Math.abs(imuHeading - angle)>Math.toRadians(5)) && !isStopRequested() && opModeIsActive()){
+            System.out.println("Heading check: " + Math.abs(imuHeading - angle));
+            System.out.println("Angle: " + angle);
+            config.update();
+            imuHeading = config.imu.get()[0];
+            double tempHeading = imuHeading;
+            double tempTarget = angle;
+            System.out.println("Heading: " + imuHeading);
+            if(tempHeading < 0) tempHeading += 2 * Math.PI;
+            if(angle < 0) tempTarget += 2 * Math.PI;
+            double p = 0.1, f = 0.03;
+            //int invert = tempHeading + (2 * Math.PI - tempTarget) % (2 * Math.PI) > Math.PI ? 1 : -1;
+            double invert = angle - imuHeading;
+            if(invert > Math.PI) invert -= 2 * Math.PI;
+            else if(invert < -Math.PI) invert += 2 * Math.PI;
+            invert = invert < 0 ? 1 : -1;
+            double power = invert * p * (Math.abs(tempHeading - tempTarget) > Math.PI ? (Math.abs(tempHeading > Math.PI ? 2 * Math.PI - tempHeading : tempHeading) + Math.abs(tempTarget > Math.PI ? 2 * Math.PI - tempTarget : tempTarget)) : Math.abs(tempHeading - tempTarget)); //Long line, but the gist is if you're calculating speed in the wrong direction, git gud.
+            power += (power > 0 ? f : -f);
+            drive.setPower(0, 0, power);
+        }
+        drive.setPower(0, 0, 0);
+        config.imu.retrievingHardware(false);
+    }
+
+    public void roadRunnerToPosition(Pose2d targetPose) {
         /*config.motors.get(0).reverse(false);
         config.motors.get(1).reverse(false);
         config.motors.get(2).reverse(true);
@@ -486,6 +537,8 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
          */
         drive.runWithEncoder(true);
         Pose2d currentPose = config.getPoseEstimate();
+        double halfX = (currentPose.getX() + targetPose.getX()) / 2;
+        double halfY = (currentPose.getY() + targetPose.getY()) / 2;
         Trajectory traj = config.trajectoryBuilder(currentPose)
                 .strafeTo(targetPose.vec())
                 .build();
@@ -566,48 +619,54 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         config.frontDist.pingSensor();
         config.backDist.pingSensor();
         vals.waitForCycle();
-        vals.waitForCycle();
         double imuHeading = config.imu.get()[0];
         config.imu.gettingInput = false;
         double left = config.leftDist.getDistance(DistanceUnit.INCH);
         double right = config.rightDist.getDistance(DistanceUnit.INCH);
         double front = config.frontDist.getDistance(DistanceUnit.INCH);
         double back = config.backDist.getDistance(DistanceUnit.INCH);
+        System.out.println("Left Input: " + left);
+        System.out.println("Right Input: " + right);
+        System.out.println("Front Input: " + front);
+        System.out.println("Back Input: " + back);
         double correctedSideAngle = sensorSideAngle; //Accounts for X vs. Y.
         double correctedStraightAngle = sensorStrightAngle; //Accounts for X vs. Y.
-        double correctedHeading = imuHeading > 0 ? (imuHeading + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4 : -((Math.abs(imuHeading) + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4);
-        if(Math.abs(imuHeading) > Math.PI / 4 && Math.abs(imuHeading) < 3 * Math.PI / 4) {
-            //correctedHeading = Math.PI / 2 - correctedHeading;
-            //correctedSideAngle = Math.PI / 2 - sensorSideAngle;
-            //correctedStraightAngle = Math.PI / 2 - sensorStrightAngle;
-        }
-        left *= (left < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 1 / left * 200;
+        double correctedHeading = imuHeading > 0 ? (imuHeading + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4 : -((Math.abs(imuHeading) + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4); //Correct heading in each quadrant, as a new quadrant switches what wall it should be seeing.
+        left *= (left < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 1 / left * 200; //Gets distance from wall as a straight line
         right *= (right < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 1 / right * 200;
         front *= (front < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 1 / front * 200;
         back *= (back < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 1 / back * 200;
-        System.out.println("Left Before: " + left);
-        System.out.println("Right Before: " + right);
-        System.out.println("Front Before: " + front);
-        System.out.println("Back Before: " + back);
         left += (left != 200) ? sensorSideOffset * Math.abs(Math.cos(correctedSideAngle + correctedHeading)) : 0; //First quadrant, deals with small cosine values
         right += (right != 200) ? sensorSideOffset * Math.abs(Math.cos(-correctedSideAngle + correctedHeading)) : 0; //Second quadrant, deals with small cosine values
         front += (front != 200) ? sensorStrightOffset * Math.abs(Math.cos(correctedStraightAngle + correctedHeading)) : 0; //First quadrant, deals with small cosine values
         back += (back != 200) ? sensorStrightOffset * Math.abs(Math.cos(-correctedStraightAngle + correctedHeading)) : 0; //Second quadrant, deals with small cosine values
-        System.out.println("Left: " + left);
-        System.out.println("Right: " + right);
-        System.out.println("Front: " + front);
-        System.out.println("Back: " + back);
+        System.out.println("Heading: " + correctedHeading + ", IMU: " + imuHeading);
+        System.out.println("Left Before: " + left);
+        System.out.println("Right Before: " + right);
+        System.out.println("Front Before: " + front);
+        System.out.println("Back Before: " + back);
 
-        double distanceYLeft = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? left : front) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? right : back);
+        double distanceYLeft = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? left : front) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? right : back); //Switches which distance sensor input corresponds to what actual side relative to robot.
         double distanceYRight = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? right : back) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? left : front);
         double distanceXFront = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? front : right) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? back : left);
         double distanceXBack = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? back : left) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? front : right);
+        System.out.println("Left: " + distanceYLeft);
+        System.out.println("Right: " + distanceYRight);
+        System.out.println("Front: " + distanceXFront);
+        System.out.println("Back: " + distanceXBack);
 
         Pose2d currentPose = config.getPoseEstimate();
         double poseX = currentPose.getX(), poseY = currentPose.getY();
 
-        poseY = (distanceYRight < distanceYLeft) ? - 87 + Math.abs(distanceYRight) : (distanceYLeft < 100) ? 9 - Math.abs(distanceYLeft) : poseY; //Sets up 0 when robot jammed against left wall
-        poseX = (distanceXBack < distanceXFront) ? - 131 + Math.abs(distanceXBack) : (distanceXFront < 100) ? 9 - Math.abs(distanceXFront) : poseX; //Sets up 0 when robot jammed against front wall
+        poseY = (distanceYRight < distanceYLeft) ? - 87 + Math.abs(distanceYRight) : (distanceYLeft < 100) ? 9 - Math.abs(distanceYLeft) : poseY; //Sets up 0 when robot jammed against left wall, grabs smaller of two distances.
+        //System.out.println("Y Before: " + poseY);
+        poseX = (distanceXBack < distanceXFront) ? - 135 + Math.abs(distanceXBack) : (distanceXFront < 100) ? 9 - Math.abs(distanceXFront) : poseX; //Sets up 0 when robot jammed against front wall
+        //System.out.println("X Before: " + poseX);
+
+        //poseY = (Math.abs(currentPose.getY() - poseY) < 50) ? poseY : currentPose.getY();
+        //System.out.println("Y After: " + poseY);
+        //poseX = (Math.abs(currentPose.getX() - poseX) < 50) ? poseX : currentPose.getX();
+        //System.out.println("X After: " + poseX);
 
         return new Pose2d(poseX, poseY, imuHeading);
     }
@@ -646,9 +705,20 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         return new Pose2d(poseX, poseY, imuHeading);
     }
 
+    public void turnUntilHighGoal() {
+        while(Math.abs(upperCameraCenter - targetHighGoalX) > 30) {
+            if(upperCameraCenter == 0) break;
+            double p = 0.0005, f = 0.02;
+            double power = p * (upperCameraCenter - targetHighGoalX);
+            power += power > 0 ? f : -f;
+            drive.setPower(0, 0, power);
+        }
+        drive.setPower(0, 0, 0);
+    }
+
     public void shootOnce() {
         config.loader.set(load);
-        sleep(550);
+        sleep(400);
         config.loader.set(reload);
     }
 
@@ -734,6 +804,10 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
                 Imgproc.line(outputMat, new org.opencv.core.Point((boundRect[contours.size()-1].tl().x+boundRect[contours.size()-1].br().x)/2, 0), new org.opencv.core.Point((boundRect[contours.size()-1].tl().x+boundRect[contours.size()-1].br().x)/2, 480), new Scalar(0,0,255), 3);
                 //Imgproc.putText(outputMat, "Points: " + contoursPoly[i].rows(), boundRect[i].tl(), Imgproc.FONT_HERSHEY_DUPLEX, 0.7, new Scalar(255,0,0));
             }
+
+            upperCameraCenter = contours.size() >= 1 ? (int) (boundRect[contours.size()-1].tl().x+boundRect[contours.size()-1].br().x) : 0;
+
+            if(contours.size() >= 1) Imgproc.putText(outputMat, "Center: " + (boundRect[contours.size()-1].tl().x+boundRect[contours.size()-1].br().x), boundRect[contours.size() - 1].tl(), Imgproc.FONT_HERSHEY_DUPLEX, 0.7, new Scalar(255, 255, 255));
 
             switch (stageToRenderToViewport){
                 case INPUT:
