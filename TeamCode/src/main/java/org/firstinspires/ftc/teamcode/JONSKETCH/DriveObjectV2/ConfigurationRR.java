@@ -109,7 +109,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         turnController.setInputBounds(0, 2 * Math.PI);
 
         constraints = new MecanumConstraints(new DriveConstraints(
-                60.0, 40.0, 0.0,
+                60.0, 50.0, 0.0,
                 Math.toRadians(180.0), Math.toRadians(180.0), 0.0
         ), TRACK_WIDTH); //Just has to be high enough to not mess with driving.
         follower = new HolonomicPIDVAFollower(TRANSLATIONAL_PID, TRANSLATIONAL_PID, HEADING_PID,

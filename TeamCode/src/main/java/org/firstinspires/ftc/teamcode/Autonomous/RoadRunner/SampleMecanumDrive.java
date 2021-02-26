@@ -28,6 +28,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorImpl;
 import com.qualcomm.robotcore.hardware.DcMotorImplEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -86,6 +87,7 @@ public class SampleMecanumDrive extends MecanumDrive {
     public DcMotorSimple ingester, preIngest;
     public BNO055IMU imu;
     private VoltageSensor batteryVoltageSensor;
+    public DistanceSensor leftDist, rightDist, frontDist, backDist;
 
     private Pose2d lastPoseOnTurn;
 
@@ -138,6 +140,10 @@ public class SampleMecanumDrive extends MecanumDrive {
         gripper = hardwareMap.get(Servo.class, "gripper");
         ingester = hardwareMap.get(DcMotorSimple.class, "frontEncoder");
         preIngest = hardwareMap.get(DcMotorSimple.class, "leftEncoder");
+        leftDist = hardwareMap.get(DistanceSensor.class, "distanceLeft");
+        rightDist = hardwareMap.get(DistanceSensor.class, "distanceRight");
+        frontDist = hardwareMap.get(DistanceSensor.class, "distanceFront");
+        backDist = hardwareMap.get(DistanceSensor.class, "distanceBack");
 
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
 
@@ -164,6 +170,7 @@ public class SampleMecanumDrive extends MecanumDrive {
         rightRear.setDirection(DcMotorSimple.Direction.REVERSE);
         leftFront.setDirection(DcMotorSimple.Direction.FORWARD);
         leftRear.setDirection(DcMotorSimple.Direction.FORWARD);
+        shooter.setDirection(DcMotorSimple.Direction.REVERSE);
 
         // TODO: if desired, use setLocalizer() to change the localization method
         // for instance, setLocalizer(new ThreeTrackingWheelLocalizer(...));

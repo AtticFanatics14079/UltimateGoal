@@ -6,6 +6,8 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
+import com.acmerobotics.roadrunner.trajectory.TrajectoryBuilder;
+import com.acmerobotics.roadrunner.trajectory.TrajectoryBuilderKt;
 import com.acmerobotics.roadrunner.trajectory.constraints.DriveConstraints;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -13,17 +15,27 @@ import com.qualcomm.robotcore.hardware.DistanceSensor;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants;
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDrive;
-import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDriveDistance;
+import org.firstinspires.ftc.teamcode.TeleOp.UltimateGoalTeleOpV1;
+import org.firstinspires.ftc.teamcode.Vision.scanPipeline;
+import org.firstinspires.ftc.teamcode.Vision.twoScanPipeline;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvPipeline;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Config
 @Autonomous
@@ -49,22 +61,26 @@ public class AllPathsVisionDistance extends LinearOpMode {
             Math.toRadians(120.0), Math.toRadians(120.0), 0.0
     );
 
-    private Pose2d startPose = new Pose2d(-63.0, -35.0, Math.toRadians(0.0)); //-18.0
-    private Pose2d midwayShoot = new Pose2d(-38.0, -18.0);
-    private Pose2d powerShotShoot = new Pose2d(-24.0, -24.0);
-    private Pose2d highGoalShoot = new Pose2d(-16.0, -50.0);
-    private Pose2d path4dropoff = new Pose2d(43.0, -52.0);
-    private Pose2d pickup4 = new Pose2d(-55, -50, 0.0);
-    private Pose2d path1dropoff = new Pose2d(15.0, -32.0);
-    private Pose2d pickup1 = new Pose2d(-56.5, -45); //Was x = -38.5, y = -40 before moving to back of tape
-    private Pose2d path0dropoff = new Pose2d(-2.0, -56.0);
-    private Pose2d pickup0 = new Pose2d(-56.5, -52.0);
-    private Pose2d endLocation = new Pose2d(5.0, -44.0, 0.0);
+    private Pose2d startPose = new Pose2d(-126.0, -50.0, Math.toRadians(0.0)); //-18.0
+    private Pose2d midwayShoot = new Pose2d(-101.0, -33.0);
+    private Pose2d powerShotShoot = new Pose2d(-87.0, -39.0);
+    private Pose2d highGoalShoot = new Pose2d(-79.0, -65.0);
+    private Pose2d path4dropoff = new Pose2d(-20.0, -67.0);
+    private Pose2d pickup4 = new Pose2d(-108, -65, 0.0);
+    private Pose2d path1dropoff = new Pose2d(-48.0, -47.0);
+    private Pose2d pickup1 = new Pose2d(-109.5, -60); //Was x = -38.5, y = -40 before moving to back of tape
+    private Pose2d path0dropoff = new Pose2d(-65.0, -71.0);
+    private Pose2d pickup0 = new Pose2d(-120.5, -67.0);
+    private Pose2d endLocation = new Pose2d(-58.0, -59.0, 0.0);
 
     public static double wobbleUp = 0.17, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, loaded = 0.48, reload = 0.14, path5highgoalX = -36, path5highgoalY = -40, offsetDivisor = 50, pshot1 = 1, pshot2 = 4.7, pshot3 = 8.3;
 
-    private Pose2d powerShotBackShoot = new Pose2d(-39.0,-35.0, Math.toRadians(pshot1)); //Is actually 1
-    private Pose2d ingestStack = new Pose2d(-16.0, -35.0, Math.toRadians(0));
+    public static double multiplier = 0.97, sensorSideOffset = 8.20, sensorSideAngle = 0.66, sensorStrightOffset = 8, sensorStrightAngle = 0, rightDistMult = 1;
+
+    private Pose2d powerShotBackShoot = new Pose2d(-102.0,-50.0, Math.toRadians(pshot1)); //Is actually 1
+    private Pose2d ingestStack = new Pose2d(-79.0, -50.0, Math.toRadians(0));
+
+    public static double powshot1 = 70, powshot2 = 110, powshot3 = 147, minX;
 
     private final int rows = 640;
     private final int cols = 480;
@@ -78,32 +94,41 @@ public class AllPathsVisionDistance extends LinearOpMode {
     public static int stackSize = -1;
     public static boolean properSetup = false;
     private static double color1, color2;
+    public static int upperCameraCenter = 0;
+    public static double rotateAngle = 195;
+    public static int redThresh = 137;
 
     public static int extract = 1;
     public static int row = 320;
 
-    private StageSwitchingPipeline pipeline = new StageSwitchingPipeline();
+    private lowerCameraPipeline pipeline = new lowerCameraPipeline();
 
     public static boolean usingCamera = true;
 
-    OpenCvCamera webCam;
+    OpenCvCamera webCam, webcam2;
 
-    SampleMecanumDriveDistance drive;
+    SampleMecanumDrive drive;
 
     @Override
     public void runOpMode() throws InterruptedException {
-        drive = new SampleMecanumDriveDistance(hardwareMap);
+        drive = new SampleMecanumDrive(hardwareMap);
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         DistanceSensor leSense = hardwareMap.get(DistanceSensor.class, "distanceRight");
 
         if(usingCamera) {
             int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-            webCam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam1"), cameraMonitorViewId);
-            webCam.openCameraDevice();//open camera
-            webCam.setPipeline(pipeline);//different stages
-            webCam.startStreaming(rows, cols, OpenCvCameraRotation.UPRIGHT);//display on RC
+            int[] viewportContainerIds = OpenCvCameraFactory.getInstance()
+                    .splitLayoutForMultipleViewports(cameraMonitorViewId, 2, OpenCvCameraFactory.ViewportSplitMethod.HORIZONTALLY);
 
+            webCam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam1"), viewportContainerIds[0]);
+            webcam2 = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam2"), viewportContainerIds[1]);
+            webCam.openCameraDevice();//open camera
+            webcam2.openCameraDevice();//open camera
+            webCam.setPipeline(new lowerCameraPipeline());//different stages
+            webcam2.setPipeline(new upperCameraPipeline());//different stages
+            webCam.startStreaming(rows, cols, OpenCvCameraRotation.UPRIGHT);//display on RC
+            webcam2.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);//display on RC
             pipeline.initDetect = true;
         }
 
@@ -133,7 +158,9 @@ public class AllPathsVisionDistance extends LinearOpMode {
                 .build();
         drive.followTrajectory(goToShoot);
 
-        imuTurn(Math.toRadians(pshot1));
+        //imuTurn(Math.toRadians(pshot1));
+        turnToPowershot(700);
+
         //telemetry.addLine("Finished turn");
         //telemetry.update();
 
@@ -143,24 +170,26 @@ public class AllPathsVisionDistance extends LinearOpMode {
         sleep(600);
         drive.loader.setPosition(reload);
         drive.shooter.setVelocity(-1580);
-        imuTurn(Math.toRadians(pshot2));
+        //imuTurn(Math.toRadians(pshot2));
+        turnToPowershot(110);
         sleep(400);
         drive.loader.setPosition(loaded);
         sleep(600);
         drive.loader.setPosition(reload);
         drive.shooter.setVelocity(-1580);
-        imuTurn(Math.toRadians(pshot3));
+        //imuTurn(Math.toRadians(pshot3));
+        turnToPowershot(147);
         sleep(400);
         drive.loader.setPosition(loaded);
         sleep(600);
         drive.shooter.setVelocity(0);
 
         double imuHeading = drive.imu.getAngularOrientation().firstAngle;
-        Pose2d currentPose = drive.getPoseEstimate();
+        Pose2d currentPose = sensorPose();
 
         drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
 
-        drive.setPoseEstimate(sensorPose());
+        //drive.ingester.setPower(1);
 
         switch(stackSize2) {
             case 0: {
@@ -168,8 +197,10 @@ public class AllPathsVisionDistance extends LinearOpMode {
                 drive.ingester.setPower(0);
 
                 imuTurn(0);
-
                 drive.setPoseEstimate(sensorPose());
+                System.out.println("Sensor Pose: " + sensorPose());
+                //imuHeading = drive.imu.getAngularOrientation().firstAngle;
+                //drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
 
                 Trajectory wobble1 = drive.trajectoryBuilder(drive.getPoseEstimate())
                         .strafeTo(new Vector2d(path0dropoff.getX(), path0dropoff.getY()), slow)
@@ -178,7 +209,10 @@ public class AllPathsVisionDistance extends LinearOpMode {
 
                 drive.loader.setPosition(reload);
 
-                drive.setPoseEstimate(sensorPose());
+                //currentPose = drive.getPoseEstimate();
+                //imuHeading = drive.imu.getAngularOrientation().firstAngle;
+                //drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
+                //drive.setPoseEstimate(sensorPose());
 
                 drive.wobble.setPosition(wobbleDown);
                 drive.gripper.setPosition(gripperOpen);
@@ -190,15 +224,15 @@ public class AllPathsVisionDistance extends LinearOpMode {
                 drive.followTrajectory(wobble2);
 
                 pipeline.initDetect = false;
-                drive.setPoseEstimate(sensorPose());
 
                 sleep(300);
 
                 double offset = pipeline.offset;
 
+                drive.setPoseEstimate(sensorPose());
                 currentPose = drive.getPoseEstimate();
-                imuHeading = drive.imu.getAngularOrientation().firstAngle;
-                drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY() - offset - 1, imuHeading));
+                //imuHeading = drive.imu.getAngularOrientation().firstAngle;
+                //drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY() - offset - 1, imuHeading));
 
                 Trajectory pickupWobble = drive.trajectoryBuilder(drive.getPoseEstimate())
                         .splineToConstantHeading(new Vector2d(pickup0.getX() + 6, pickup0.getY()), Math.toRadians(180), verySlow)
@@ -206,7 +240,10 @@ public class AllPathsVisionDistance extends LinearOpMode {
                         .build();
                 drive.followTrajectory(pickupWobble);
 
-                drive.setPoseEstimate(sensorPose());
+                //currentPose = drive.getPoseEstimate();
+                //imuHeading = drive.imu.getAngularOrientation().firstAngle;
+                //drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY() + offset + 1, imuHeading));
+                drive.setPoseEstimate(sensorPose()); //Should account for offset, so no need for previous line.
 
                 drive.gripper.setPosition(gripperClosed);
                 sleep(1200);
@@ -216,8 +253,6 @@ public class AllPathsVisionDistance extends LinearOpMode {
                         .lineToLinearHeading(new Pose2d(path0dropoff.getX() - 7, path0dropoff.getY() + 9, 0.0), slow)
                         .build();
                 drive.followTrajectory(dropoff);
-
-                drive.setPoseEstimate(sensorPose());
 
                 drive.wobble.setPosition(wobbleDown);
                 drive.gripper.setPosition(gripperOpen);
@@ -231,14 +266,10 @@ public class AllPathsVisionDistance extends LinearOpMode {
                         .build();
                 drive.followTrajectory(park1);
 
-                drive.setPoseEstimate(sensorPose());
-
                 Trajectory park2 = drive.trajectoryBuilder(drive.getPoseEstimate())
                         .forward(14)
                         .build();
                 drive.followTrajectory(park2);
-
-                drive.setPoseEstimate(sensorPose());
             }
             break;
             case 1: {
@@ -491,32 +522,6 @@ public class AllPathsVisionDistance extends LinearOpMode {
         pipeline.initDetect = true;
     }
 
-    //Currently, this assumes the robot is close to either heading 0 or heading 180, as I don't know how to account for distance sensors seeing the wrong wall.
-    public Pose2d sensorPose() {
-        double imuHeading = drive.imu.getAngularOrientation().firstAngle;
-        Pose2d currentPose = drive.getPoseEstimate();
-        double left = drive.distanceLeft.getDistance(DistanceUnit.INCH);
-        left *= Math.abs(Math.cos(imuHeading));
-        double right = drive.distanceRight.getDistance(DistanceUnit.INCH);
-        right *= Math.abs(Math.cos(imuHeading));
-        double front = drive.distanceForward.getDistance(DistanceUnit.INCH);
-        front *= Math.abs(Math.cos(imuHeading));
-        double back = drive.distanceBack.getDistance(DistanceUnit.INCH);
-        back *= Math.abs(Math.cos(imuHeading));
-
-        double distanceYLeft = Math.abs(imuHeading - Math.PI) < Math.PI / 2 ? right : left;
-        double distanceYRight = Math.abs(imuHeading - Math.PI) < Math.PI / 2 ? left : right;
-        double distanceXFront = Math.abs(imuHeading - Math.PI) < Math.PI / 2 ? back : front;
-        double distanceXBack = Math.abs(imuHeading - Math.PI) < Math.PI / 2 ? front : back;
-
-        double poseX = currentPose.getX(), poseY = currentPose.getY();
-
-        poseY = (distanceYLeft < 100) ? 17 - distanceYLeft : (distanceYRight < 100) ? - 65 + distanceYRight : poseY;
-        poseX = (distanceXFront < 100) ? 17 - distanceXFront : (distanceXBack < 100) ? - 65 + distanceXBack : poseX;
-
-        return new Pose2d(poseX, poseY, imuHeading);
-    }
-
     public void imuTurn(double angle) {
 
         double imuHeading = drive.imu.getAngularOrientation().firstAngle;
@@ -541,7 +546,176 @@ public class AllPathsVisionDistance extends LinearOpMode {
         drive.setMotorPowers(0, 0, 0, 0);
     }
 
-    static class StageSwitchingPipeline extends OpenCvPipeline {
+    public Pose2d sensorPose() {
+        //Do not call this in a situation where distance sensors could hit the same wall
+        //NOTE: DO NOT call repeatedly (aka every loop) or the y position will not update properly (while using odo).
+
+        double imuHeading = drive.imu.getAngularOrientation().firstAngle;
+        double left = drive.leftDist.getDistance(DistanceUnit.INCH);
+        double right = drive.rightDist.getDistance(DistanceUnit.INCH);
+        double front = drive.frontDist.getDistance(DistanceUnit.INCH);
+        double back = drive.backDist.getDistance(DistanceUnit.INCH);
+        System.out.println("Input : " + left);
+        System.out.println("Right input: " + right);
+        System.out.println("Front input : " + front);
+        System.out.println("Back input: " + back);
+        double correctedSideAngle = sensorSideAngle; //Accounts for X vs. Y.
+        double correctedStraightAngle = sensorStrightAngle; //Accounts for X vs. Y.
+        double correctedHeading = imuHeading > 0 ? (imuHeading + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4 : -((Math.abs(imuHeading) + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4); //Correct heading in each quadrant, as a new quadrant switches what wall it should be seeing.
+        left *= (left < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0; //Gets distance from wall as a straight line
+        System.out.println("Distance : " + left);
+        right *= (right < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier * rightDistMult : 0;
+        front *= (front < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0;
+        back *= (back < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0;
+        left += (left > 0) ? sensorSideOffset * Math.abs(Math.cos(correctedSideAngle + correctedHeading)) : 200; //First quadrant, deals with small cosine values
+        System.out.println("Center Distance : " + left);
+        right += (right > 0) ? sensorSideOffset * Math.abs(Math.cos(-correctedSideAngle + correctedHeading)) : 200; //Second quadrant, deals with small cosine values
+        System.out.println("Right : " + right);
+        front += (front > 0) ? sensorStrightOffset * Math.abs(Math.cos(correctedStraightAngle + correctedHeading)) : 200; //First quadrant, deals with small cosine values
+        System.out.println("Front center : " + front);
+        back += (back > 0) ? sensorStrightOffset * Math.abs(Math.cos(-correctedStraightAngle + correctedHeading)) : 200; //Second quadrant, deals with small cosine values
+        System.out.println("Back center: " + back);
+
+        double distanceYLeft = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? left : front) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? right : back); //Switches which distance sensor input corresponds to what actual side relative to robot.
+        System.out.println("Actual dist : " + distanceYLeft);
+        double distanceYRight = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? right : back) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? left : front);
+        System.out.println("Actual right : " + distanceYRight);
+        double distanceXFront = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? front : right) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? back : left);
+        System.out.println("Actual front : " + distanceYRight);
+        double distanceXBack = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? back : left) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? front : right);
+        System.out.println("Actual back : " + distanceYRight);
+
+        Pose2d currentPose = drive.getPoseEstimate();
+        double poseX = currentPose.getX(), poseY = currentPose.getY();
+
+        poseY = (distanceYRight < distanceYLeft) ? - 87 + Math.abs(distanceYRight) : (distanceYLeft < 100) ? 9 - Math.abs(distanceYLeft) : poseY; //Sets up 0 when robot jammed against left wall, grabs smaller of two distances.
+        poseX = (distanceXBack < distanceXFront) ? - 135 + Math.abs(distanceXBack) : (distanceXFront < 100) ? 9 - Math.abs(distanceXFront) : poseX; //Sets up 0 when robot jammed against front wall
+        System.out.println("Pose Y: " + poseY);
+
+        return new Pose2d(poseX, poseY, imuHeading);
+    }
+
+    public void turnToPowershot(int pixel) {
+        while(Math.abs(minX - pixel) > 30) {
+            if(minX == 640) break; //If no value
+            double p = 0.04, f = 0.03;
+            double power = p * (minX - pixel);
+            power += power > 0 ? f : -f;
+            drive.setMotorPowers(power, power, -power, -power);
+        }
+        drive.setMotorPowers(0, 0, 0, 0);
+    }
+
+    static class upperCameraPipeline extends OpenCvPipeline
+    {
+
+        Mat inputMat = new Mat();
+        Mat grayMat = new Mat();
+        Mat interMat = new Mat();
+        Mat outputMat = new Mat();
+        Mat hierarchy = new Mat();
+
+        enum Stage
+        {
+            INPUT,
+            INTER,
+            OUTPUT
+        }
+
+        private upperCameraPipeline.Stage stageToRenderToViewport = upperCameraPipeline.Stage.INTER;
+        private upperCameraPipeline.Stage[] stages = upperCameraPipeline.Stage.values();
+
+        @Override
+        public void onViewportTapped()
+        {
+            /*
+             * Note that this method is invoked from the UI thread
+             * so whatever we do here, we must do quickly.
+             */
+
+            int currentStageNum = stageToRenderToViewport.ordinal();
+
+            int nextStageNum = currentStageNum + 1;
+
+            if(nextStageNum >= stages.length)
+            {
+                nextStageNum = 0;
+            }
+
+            stageToRenderToViewport = stages[nextStageNum];
+        }
+
+        @Override
+        public Mat processFrame(Mat input)
+        {
+            inputMat = input;
+            Mat rota = Imgproc.getRotationMatrix2D(new org.opencv.core.Point(160, 120), rotateAngle,1);
+            Imgproc.warpAffine(inputMat, inputMat, rota, new Size(320,240));
+            Imgproc.cvtColor(inputMat, interMat, Imgproc.COLOR_RGB2YCrCb);
+            Core.extractChannel(interMat, interMat, extract);
+            Imgproc.medianBlur(interMat, interMat, 5);
+            grayMat = interMat.clone();
+            Imgproc.threshold(interMat, interMat, redThresh, 255, Imgproc.THRESH_BINARY);
+            Imgproc.cvtColor(interMat, outputMat, Imgproc.COLOR_GRAY2RGB);
+
+            List<MatOfPoint> contours = new ArrayList<>();
+            Imgproc.findContours(interMat, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+
+            MatOfPoint2f[] contoursPoly  = new MatOfPoint2f[contours.size()];
+            Rect[] boundRect = new Rect[contours.size()];
+            org.opencv.core.Point[] centers = new org.opencv.core.Point[contours.size()];
+            float[][] radius = new float[contours.size()][1];
+            for (int i = 0; i < contours.size(); i++) {
+                contoursPoly[i] = new MatOfPoint2f();
+                Imgproc.approxPolyDP(new MatOfPoint2f(contours.get(i).toArray()), contoursPoly[i], 3, true);
+                boundRect[i] = Imgproc.boundingRect(new MatOfPoint(contoursPoly[i].toArray()));
+                centers[i] = new org.opencv.core.Point();
+                Imgproc.minEnclosingCircle(contoursPoly[i], centers[i], radius[i]);
+            }
+            List<MatOfPoint> contoursPolyList = new ArrayList<>(contoursPoly.length);
+            for (MatOfPoint2f poly : contoursPoly) {
+                contoursPolyList.add(new MatOfPoint(poly.toArray()));
+            }
+            for (int i = 0; i < contours.size(); i++) {
+                Imgproc.drawContours(outputMat, contoursPolyList, i, new Scalar(0,255,0), 3);
+                Imgproc.rectangle(outputMat, boundRect[i].tl(), boundRect[i].br(), new Scalar(255,0,0), 2);
+                Imgproc.line(outputMat, new org.opencv.core.Point((boundRect[contours.size()-1].tl().x+boundRect[contours.size()-1].br().x)/2, 0), new org.opencv.core.Point((boundRect[contours.size()-1].tl().x+boundRect[contours.size()-1].br().x)/2, 480), new Scalar(0,0,255), 3);
+                //Imgproc.putText(outputMat, "Points: " + contoursPoly[i].rows(), boundRect[i].tl(), Imgproc.FONT_HERSHEY_DUPLEX, 0.7, new Scalar(255,0,0));
+            }
+
+            upperCameraCenter = contours.size() >= 1 ? (int) (boundRect[contours.size()-1].tl().x+boundRect[contours.size()-1].br().x) : 0;
+
+            minX = 640;
+            for(int i = 0; i<contours.size()-1; i++){
+                if(boundRect[i].tl().x < minX){
+                    minX = boundRect[i].tl().x;
+                }
+            }
+            Imgproc.line(outputMat, new Point(minX, 0), new Point(minX, 480),new Scalar(255,0,255), 2);
+            Imgproc.putText(outputMat, "Powershot Corner: " + minX, new Point(minX, 100), Imgproc.FONT_HERSHEY_DUPLEX, 0.3, new Scalar(255,255,255));
+            //RIGHT POWERSHOT == 70 @ 1600, CENTER == 110 @ 1580, LEFT == 147 @ 1600
+
+            if(contours.size() >= 1) Imgproc.putText(outputMat, "Center: " + (boundRect[contours.size()-1].tl().x+boundRect[contours.size()-1].br().x), boundRect[contours.size() - 1].tl(), Imgproc.FONT_HERSHEY_DUPLEX, 0.7, new Scalar(255, 255, 255));
+
+            switch (stageToRenderToViewport){
+                case INPUT:
+                {
+                    return inputMat;
+                }
+                case INTER:
+                {
+                    return outputMat;
+                }
+                default:
+                {
+                    return input;
+                }
+            }
+        }
+
+    }
+
+    static class lowerCameraPipeline extends OpenCvPipeline {
 
         public double middle = -1, offset = 0;
 
@@ -561,8 +735,8 @@ public class AllPathsVisionDistance extends LinearOpMode {
             MEDIUMRARE
         }
 
-        private Stage stageToRenderToViewport = Stage.RAW;
-        private Stage[] stages = Stage.values();
+        private lowerCameraPipeline.Stage stageToRenderToViewport = lowerCameraPipeline.Stage.RAW;
+        private lowerCameraPipeline.Stage[] stages = lowerCameraPipeline.Stage.values();
 
         @Override
         public void onViewportTapped()

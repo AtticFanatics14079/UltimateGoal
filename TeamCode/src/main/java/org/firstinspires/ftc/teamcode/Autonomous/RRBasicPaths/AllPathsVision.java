@@ -66,6 +66,8 @@ public class AllPathsVision extends LinearOpMode {
 
     public static double wobbleUp = 0.17, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, loaded = 0.48, reload = 0.14, path5highgoalX = -36, path5highgoalY = -40, offsetDivisor = 50, pshot1 = 1, pshot2 = 4.7, pshot3 = 8.3;
 
+    public static double multiplier = 0.97, sensorSideOffset = 8.20, sensorSideAngle = 0.66, sensorStrightOffset = 8, sensorStrightAngle = 0, rightDistMult = 1.33;
+
     private Pose2d powerShotBackShoot = new Pose2d(-39.0,-35.0, Math.toRadians(pshot1)); //Is actually 1
     private Pose2d ingestStack = new Pose2d(-16.0, -35.0, Math.toRadians(0));
 
@@ -159,7 +161,7 @@ public class AllPathsVision extends LinearOpMode {
         drive.shooter.setVelocity(0);
 
         double imuHeading = drive.imu.getAngularOrientation().firstAngle;
-        Pose2d currentPose = drive.getPoseEstimate();
+        Pose2d currentPose = sensorPose();
 
         drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
 
@@ -171,9 +173,9 @@ public class AllPathsVision extends LinearOpMode {
                 drive.ingester.setPower(0);
 
                 imuTurn(0);
-                currentPose = drive.getPoseEstimate();
-                imuHeading = drive.imu.getAngularOrientation().firstAngle;
-                drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
+                drive.setPoseEstimate(sensorPose());
+                //imuHeading = drive.imu.getAngularOrientation().firstAngle;
+                //drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
 
                 Trajectory wobble1 = drive.trajectoryBuilder(drive.getPoseEstimate())
                         .strafeTo(new Vector2d(path0dropoff.getX(), path0dropoff.getY()), slow)
@@ -182,9 +184,10 @@ public class AllPathsVision extends LinearOpMode {
 
                 drive.loader.setPosition(reload);
 
-                currentPose = drive.getPoseEstimate();
-                imuHeading = drive.imu.getAngularOrientation().firstAngle;
-                drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
+                //currentPose = drive.getPoseEstimate();
+                //imuHeading = drive.imu.getAngularOrientation().firstAngle;
+                //drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
+                //drive.setPoseEstimate(sensorPose());
 
                 drive.wobble.setPosition(wobbleDown);
                 drive.gripper.setPosition(gripperOpen);
@@ -201,8 +204,9 @@ public class AllPathsVision extends LinearOpMode {
 
                 double offset = pipeline.offset;
 
-                currentPose = drive.getPoseEstimate();
-                imuHeading = drive.imu.getAngularOrientation().firstAngle;
+                //currentPose = drive.getPoseEstimate();
+                //imuHeading = drive.imu.getAngularOrientation().firstAngle;
+                drive.setPoseEstimate(sensorPose());
                 drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY() - offset - 1, imuHeading));
 
                 Trajectory pickupWobble = drive.trajectoryBuilder(drive.getPoseEstimate())
@@ -211,9 +215,10 @@ public class AllPathsVision extends LinearOpMode {
                         .build();
                 drive.followTrajectory(pickupWobble);
 
-                currentPose = drive.getPoseEstimate();
-                imuHeading = drive.imu.getAngularOrientation().firstAngle;
-                drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY() + offset + 1, imuHeading));
+                //currentPose = drive.getPoseEstimate();
+                //imuHeading = drive.imu.getAngularOrientation().firstAngle;
+                //drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY() + offset + 1, imuHeading));
+                drive.setPoseEstimate(sensorPose()); //Should account for offset, so no need for previous line.
 
                 drive.gripper.setPosition(gripperClosed);
                 sleep(1200);
@@ -514,6 +519,55 @@ public class AllPathsVision extends LinearOpMode {
             telemetry.update();
         }
         drive.setMotorPowers(0, 0, 0, 0);
+    }
+
+    public Pose2d sensorPose() {
+        //Do not call this in a situation where distance sensors could hit the same wall
+        //NOTE: DO NOT call repeatedly (aka every loop) or the y position will not update properly (while using odo).
+
+        double imuHeading = drive.imu.getAngularOrientation().firstAngle;
+        double left = drive.leftDist.getDistance(DistanceUnit.INCH);
+        double right = drive.rightDist.getDistance(DistanceUnit.INCH);
+        double front = drive.frontDist.getDistance(DistanceUnit.INCH);
+        double back = drive.backDist.getDistance(DistanceUnit.INCH);
+        System.out.println("Input : " + left);
+        System.out.println("Right input: " + right);
+        System.out.println("Front input : " + front);
+        System.out.println("Back input: " + back);
+        double correctedSideAngle = sensorSideAngle; //Accounts for X vs. Y.
+        double correctedStraightAngle = sensorStrightAngle; //Accounts for X vs. Y.
+        double correctedHeading = imuHeading > 0 ? (imuHeading + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4 : -((Math.abs(imuHeading) + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4); //Correct heading in each quadrant, as a new quadrant switches what wall it should be seeing.
+        left *= (left < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0; //Gets distance from wall as a straight line
+        System.out.println("Distance : " + left);
+        right *= (right < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier * rightDistMult : 0;
+        front *= (front < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0;
+        back *= (back < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0;
+        left += (left > 0) ? sensorSideOffset * Math.abs(Math.cos(correctedSideAngle + correctedHeading)) : 200; //First quadrant, deals with small cosine values
+        System.out.println("Center Distance : " + left);
+        right += (right > 0) ? sensorSideOffset * Math.abs(Math.cos(-correctedSideAngle + correctedHeading)) : 200; //Second quadrant, deals with small cosine values
+        System.out.println("Right : " + right);
+        front += (front > 0) ? sensorStrightOffset * Math.abs(Math.cos(correctedStraightAngle + correctedHeading)) : 200; //First quadrant, deals with small cosine values
+        System.out.println("Front center : " + front);
+        back += (back > 0) ? sensorStrightOffset * Math.abs(Math.cos(-correctedStraightAngle + correctedHeading)) : 200; //Second quadrant, deals with small cosine values
+        System.out.println("Back center: " + back);
+
+        double distanceYLeft = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? left : front) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? right : back); //Switches which distance sensor input corresponds to what actual side relative to robot.
+        System.out.println("Actual dist : " + distanceYLeft);
+        double distanceYRight = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? right : back) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? left : front);
+        System.out.println("Actual right : " + distanceYRight);
+        double distanceXFront = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? front : right) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? back : left);
+        System.out.println("Actual front : " + distanceYRight);
+        double distanceXBack = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? back : left) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? front : right);
+        System.out.println("Actual back : " + distanceYRight);
+
+        Pose2d currentPose = drive.getPoseEstimate();
+        double poseX = currentPose.getX(), poseY = currentPose.getY();
+
+        poseY = (distanceYRight < distanceYLeft) ? - 87 + Math.abs(distanceYRight) : (distanceYLeft < 100) ? 9 - Math.abs(distanceYLeft) : poseY; //Sets up 0 when robot jammed against left wall, grabs smaller of two distances.
+        poseX = (distanceXBack < distanceXFront) ? - 135 + Math.abs(distanceXBack) : (distanceXFront < 100) ? 9 - Math.abs(distanceXFront) : poseX; //Sets up 0 when robot jammed against front wall
+        System.out.println("Pose Y: " + poseY);
+
+        return new Pose2d(poseX, poseY, imuHeading);
     }
 
     static class StageSwitchingPipeline extends OpenCvPipeline {
