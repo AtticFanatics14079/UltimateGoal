@@ -77,7 +77,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     ValueStorage vals = new ValueStorage();
     HardwareThread hardware;
     Thread returnToShoot, powerShots, shootMacro, grabWobble, dropWobble, lowerWobble;
-    public static double wobbleUp = 0.22, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, load = 0.5, reload = 0.13, shooterSpeed = -1640, multiplier = 0.97, sensorSideOffset = 8.20, sensorSideAngle = 0.66, sensorStrightOffset = 8, sensorStrightAngle = 0, rightDistMult = 1.33; //Sheets had 1.15 as multiplier, seeing if just my house that's off
+    public static double wobbleUp = 0.22, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, load = 0.5, reload = 0.1, shooterSpeed = -1640, multiplier = 0.97, sensorSideOffset = 8.20, sensorSideAngle = 0.66, sensorStrightOffset = 8, sensorStrightAngle = 0, rightDistMult = 1; //Sheets had 1.15 as multiplier, seeing if just my house that's off
 
     public static double highGoalX = 0, highGoalY = 0, powerShotX = 0, powerShotY = 0, wallDistance = 18, distanceLeft = 21, distanceRight = 15;
 
@@ -154,17 +154,17 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             shooterFast = !shooterFast;
         }
         else if(pressedShooter && !gamepad2.a) pressedShooter = false;
-        if(gamepad1.left_stick_button) {
+        if(gamepad1.right_stick_button) {
             config.setPoseEstimate(sensorPose());
             Pose2d currentPose = config.getPoseEstimate();
             System.out.println("Current pose: " + currentPose);
             System.out.println("Angle: " + Math.atan((currentPose.getY() + 64) / currentPose.getX()));
             double dist = Math.sqrt(Math.pow((currentPose.getY() + 60), 2) + Math.pow(currentPose.getX(), 2));
             System.out.println("Distance: " + dist);
-            if(dist < 96) shooterSpeed = -1600;
-            else if(dist < 105) shooterSpeed = -1620;
-            else if(dist < 112) shooterSpeed = -1640;
-            else shooterSpeed = -1660;
+            if(dist < 96) shooterSpeed = -1580;
+            else if(dist < 105) shooterSpeed = -1600;
+            else if(dist < 112) shooterSpeed = -1620;
+            else shooterSpeed = -1640;
             telemetry.addData("Current Pose: ", currentPose);
             telemetry.addData("Angle: ", Math.atan((currentPose.getY() + 64) / currentPose.getX()));
             telemetry.update();
@@ -179,7 +179,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             config.imu.resetIMU();
         }
         if(gamepad2.left_stick_y > 0.5) shooterSpeed = -1540;
-        else if(gamepad2.left_stick_y < -0.5) shooterSpeed = -1640;
+        else if(gamepad2.left_stick_y < -0.5) shooterSpeed = -1620;
         config.shooter.set(shooterFast ? shooterSpeed : 0);
         //if(gamepad1.start) { //Will be changed later
             //config.imu.resetIMU();
@@ -286,28 +286,6 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         config.preIngest.set(intakeSpeed);
 
         System.out.println("Time 2: " + time.milliseconds());
-
-        if(gamepad1.right_stick_button) {
-            config.imu.retrievingHardware(true);
-            sleep(40);
-            double imuHeading = config.imu.get()[0];
-            while((Math.abs(imuHeading)>Math.toRadians(0.5)) && !isStopRequested() && opModeIsActive()){
-                config.update();
-                imuHeading = config.imu.get()[0];
-                if(imuHeading < 0) imuHeading += 2 * Math.PI;
-                //currentPose = drive.getPoseEstimate();
-                double p = 0.35, f = 0.04;
-                int invert = ((2 * Math.PI - imuHeading)) % (2 * Math.PI) > Math.PI ? 1 : -1;
-                double power = invert * p * (Math.abs(imuHeading) > Math.PI ? (Math.abs((imuHeading > Math.PI ? 2 * Math.PI : 0) - imuHeading) + Math.abs((0 > Math.PI ? 2 * Math.PI : 0) - 0)) : Math.abs(imuHeading - 0)); //Long line, but the gist is if you're calculating speed in the wrong direction, git gud.
-                power += (power > 0 ? f : -f);
-                drive.setPower(0, 0, -power);
-            }
-            drive.setPower(0, 0, 0);
-            //currentPose = config.getPoseEstimate();
-            //config.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
-            config.imu.retrievingHardware(false);
-        }
-        System.out.println("Time 3: " + time.milliseconds());
     }
 
     public void configureMacros() {
