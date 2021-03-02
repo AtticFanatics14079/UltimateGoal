@@ -66,15 +66,15 @@ public class AllPathsVisionDistance extends LinearOpMode {
     private Pose2d midwayShoot = new Pose2d(-101.0, -33.0);
     private Pose2d powerShotShoot = new Pose2d(-87.0, -39.0);
     private Pose2d highGoalShoot = new Pose2d(-79.0, -65.0);
-    private Pose2d path4dropoff = new Pose2d(-20.0, -67.0);
-    private Pose2d pickup4 = new Pose2d(-121, -68.5, 0.0);
+    private Pose2d path4dropoff = new Pose2d(-20.0, -69.0);
+    private Pose2d pickup4 = new Pose2d(-120, -68.5, 0.0);
     private Pose2d path1dropoff = new Pose2d(-48.0, -50.0);
-    private Pose2d pickup1 = new Pose2d(-121.5, -68.5); //Was x = -38.5, y = -40 before moving to back of tape
+    private Pose2d pickup1 = new Pose2d(-121, -68.5); //Was x = -38.5, y = -40 before moving to back of tape
     private Pose2d path0dropoff = new Pose2d(-65.0, -71.0);
     private Pose2d pickup0 = new Pose2d(-120, -68.5);
     private Pose2d endLocation = new Pose2d(-58.0, -59.0, 0.0);
 
-    public static double wobbleUp = 0.17, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, loaded = 0.48, reload = 0.14, path5highgoalX = -36, path5highgoalY = -40, offsetDivisor = 50, pshot1 = 1, pshot2 = 4.7, pshot3 = 8.3;
+    public static double wobbleUp = 0.17, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, loaded = 0.48, reload = 0.14, path5highgoalX = -80, path5highgoalY = -60, offsetDivisor = 50, pshot1 = 5, pshot2 = 4.7, pshot3 = 8.3;
 
     public static double multiplier = 0.97, sensorSideOffset = 8.20, sensorSideAngle = 0.66, sensorStrightOffset = 8, sensorStrightAngle = 0, rightDistMult = 1;
 
@@ -96,8 +96,8 @@ public class AllPathsVisionDistance extends LinearOpMode {
     public static boolean properSetup = false;
     private static double color1, color2;
     public static int upperCameraCenter = 0;
-    public static double rotateAngle = 195;
-    public static int redThresh = 137;
+    public static double rotateAngle = 180;
+    public static int redThresh = 136;
 
     public static int extract = 1;
     public static int row = 320;
@@ -160,23 +160,23 @@ public class AllPathsVisionDistance extends LinearOpMode {
                     .build();
             drive.followTrajectory(goToShoot);
 
-            //stackSize2 = -1;
+            stackSize2 = 4;
 
-            turnToPowershot(66);
+            turnToPowershot(10);
 
             drive.loader.setPosition(loaded);
             sleep(600);
             drive.loader.setPosition(reload);
             drive.shooter.setVelocity(-1560);
             //imuTurn(Math.toRadians(pshot2));
-            turnToPowershot(110);
+            turnToPowershot(40);
             sleep(400);
             drive.loader.setPosition(loaded);
             sleep(600);
             drive.loader.setPosition(reload);
             drive.shooter.setVelocity(-1560);
             //imuTurn(Math.toRadians(pshot3));
-            turnToPowershot(148);
+            turnToPowershot(70);
             sleep(400);
             drive.loader.setPosition(loaded);
             sleep(600);
@@ -372,7 +372,7 @@ public class AllPathsVisionDistance extends LinearOpMode {
 
                     Trajectory wobble1 = drive.trajectoryBuilder(drive.getPoseEstimate())
                             .splineTo(ingestStack.vec(), ingestStack.getHeading())
-                            .splineToConstantHeading(new Vector2d(path4dropoff.getX() - 48, path4dropoff.getY() - 6), Math.toRadians(0))
+                            .splineToConstantHeading(new Vector2d(path4dropoff.getX() - 48, path4dropoff.getY() - 1), Math.toRadians(0))
                             .addDisplacementMarker(() -> {
                                 drive.preIngest.setPower(1);
                             })
@@ -427,7 +427,7 @@ public class AllPathsVisionDistance extends LinearOpMode {
                     sleep(200);
 
                     Trajectory shootdrop = drive.trajectoryBuilder(drive.getPoseEstimate())
-                            .lineToLinearHeading(new Pose2d(path5highgoalX, path5highgoalY, Math.toRadians(-9)))
+                            .lineToLinearHeading(new Pose2d(path5highgoalX, path5highgoalY, Math.toRadians(0)))
                             .build();
                     drive.followTrajectory(shootdrop);
 
@@ -459,7 +459,7 @@ public class AllPathsVisionDistance extends LinearOpMode {
                     Trajectory drop = drive.trajectoryBuilder(drive.getPoseEstimate())
                             .splineTo(new Vector2d(path4dropoff.getX() - 36, path4dropoff.getY() + 16), 0, omegaFast)
                             .splineTo(new Vector2d(path4dropoff.getX() - 24, path4dropoff.getY() + 16), 0, omegaFast)
-                            .splineTo(new Vector2d(path4dropoff.getX(), path4dropoff.getY() + 10), 0, omegaFast)
+                            .splineTo(new Vector2d(path4dropoff.getX() - 6, path4dropoff.getY() + 6), 0, omegaFast)
                             .build();
                     drive.followTrajectory(drop);
 
