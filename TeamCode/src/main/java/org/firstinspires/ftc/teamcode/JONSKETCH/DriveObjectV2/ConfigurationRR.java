@@ -199,7 +199,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         motors.get(2).reverse(true);
         motors.get(3).reverse(true);
 
-        preIngest.reverse(true);
+        //preIngest.reverse(true);
 
         shooter.reverse(true);
 
