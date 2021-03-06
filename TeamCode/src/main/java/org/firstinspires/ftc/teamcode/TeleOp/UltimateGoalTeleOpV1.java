@@ -78,7 +78,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     ValueStorage vals = new ValueStorage();
     HardwareThread hardware;
     Thread returnToShoot, powerShots, shootMacro, grabWobble, dropWobble, lowerWobble;
-    public static double wobbleUp = 0.22, wobbleDown = 0.65, wobbleMid = 0.45, gripperOpen = 0, gripperClosed = 1, load = 0.5, reload = 0.1, shooterSpeed = -1640, multiplier = 0.97, sensorSideOffset = 8.20, sensorSideAngle = 0.66, sensorStrightOffset = 8, sensorStrightAngle = 0, rightDistMult = 1; //Sheets had 1.15 as multiplier, seeing if just my house that's off
+    public static double wobbleUp = 0.4, wobbleDown = 0.87, wobbleMid = 0.67, gripperOpen = 0, gripperClosed = 1, load = 0.5, reload = 0.1, shooterSpeed = -1640, multiplier = 0.97, sensorSideOffset = 8.20, sensorSideAngle = 0.66, sensorStrightOffset = 8, sensorStrightAngle = 0, rightDistMult = 1; //Sheets had 1.15 as multiplier, seeing if just my house that's off
 
     public static double highGoalX = 0, highGoalY = 0, powerShotX = 0, powerShotY = 0, wallDistance = 18, distanceLeft = 21, distanceRight = 15;
 
@@ -96,7 +96,6 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         try{
-            //leSense = hardwareMap.get(DistanceSensor.class, "distanceLeft");
             config = new ConfigurationRR(hardwareMap);
             hardware = new HardwareThread(hardwareMap, vals, config);
             hardware.start();
@@ -107,9 +106,6 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             webcam2.openCameraDevice();//open camera
             webcam2.setPipeline(new upperCameraPipeline());//different stages
             webcam2.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);//display on RC
-            //width, height
-            //width = height in this case, because camera is in portrait mode.
-            //config.Configure(hardwareMap, vals);
             drive = new DriveObjectRobotMovement(config);
             for(DEncoderlessMotor d : config.motors) d.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             configureMacros();
@@ -136,20 +132,8 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         System.out.println("Input loop: " + time.milliseconds());
         config.update();
         config.imu.retrievingHardware(true);
-        //config.leftDist.pingSensor();
-        //config.rightDist.pingSensor();
-        //config.frontDist.pingSensor();
-        config.backDist.pingSensor();
-        System.out.println(config.backDist.getDistance(DistanceUnit.INCH));
-        //config.setPoseEstimate(sensorPose());
         telemetry.addData("Pose: ", config.getPoseEstimate());
         double head = config.imu.get()[0];
-        //telemetry.addData("Heading: ", config.imu.get()[0]);
-        //double dist = config.leftDist.getDistance(DistanceUnit.MM);
-        //dist *= multiplier; //(dist > 800) ? multiplier : 1;
-        //dist *= Math.cos(head);
-        //telemetry.addData("Center distance: ", dist / 25.4 + Math.cos(head) * sensorXOffset + Math.sin(sensorYOffset));
-        //telemetry.addData("Distance: ", dist / 25.4);
         telemetry.update();
         if(gamepad2.a && !pressedShooter) {
             pressedShooter = true;
@@ -170,9 +154,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             telemetry.addData("Current Pose: ", currentPose);
             telemetry.addData("Angle: ", Math.atan((currentPose.getY() + 64) / currentPose.getX()));
             telemetry.update();
-            //imuTurn();
-            //imuTurnAngle(Math.PI);
-            imuTurnAngle(Math.atan((currentPose.getY() + 64) / currentPose.getX())); //Testing 60, there was a consistent trend of turning too far left. May need to later either change the target or add a constant turn to better match camera.
+            imuTurn(Math.atan((currentPose.getY() + 64) / currentPose.getX())); //Testing 60, there was a consistent trend of turning too far left. May need to later either change the target or add a constant turn to better match camera.
             sleep(300);
             turnUntilHighGoal((int)(100 / dist * 30));
         }
@@ -183,80 +165,23 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         if(gamepad2.left_stick_y > 0.5) shooterSpeed = -1540;
         else if(gamepad2.left_stick_y < -0.5) shooterSpeed = -1620;
         config.shooter.set(shooterFast ? shooterSpeed : 0);
-        //if(gamepad1.start) { //Will be changed later
-            //config.imu.resetIMU();
-            //if(time.seconds() < 5) config.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), 0.0));
-            //config.setPoseEstimate(new Pose2d(-63, -63, Math.PI)); //In corner, AKA after dropping off wobble goal.
-        //}
         if(gamepad1.start && !shootMacro.isAlive()) {
             returnToShoot.start();
-            //config.setPoseEstimate(config.getPoseEstimate());
-            /*Trajectory goToShoot = config.trajectoryBuilder(config.getPoseEstimate())
-                    .lineToLinearHeading(new Pose2d(highGoalShoot.getX(), highGoalShoot.getY(), header), new DriveConstraints(
-                            45.0, 30.0, 0.0,
-                            Math.toRadians(120.0), Math.toRadians(120.0), 0.0))
-                    .build();
-            config.followTrajectory(goToShoot);
-             */
             while(returnToShoot.isAlive());
         }
         else if(gamepad1.a && !shootMacro.isAlive() && config.ingester.get()[0] >= shooterSpeed - 500) { //Just making sure we don't shoot until after shooter reaches speed, may add this check to the macro.
             shootMacro.start();
-            /*drive.runWithEncoder(false);
-            config.motors.get(0).reverse(false);
-            config.motors.get(1).reverse(false);
-            config.motors.get(2).reverse(true);
-            config.motors.get(3).reverse(true);
-            Pose2d currentPose = config.getPoseEstimate();
-            drive.updatePose(new Point(currentPose.getX(), currentPose.getY()), currentPose.getHeading());
-            while((Math.hypot(Math.abs(highGoalShoot.getX()-currentPose.getX()),Math.abs(highGoalShoot.getY()-currentPose.getY()))>0.75)&&!isStopRequested()){
-                config.update();
-                currentPose = config.getPoseEstimate();
-                drive.updatePose(new Point(currentPose.getX(), currentPose.getY()), currentPose.getHeading());
-                telemetry.addData("Position: ", currentPose);
-                telemetry.addData("Pose: ", drive.robotPosition + " " + drive.worldAngle);
-                telemetry.update();
-                drive.goToPosition(highGoalShoot.getX(),highGoalShoot.getY(),0.8,270,0.7);
-            }
-            drive.setPower(0,0,0);
-            sleep(200);
-            double imuHeading = config.imu.get()[0];
-            while((Math.abs(imuHeading)>Math.toRadians(2)) && !isStopRequested()){
-                config.update();
-                imuHeading = config.imu.get()[0];
-                int invert = imuHeading > 180 ? -1 : 1;
-                double p = 0.2, f = 0.15;
-                drive.setPower(0,0, invert * (f+(p*Math.abs(imuHeading))));
-            }
-            drive.runWithEncoder(true);
-            config.motors.get(0).reverse(true);
-            config.motors.get(1).reverse(true);
-            config.motors.get(2).reverse(false);
-            config.motors.get(3).reverse(false);
-             */
         }
         else if(gamepad1.back) {
-            //config.setPoseEstimate(config.getPoseEstimate());
-            //config.turn(Math.toRadians(12));
             powerShots.start();
             while(powerShots.isAlive());
         }
         System.out.println("Time 1: " + time.milliseconds());
         double speedMultiplier = -1;
         if(gamepad1.left_bumper) speedMultiplier = -0.2;
-        //Pose2d currentPose = config.getPoseEstimate();
-        //double arctan = Math.atan(currentPose.getY() / currentPose.getX());
-        //int inverse = ((2 * Math.PI - head) + arctan) % (2 * Math.PI) > Math.PI ? 1 : -1;
-        //double angPower = -0.4 * inverse * ((Math.abs(head - arctan)) > Math.PI ? (Math.abs((head > Math.PI ? 2 * Math.PI : 0) - head) + Math.abs((arctan > Math.PI ? 2 * Math.PI : 0) - arctan)) : Math.abs(head - arctan)); //Long line, but the gist is if you're calculating speed in the wrong direction, git gud.
-        //angPower *= (Math.abs(arctan - head) < 1) ? 0 : 1;
-        //telemetry.addData("Ang power: ", angPower);
-        //telemetry.update();
-        //setPower(multiplier * gamepad1.left_stick_x, multiplier * gamepad1.left_stick_y, multiplier * gamepad1.right_stick_x);
         if(gamepad1.right_bumper) setPower(speedMultiplier * (gamepad1.left_stick_x * Math.cos(head) + gamepad1.left_stick_y * Math.sin(head)), speedMultiplier * (gamepad1.left_stick_x * Math.sin(head) + gamepad1.left_stick_y * Math.cos(head)), -speedMultiplier * gamepad1.right_stick_x); //Should be field-centric
         else setPower(speedMultiplier * gamepad1.left_stick_x, speedMultiplier * gamepad1.left_stick_y, -speedMultiplier * gamepad1.right_stick_x);
         if(!pressedOdoAdjust && (gamepad2.dpad_left || gamepad2.dpad_right || gamepad2.dpad_up || gamepad2.dpad_down)) {
-            //currentPose = config.getPoseEstimate();
-            //config.setPoseEstimate(new Pose2d(currentPose.getX() + (gamepad2.dpad_up ? -2 : (gamepad2.dpad_down ? 2 : 0)), currentPose.getY() + (gamepad2.dpad_left ? -2 : (gamepad2.dpad_right ? 2 : 0)), currentPose.getHeading()));
             pressedOdoAdjust = true;
         }
         else if(pressedOdoAdjust && !(gamepad2.dpad_left || gamepad2.dpad_right || gamepad2.dpad_up || gamepad2.dpad_down)) pressedOdoAdjust = false;
@@ -286,43 +211,17 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         else if(gamepad2.left_stick_button) intakeSpeed = 1;
         config.ingester.set(intakeSpeed);
         config.preIngest.set(-intakeSpeed);
-
-        System.out.println("Time 2: " + time.milliseconds());
     }
 
     public void configureMacros() {
-        /*Sequence returnToHighGoal = new Sequence(() -> {
-            config.setPoseEstimate(config.getPoseEstimate());
-            Trajectory goToShoot = config.trajectoryBuilder(config.getPoseEstimate())
-                    .lineToLinearHeading(new Pose2d(highGoalShoot.getX(), highGoalShoot.getY(), header), new DriveConstraints(
-                            45.0, 30.0, 0.0,
-                            Math.toRadians(120.0), Math.toRadians(120.0), 0.0))
-                    .build();
-            config.followTrajectory(goToShoot);
-            return null;
-        });
-         */
-        Sequence returnToHighGoal = new Sequence(() -> {
-            //imuTurn();
-            //Pose2d currentPose = config.getPoseEstimate();
-            //config.setPoseEstimate(currentPose.getX(), leSense.getDistance(DistanceUnit.INCH));
-            roadRunnerToPosition(highGoalShoot);
-            highGoalWallAdjust();
-            return null;
-        });
         Sequence returnToHighGoalDistance = new Sequence(() -> {
-            //Pose2d currentPose = config.getPoseEstimate();
             config.setPoseEstimate(sensorPose());
             System.out.println("Pose: " + config.getPoseEstimate());
             config.shooter.set(-1640);
             roadRunnerToPosition(new Pose2d(-90, -62));
-            imuTurn();
+            imuTurn(0);
             config.setPoseEstimate(sensorPose());
             turnUntilHighGoal(30);
-            //config.rightDist.pingSensor();
-            //config.leftDist.pingSensor();
-            //sleep(80);
-            //config.setPoseEstimate(sensorPoseTwoSensor());
             return null;
         });
         Sequence tripleShoot = new Sequence(() -> {
@@ -352,23 +251,12 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         });
         shootMacro = new Thread(shootThrice);
 
-        /*Sequence returnToPowerShot = new Sequence(() -> {
-            config.setPoseEstimate(config.getPoseEstimate());
-            Trajectory goToShoot = config.trajectoryBuilder(config.getPoseEstimate())
-                    .lineToLinearHeading(powerShotShoot, new DriveConstraints(
-                            45.0, 30.0, 0.0,
-                            Math.toRadians(120.0), Math.toRadians(120.0), 0.0))
-                    .build();
-            config.followTrajectory(goToShoot);
-            return null;
-        });
-         */
         Sequence returnToPowerShot = new Sequence(() -> {
             config.setPoseEstimate(sensorPose());
             config.shooter.set(-1520);
             roadRunnerToPositionSlow(new Pose2d(-72, -30));
             config.setPoseEstimate(sensorPose());
-            imuTurnAngle(Math.toRadians(-10));
+            imuTurn(Math.toRadians(-10));
             sleep(200);
             turnToPowershot(pshotRight);
             return null;
@@ -376,7 +264,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         Sequence pivotShoot = new Sequence(() -> {
             sleep(600);
             shootOnce();
-            imuTurnAngle(Math.toRadians(2));
+            imuTurn(Math.toRadians(2));
             sleep(600);
             turnToPowershot(pshotMid);
             shootOnce();
@@ -414,61 +302,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         lowerWobble = new Thread(lowerToGrab);
     }
 
-    public void purePursuitToPosition(Pose2d targetPose, double speed) {
-        //drive.runWithEncoder(false);
-        config.motors.get(0).reverse(false);
-        config.motors.get(1).reverse(false);
-        config.motors.get(2).reverse(true);
-        config.motors.get(3).reverse(true);
-        Pose2d currentPose = config.getPoseEstimate();
-        drive.updatePose(new Point(currentPose.getX(), currentPose.getY()), currentPose.getHeading());
-        while((Math.hypot(Math.abs(targetPose.getX()-currentPose.getX()),Math.abs(targetPose.getY()-currentPose.getY()))>0.5)&&!isStopRequested()){
-            config.update();
-            currentPose = config.getPoseEstimate();
-            drive.updatePose(new Point(currentPose.getX(), currentPose.getY()),currentPose.getHeading());
-            //t.addData("Current Position (Odo): ", currentPose);
-            //t.addData("Target Point: ", targetPose);
-            //t.update();
-            drive.goToPosition(targetPose.getX(),targetPose.getY(),speed,90,0.3);
-        }
-        drive.setPower(0,0,0);
-        sleep(500);
-        if(isStopRequested()) return;
-        config.imu.retrievingHardware(true);
-        sleep(200);
-        double imuHeading = config.imu.get()[0];
-        while((Math.abs(imuHeading - targetPose.getHeading())>Math.toRadians(1)) && !isStopRequested() && opModeIsActive()){
-            config.update();
-            imuHeading = config.imu.get()[0];
-            if(imuHeading < 0) imuHeading += 2 * Math.PI;
-            //currentPose = drive.getPoseEstimate();
-            double p = 0.3, f = 0.07;
-            int invert = (targetPose.getHeading() + (2 * Math.PI - imuHeading)) % (2 * Math.PI) > Math.PI ? 1 : -1;
-            double power = invert * p * (Math.abs(imuHeading - targetPose.getHeading()) > Math.PI ? (Math.abs((imuHeading > Math.PI ? 2 * Math.PI : 0) - imuHeading) + Math.abs((targetPose.getHeading() > Math.PI ? 2 * Math.PI : 0) - targetPose.getHeading())) : Math.abs(imuHeading - targetPose.getHeading())); //Long line, but the gist is if you're calculating speed in the wrong direction, git gud.
-            power += (power > 0 ? f : -f);
-            drive.setPower(0, 0, power);
-        }
-        if(isStopRequested()) return;
-        config.imu.retrievingHardware(false);
-        double distance = leSense.getDistance(DistanceUnit.INCH);
-        currentPose = config.getPoseEstimate();
-        if(distance > distanceLeft || distance < distanceRight) {
-            Trajectory traj = config.trajectoryBuilder(currentPose)
-                    .strafeTo(new Vector2d(currentPose.getX(), currentPose.getY() - distance + 20))
-                    .build();
-            config.followTrajectory(traj);
-        }
-        if(isStopRequested()) return;
-        drive.setPower(0, 0, 0);
-        sleep(200);
-        //drive.runWithEncoder(true);
-        config.motors.get(0).reverse(true);
-        config.motors.get(1).reverse(true);
-        config.motors.get(2).reverse(false);
-        config.motors.get(3).reverse(false);
-    }
-
-    public void imuTurn() {
+    /*public void imuTurn() {
         config.imu.retrievingHardware(true);
         sleep(40);
         double imuHeading = config.imu.get()[0];
@@ -489,8 +323,9 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         config.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
         config.imu.retrievingHardware(false);
     }
+     */
 
-    public void imuTurnAngle(double angle) {
+    public void imuTurn(double angle) {
         //Radians
         config.imu.retrievingHardware(true);
         vals.waitForCycle();
@@ -521,11 +356,6 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     }
 
     public void roadRunnerToPosition(Pose2d targetPose) {
-        /*config.motors.get(0).reverse(false);
-        config.motors.get(1).reverse(false);
-        config.motors.get(2).reverse(true);
-        config.motors.get(3).reverse(true);
-         */
         drive.runWithEncoder(true);
         Pose2d currentPose = config.getPoseEstimate();
         double halfX = (currentPose.getX() + targetPose.getX()) / 2;
@@ -536,33 +366,6 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         config.followTrajectory(traj);
         drive.setPower(0,0,0);
         drive.runWithEncoder(false);
-        /*config.motors.get(0).reverse(true);
-        config.motors.get(1).reverse(true);
-        config.motors.get(2).reverse(false);
-        config.motors.get(3).reverse(false);
-         */
-        /*config.imu.retrievingHardware(true);
-        sleep(40);
-        double imuHeading = config.imu.get()[0];
-        while((Math.abs(imuHeading - targetPose.getHeading())>Math.toRadians(0.5)) && !isStopRequested() && opModeIsActive()){
-            config.update();
-            imuHeading = config.imu.get()[0];
-            if(imuHeading < 0) imuHeading += 2 * Math.PI;
-            //currentPose = drive.getPoseEstimate();
-            double p = 0.35, f = 0.04;
-            int invert = (targetPose.getHeading() + (2 * Math.PI - imuHeading)) % (2 * Math.PI) > Math.PI ? 1 : -1;
-            double power = invert * p * (Math.abs(imuHeading - targetPose.getHeading()) > Math.PI ? (Math.abs((imuHeading > Math.PI ? 2 * Math.PI : 0) - imuHeading) + Math.abs((targetPose.getHeading() > Math.PI ? 2 * Math.PI : 0) - targetPose.getHeading())) : Math.abs(imuHeading - targetPose.getHeading())); //Long line, but the gist is if you're calculating speed in the wrong direction, git gud.
-            power += (power > 0 ? f : -f);
-            drive.setPower(0, 0, power);
-        }
-        if(isStopRequested()) return;
-        drive.setPower(0, 0, 0);
-        currentPose = config.getPoseEstimate();
-        imuHeading = config.imu.get()[0];
-        config.imu.retrievingHardware(false);
-        config.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
-         */
-
     }
 
     public void roadRunnerToPositionSlow(Pose2d targetPose) {
@@ -577,41 +380,6 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         config.followTrajectory(traj);
         drive.setPower(0,0,0);
         drive.runWithEncoder(false);
-    }
-
-    private void highGoalWallAdjust() {
-        double distance = leSense.getDistance(DistanceUnit.INCH);
-        System.out.println("Distance sensor: " + distance);
-        if((distance > distanceLeft || distance < distanceRight) && distance < 300) {
-            Pose2d currentPose = config.getPoseEstimate();
-            Trajectory correct = config.trajectoryBuilder(config.getPoseEstimate())
-                    .strafeRight(distance - wallDistance)
-                    .build();
-            config.followTrajectory(correct);
-            config.imu.retrievingHardware(true);
-            sleep(40);
-            double imuHeading = config.imu.get()[0];
-            config.setPoseEstimate(new Pose2d(currentPose.getX(), distance - wallDistance, imuHeading));
-            while((Math.abs(imuHeading)>Math.toRadians(0.5)) && !isStopRequested() && opModeIsActive()){
-                config.update();
-                imuHeading = config.imu.get()[0];
-                if(imuHeading < 0) imuHeading += 2 * Math.PI;
-                //currentPose = drive.getPoseEstimate();
-                double p = 0.35, f = 0.04;
-                int invert = ((2 * Math.PI - imuHeading)) % (2 * Math.PI) > Math.PI ? 1 : -1;
-                double power = invert * p * (Math.abs(imuHeading) > Math.PI ? (Math.abs((imuHeading > Math.PI ? 2 * Math.PI : 0) - imuHeading) + Math.abs((0 > Math.PI ? 2 * Math.PI : 0) - 0)) : Math.abs(imuHeading - 0)); //Long line, but the gist is if you're calculating speed in the wrong direction, git gud.
-                power += (power > 0 ? f : -f);
-                drive.setPower(0, 0, power);
-            }
-            drive.setPower(0, 0, 0);
-            config.imu.retrievingHardware(false);
-        }
-        if(isStopRequested()) return;
-        drive.runWithEncoder(false);
-        config.motors.get(0).reverse(true);
-        config.motors.get(1).reverse(true);
-        config.motors.get(2).reverse(false);
-        config.motors.get(3).reverse(false);
     }
 
     public Pose2d sensorPose() {
@@ -705,6 +473,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         config.rightFront.setPower(x + y - a);
         config.rightRear.setPower(-x + y - a);
     }
+
     static class upperCameraPipeline extends OpenCvPipeline
     {
 
