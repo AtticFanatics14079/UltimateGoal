@@ -45,7 +45,7 @@ import javax.xml.transform.sax.SAXSource;
 public class AllPathsVisionDistance extends LinearOpMode {
 
     private DriveConstraints verySlow = new DriveConstraints(
-            10, 15.0, 0.0,
+            15, 15.0, 0.0,
             Math.toRadians(90.0), Math.toRadians(90.0), 0.0
     );
 
@@ -61,31 +61,39 @@ public class AllPathsVisionDistance extends LinearOpMode {
 
     private DriveConstraints omegaFast = new DriveConstraints(
             60.0, 55.0, 0.0,
-            Math.toRadians(180.0), Math.toRadians(180.0), 0.0
+            Math.toRadians(270.0), Math.toRadians(270.0), 0.0
     );
 
     private DriveConstraints gas = new DriveConstraints(
             80.0, 70.0, 0.0,
-            Math.toRadians(180.0), Math.toRadians(180.0), 0.0
+            Math.toRadians(360.0), Math.toRadians(360.0), 0.0
+    );
+
+    private DriveConstraints omegaGas = new DriveConstraints(
+            100.0, 100.0, 0.0,
+            Math.toRadians(360.0), Math.toRadians(360.0), 0.0
     );
 
     private Pose2d startPose = new Pose2d(-126.0, -50.0, Math.toRadians(0.0)); //-18.0
     private Pose2d midwayShoot = new Pose2d(-101.0, -33.0);
     private Pose2d powerShotShoot = new Pose2d(-87.0, -39.0);
     private Pose2d highGoalShoot = new Pose2d(-82.0, -60.0);
-    private Pose2d path4dropoff = new Pose2d(-20.0, -69.0);
-    private Pose2d pickup4 = new Pose2d(-121, -68.5, 0.0);
-    private Pose2d path1dropoff = new Pose2d(-48.0, -54.0);
-    private Pose2d pickup1 = new Pose2d(-121, -68.5); //Was x = -38.5, y = -40 before moving to back of tape
-    private Pose2d path0dropoff = new Pose2d(-65.0, -71.0);
-    private Pose2d pickup0 = new Pose2d(-120, -68.5);
+    private Pose2d path4dropoff = new Pose2d(-24.0, -69.0);
+    private Pose2d pickup4 = new Pose2d(-122, -70.5, 0.0);
+    private Pose2d path1dropoff = new Pose2d(-38.0, -59.0);
+    private Pose2d pickup1 = new Pose2d(-121, -69.5); //Was x = -38.5, y = -40 before moving to back of tape
+    private Pose2d path0dropoff = new Pose2d(-65.0, -75.0);
+    private Pose2d pickup0 = new Pose2d(-121, -69.5);
     private Pose2d endLocation = new Pose2d(-58.0, -59.0, 0.0);
 
-    public static double wobbleUp = 0.4, wobbleDown = 0.87, wobbleMid = 0.67, wobblePushStack = 0.805, gripperOpen = 0, gripperClosed = 1, loaded = 0.48, reload = 0.14, path5highgoalX = -80, path5highgoalY = -60, offsetDivisor = 50, pshot1 = 5, pshot2 = 4.7, pshot3 = 8.3;
+    public static double wobbleUp = 0.4, wobbleDown = 0.85, wobbleMid = 0.67, wobblePushStack = 0.785, gripperOpen = 0, gripperClosed = 1, loaded = 0.48, reload = 0.14, path5highgoalX = -80, path5highgoalY = -60, offsetDivisor = 50;
 
     public static double multiplier = 0.97, sensorSideOffset = 8.20, sensorSideAngle = 0.66, sensorStrightOffset = 8, sensorStrightAngle = 0, rightDistMult = 1;
 
-    private Pose2d powerShotBackShoot = new Pose2d(-102.0,-50.0, Math.toRadians(pshot1)); //Is actually 1
+    public static int pshotLeft = 64, pshotMid = 12, pshotRight = 10;
+
+    private Pose2d powerShotBackShoot = new Pose2d(-102.0,-50.0, 0); //Is actually 1
+    private Pose2d powerShot = new Pose2d(-80.0,-30.0, 0); //Is actually 1
     private Pose2d ingestStack = new Pose2d(-79.0, -50.0, Math.toRadians(0));
 
     public static double powshot1 = 70, powshot2 = 110, powshot3 = 147, minX;
@@ -143,6 +151,14 @@ public class AllPathsVisionDistance extends LinearOpMode {
 
             drive.loader.setPosition(reload);
 
+            drive.wobble.setPosition(wobbleDown);
+
+            sleep(2000);
+
+            drive.gripper.setPosition(gripperClosed);
+
+            sleep(1000);
+
             drive.wobble.setPosition(wobbleUp);
 
             while (!isStarted() && !isStopRequested()) {
@@ -150,6 +166,9 @@ public class AllPathsVisionDistance extends LinearOpMode {
                 telemetry.addData("Setup: ", properSetup);
                 telemetry.addData("Distance from wall: ", leSense.getDistance(DistanceUnit.INCH));
                 telemetry.update();
+                if(gamepad1.start) {
+                    drive.setPoseEstimate(startPose);
+                }
             }
 
             if (isStopRequested()) return;
@@ -158,42 +177,37 @@ public class AllPathsVisionDistance extends LinearOpMode {
 
             drive.setPoseEstimate(startPose);
 
-            drive.shooter.setVelocity(-1660);
+            drive.shooter.setVelocity(-1640);
 
-            drive.wobble.setPosition(wobblePushStack);
+            drive.wobble.setPosition(wobbleMid);
 
             Trajectory goToShoot = drive.trajectoryBuilder(startPose)
                     .strafeTo(new Vector2d(powerShotBackShoot.getX()-6, powerShotBackShoot.getY()+3))
                     .build();
             drive.followTrajectory(goToShoot);
 
-            stackSize2 = 4;
+            imuTurn(Math.toRadians(-5));
 
-            //imuTurn(Math.toRadians(-5));
+            turnToPowershot(30); //Does not see far left powershot yet, the turn to 3 degrees moves the left powershot in view.
 
-            //turnToPowershot(30); //Does not see far left powershot yet, the turn to 3 degrees moves the left powershot in view.
-
-            //drive.loader.setPosition(loaded);
-            //sleep(600);
-            //drive.loader.setPosition(reload);
-            drive.shooter.setVelocity(-1640);
-            /*
+            drive.loader.setPosition(loaded);
+            sleep(500);
+            drive.loader.setPosition(reload);
+            drive.shooter.setVelocity(-1600);
             imuTurn(Math.toRadians(2));
             //imuTurn(Math.toRadians(pshot2));
-            turnToPowershot(26);
+            turnToPowershot(25);
             sleep(400);
             drive.loader.setPosition(loaded);
-            sleep(600);
+            sleep(500);
             drive.loader.setPosition(reload);
-            drive.shooter.setVelocity(-1620);
+            drive.shooter.setVelocity(-1600);
             //imuTurn(Math.toRadians(pshot3));
-            */
-            //turnToPowershot(68);
-            //sleep(400);
-            //drive.loader.setPosition(loaded);
-            //sleep(600);
-            //drive.shooter.setVelocity(0);
-            //drive.loader.setPosition(reload);
+            turnToPowershot(67);
+            sleep(400);
+            drive.loader.setPosition(loaded);
+            sleep(500);
+            drive.loader.setPosition(reload);
 
             double imuHeading;// = drive.imu.getAngularOrientation().firstAngle;
             Pose2d currentPose = sensorPose();
@@ -213,7 +227,7 @@ public class AllPathsVisionDistance extends LinearOpMode {
                     //drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
 
                     Trajectory wobble1 = drive.trajectoryBuilder(drive.getPoseEstimate())
-                            .strafeTo(new Vector2d(path0dropoff.getX(), path0dropoff.getY()), slow)
+                            .splineToConstantHeading(new Vector2d(path0dropoff.getX(), path0dropoff.getY()), 0, slow)
                             .build();
                     drive.followTrajectory(wobble1);
 
@@ -226,11 +240,8 @@ public class AllPathsVisionDistance extends LinearOpMode {
 
                     drive.wobble.setPosition(wobbleDown);
                     drive.gripper.setPosition(gripperOpen);
-                    sleep(1200);
-                    drive.gripper.setPosition(gripperClosed);
+                    sleep(1000);
                     drive.wobble.setPosition(wobbleUp);
-
-                    drive.setPoseEstimate(sensorPose());
 
                     Trajectory wobble2 = drive.trajectoryBuilder(drive.getPoseEstimate(), true)
                             .lineToLinearHeading(new Pose2d(pickup0.getX() + 24, pickup0.getY() + 2, Math.toRadians(180.0)), verySlow)
@@ -245,7 +256,7 @@ public class AllPathsVisionDistance extends LinearOpMode {
                     drive.gripper.setPosition(gripperOpen);
                     sleep(600);
 
-                    drive.setPoseEstimate(sensorPose());
+                    drive.setPoseEstimate(sensorPoseNoBack());
                     //currentPose = drive.getPoseEstimate();
                     //imuHeading = drive.imu.getAngularOrientation().firstAngle;
                     //drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY() - offset - 1, imuHeading));
@@ -266,7 +277,7 @@ public class AllPathsVisionDistance extends LinearOpMode {
                     drive.wobble.setPosition(0.6);
 
                     Trajectory dropoff = drive.trajectoryBuilder(drive.getPoseEstimate())
-                            .lineToLinearHeading(new Pose2d(path0dropoff.getX() - 7, path0dropoff.getY() + 6, 0.0), slow)
+                            .lineToLinearHeading(new Pose2d(path0dropoff.getX() - 7, path0dropoff.getY() + 3, 0.0), slow)
                             .build();
                     drive.followTrajectory(dropoff);
 
@@ -280,12 +291,12 @@ public class AllPathsVisionDistance extends LinearOpMode {
                     drive.setPoseEstimate(sensorPose());
 
                     Trajectory park1 = drive.trajectoryBuilder(drive.getPoseEstimate())
-                            .strafeLeft(24)
+                            .strafeLeft(24, omegaFast)
                             .build();
                     drive.followTrajectory(park1);
 
                     Trajectory park2 = drive.trajectoryBuilder(drive.getPoseEstimate())
-                            .forward(18)
+                            .forward(18, omegaFast)
                             .build();
                     drive.followTrajectory(park2);
                 }
@@ -295,10 +306,11 @@ public class AllPathsVisionDistance extends LinearOpMode {
                     drive.ingester.setPower(1);
                     drive.preIngest.setPower(1);
 
-                    drive.setPoseEstimate(currentPose);
+                    drive.setPoseEstimate(sensorPose());
 
                     Trajectory wobble1 = drive.trajectoryBuilder(drive.getPoseEstimate())
-                            .splineTo(path1dropoff.vec(), 0)
+                            .splineToConstantHeading(new Vector2d(powerShotBackShoot.getX() - 6, powerShotBackShoot.getY() - 3), 0, kindaFast)
+                            .splineToConstantHeading(path1dropoff.vec(), 0, kindaFast)
                             .build();
                     drive.followTrajectory(wobble1);
 
@@ -306,27 +318,28 @@ public class AllPathsVisionDistance extends LinearOpMode {
 
                     drive.wobble.setPosition(wobbleDown);
                     drive.gripper.setPosition(gripperOpen);
-                    sleep(1200);
+                    sleep(1000);
+                    drive.wobble.setPosition(wobbleUp);
 
                     currentPose = drive.getPoseEstimate();
                     imuHeading = drive.imu.getAngularOrientation().firstAngle;
                     drive.setPoseEstimate(sensorPose());
 
                     Trajectory wobble2 = drive.trajectoryBuilder(drive.getPoseEstimate(), true)
-                            .lineToLinearHeading(new Pose2d(pickup1.getX() + 24, pickup1.getY(), Math.toRadians(180.0)), slow)
+                            .lineToLinearHeading(new Pose2d(pickup1.getX() + 24, pickup1.getY() - 2, Math.toRadians(180.0)), slow)
                             .build();
                     drive.followTrajectory(wobble2);
 
                     pipeline.initDetect = false;
 
-                    sleep(300);
+                    drive.wobble.setPosition(wobbleDown);
 
                     double offset = pipeline.offset;
 
                     currentPose = drive.getPoseEstimate();
                     imuHeading = drive.imu.getAngularOrientation().firstAngle;
                     //drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY() - offset + 1, currentPose.getHeading()));
-                    drive.setPoseEstimate(sensorPose());
+                    drive.setPoseEstimate(sensorPoseNoBack());
 
                     drive.ingester.setPower(0);
                     drive.preIngest.setPower(0);
@@ -355,7 +368,7 @@ public class AllPathsVisionDistance extends LinearOpMode {
                     //Maybe add high goal turn
 
                     drive.ingester.setPower(0);
-                    turnUntilHighGoal();
+                    imuTurn(Math.toRadians(-7));
                     //drive.wobble.setPosition(wobbleMid);
 
                     drive.loader.setPosition(loaded);
@@ -363,7 +376,7 @@ public class AllPathsVisionDistance extends LinearOpMode {
                     drive.loader.setPosition(reload);
 
                     Trajectory drop = drive.trajectoryBuilder(drive.getPoseEstimate(), false)
-                            .splineTo(new Vector2d(path1dropoff.getX(), path1dropoff.getY() + 8), Math.toRadians(0.0), kindaFast)
+                            .splineTo(new Vector2d(path1dropoff.getX() - 12, path1dropoff.getY()), Math.toRadians(0.0), kindaFast)
                             .build();
                     drive.followTrajectory(drop);
 
@@ -374,46 +387,66 @@ public class AllPathsVisionDistance extends LinearOpMode {
                     drive.wobble.setPosition(wobbleUp);
 
                     Trajectory toPark = drive.trajectoryBuilder(drive.getPoseEstimate(), false)
-                            .back(10, omegaFast)
+                            .back(5, omegaFast)
                             .build();
                     drive.followTrajectory(toPark);
                 }
                 break;
                 case 4: {
+
                     drive.ingester.setPower(1);
-                    drive.preIngest.setPower(-1);
-                    //drive.wobble.setPosition(wobbleMid);
+
+                    drive.wobble.setPosition(wobblePushStack);
 
                     imuTurn(0);
 
-                    System.out.println("Pre push: " + time);
-
                     Trajectory pushRings = drive.trajectoryBuilder(drive.getPoseEstimate())
-                            .splineToConstantHeading(new Vector2d(powerShotBackShoot.getX()+3, powerShotBackShoot.getY()+3), 0, gas)
+                            .splineToConstantHeading(new Vector2d(powerShotBackShoot.getX()+4, powerShotBackShoot.getY() + 4), 0, omegaGas)
                             .build();
                     drive.followTrajectory(pushRings);
 
                     drive.shooter.setVelocity(-1660);
+                    drive.wobble.setPosition(wobbleMid);
+
+                    drive.preIngest.setPower(-1);
 
                     Trajectory pullRings = drive.trajectoryBuilder(drive.getPoseEstimate())
-                            .splineToConstantHeading(new Vector2d(powerShotBackShoot.getX()+3, powerShotBackShoot.getY()-2), 0, verySlow)
-                            .splineToConstantHeading(new Vector2d(powerShotBackShoot.getX()+18, powerShotBackShoot.getY()-2), 0, verySlow)
+                            .splineToConstantHeading(new Vector2d(powerShotBackShoot.getX()+5, powerShotBackShoot.getY() + 2), 0, slow)
+                            .splineToConstantHeading(new Vector2d(powerShotBackShoot.getX()+14, powerShotBackShoot.getY() + 2), 0, verySlow)
+                            .addSpatialMarker(new Vector2d(powerShotBackShoot.getX()+14, powerShotBackShoot.getY() + 2), () -> {
+                                drive.preIngest.setPower(0);
+                                drive.ingester.setPower(0);
+                            })
                             //.splineTo(new Vector2d(path4dropoff.getX()-48, path4dropoff.getY()-1), 0, slow)
                             .build();
                     drive.followTrajectory(pullRings);
 
-                    imuTurn(Math.toRadians(-9));
+                    drive.ingester.setPower(1);
+
+                    imuTurn(Math.toRadians(-8));
+
+                    sleep(600);
 
                     drive.loader.setPosition(loaded);
-                    sleep(500);
-                    drive.loader.setPosition(reload);
 
-                    imuTurn(0);
+                    sleep(400);
+
+                    imuTurn(Math.toRadians(0));
+
+                    drive.setPoseEstimate(sensorPose());
 
                     Trajectory wobbleDrop = drive.trajectoryBuilder(drive.getPoseEstimate())
-                            .splineTo(new Vector2d(powerShotBackShoot.getX() + 30, powerShotBackShoot.getY() + 2), Math.toRadians(10), slow)
-                            .splineTo(new Vector2d(path4dropoff.getX(), path4dropoff.getY()), Math.toRadians(-20), slow)
+                            .addDisplacementMarker(() -> {
+                                drive.preIngest.setPower(-1);
+                            })
+                            .splineToConstantHeading(new Vector2d(powerShotBackShoot.getX()+22, powerShotBackShoot.getY() - 8), 0, kindaFast)
+                            .splineToConstantHeading(new Vector2d(path4dropoff.getX(), path4dropoff.getY() - 4), 0, omegaFast)
                             //.splineTo(new Vector2d(path4dropoff.getX()-48, path4dropoff.getY()-1), 0, slow)
+                            .addSpatialMarker(new Vector2d(path4dropoff.getX()-8, path4dropoff.getY()), () -> {
+                                drive.loader.setPosition(reload);
+                                drive.preIngest.setPower(0);
+                                drive.ingester.setPower(0);
+                            })
                             .build();
                     drive.followTrajectory(wobbleDrop);
 
@@ -422,16 +455,27 @@ public class AllPathsVisionDistance extends LinearOpMode {
                     if (imuHeading < 0) imuHeading += 2 * Math.PI;
                     System.out.println("IMU: " + imuHeading);
                     //drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
-                    drive.setPoseEstimate(sensorPose());
 
                     drive.wobble.setPosition(wobbleDown);
                     drive.gripper.setPosition(gripperOpen);
-                    sleep(850); //Extra 500 to let it continue ingesting
 
                     Trajectory wobble2 = drive.trajectoryBuilder(drive.getPoseEstimate(), true)
-                            .lineToLinearHeading(new Pose2d(pickup4.getX() + 24, pickup4.getY() + 4, Math.toRadians(180.0)), kindaFast)
+                            .addDisplacementMarker(() -> {
+                                drive.preIngest.setPower(-1);
+                            })
+                            .lineToLinearHeading(new Pose2d(pickup4.getX() + 24, pickup4.getY() + 9, Math.toRadians(180.0)), gas)
+                            .addSpatialMarker(new Vector2d(path4dropoff.getX() - 4, path4dropoff.getY() + 9), () -> {
+                                drive.wobble.setPosition(wobbleUp);
+                            })
+                            .addSpatialMarker(new Vector2d(pickup4.getX() + 36, path4dropoff.getY() + 9), () -> {
+                                drive.wobble.setPosition(wobbleDown);
+                            })
                             .build();
                     drive.followTrajectory(wobble2);
+
+                    drive.preIngest.setPower(-1);
+
+                    drive.wobble.setPosition(wobbleDown);
 
                     pipeline.initDetect = false;
 
@@ -443,83 +487,78 @@ public class AllPathsVisionDistance extends LinearOpMode {
                     imuHeading = drive.imu.getAngularOrientation().firstAngle;
                     System.out.println("IMU: " + imuHeading + ", Odo: " + currentPose.getHeading());
                     //drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY() - offset - 4, currentPose.getHeading()));
-                    drive.setPoseEstimate(sensorPose());
+                    drive.setPoseEstimate(sensorPoseNoBack());
+
+                    drive.ingester.setPower(1);
 
                     Trajectory pickupWobble = drive.trajectoryBuilder(drive.getPoseEstimate())
-                            .splineToConstantHeading(new Vector2d(pickup4.getX() + 6, pickup4.getY()), Math.toRadians(180), slow)
+                            .splineToConstantHeading(new Vector2d(pickup4.getX() + 12, pickup4.getY()), Math.toRadians(180), omegaFast)
                             .splineToConstantHeading(new Vector2d(pickup4.getX(), pickup4.getY()), Math.toRadians(180), slow)
+                            .addSpatialMarker(new Vector2d(pickup4.getX() + 2, pickup4.getY()), () -> {
+                                drive.gripper.setPosition(gripperClosed);
+                            })
                             .build();
                     drive.followTrajectory(pickupWobble);
+
+                    drive.ingester.setPower(0);
 
                     currentPose = drive.getPoseEstimate();
                     imuHeading = drive.imu.getAngularOrientation().firstAngle;
                     //drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY() + offset + 4, imuHeading));
-                    drive.setPoseEstimate(sensorPose());
 
                     drive.gripper.setPosition(gripperClosed);
-                    sleep(1200);
-                    drive.wobble.setPosition(wobbleUp);
-                    drive.shooter.setVelocity(-1660);
-                    drive.loader.setPosition(reload);
                     sleep(200);
+                    drive.wobble.setPosition(wobbleMid);
+                    drive.shooter.setVelocity(-1620);
+                    drive.loader.setPosition(reload);
 
                     Trajectory shootdrop = drive.trajectoryBuilder(drive.getPoseEstimate())
-                            .lineToLinearHeading(new Pose2d(path5highgoalX, path5highgoalY, Math.toRadians(0)))
+                            .lineToLinearHeading(new Pose2d(path5highgoalX, path5highgoalY, Math.toRadians(-2)), gas)
                             .build();
                     drive.followTrajectory(shootdrop);
-
-                    drive.wobble.setPosition(wobbleMid);
-
-                    sleep(500);
 
                     currentPose = drive.getPoseEstimate();
                     imuHeading = drive.imu.getAngularOrientation().firstAngle;
                     //drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
-                    drive.setPoseEstimate(sensorPose());
+
+                    imuTurn(Math.toRadians(-2));
 
                     System.out.println("Pose: " + drive.getPoseEstimate());
 
                     drive.loader.setPosition(loaded);
-                    sleep(600);
+                    sleep(500);
                     drive.loader.setPosition(reload);
                     drive.shooter.setVelocity(-1600);
                     sleep(400);
                     drive.loader.setPosition(loaded);
-                    sleep(600);
+                    sleep(500);
                     drive.loader.setPosition(reload);
                     drive.shooter.setVelocity(-1600);
                     sleep(400);
                     drive.loader.setPosition(loaded);
-                    sleep(600);
+                    sleep(400);
                     drive.shooter.setVelocity(0);
 
                     Trajectory drop = drive.trajectoryBuilder(drive.getPoseEstimate())
-                            .splineTo(new Vector2d(path4dropoff.getX() - 36, path4dropoff.getY() + 16), 0, omegaFast)
-                            .splineTo(new Vector2d(path4dropoff.getX() - 24, path4dropoff.getY() + 16), 0, omegaFast)
-                            .splineTo(new Vector2d(path4dropoff.getX() - 6, path4dropoff.getY() + 6), 0, omegaFast)
+                            .splineTo(new Vector2d(path4dropoff.getX() - 3, path4dropoff.getY() + 9), Math.toRadians(-15), omegaGas)
                             .build();
                     drive.followTrajectory(drop);
 
                     drive.wobble.setPosition(wobbleDown);
                     drive.gripper.setPosition(gripperOpen);
-                    sleep(850);
+                    sleep(150);
                     drive.shooter.setVelocity(-1720);
                     drive.loader.setPosition(reload);
 
                     currentPose = drive.getPoseEstimate();
                     imuHeading = drive.imu.getAngularOrientation().firstAngle;
-                    //drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
-                    drive.setPoseEstimate(sensorPose());
+                    drive.setPoseEstimate(new Pose2d(currentPose.getX(), currentPose.getY(), imuHeading));
+                    //drive.setPoseEstimate(sensorPose());
 
                     System.out.println("Pose: " + drive.getPoseEstimate());
 
                     Trajectory toPark = drive.trajectoryBuilder(drive.getPoseEstimate(), true)
-                            .back(10, omegaFast)
-                            .addDisplacementMarker(() -> {
-                                drive.gripper.setPosition(gripperClosed);
-                                drive.wobble.setPosition(wobbleUp);
-                            })
-                            .back(30, omegaFast)
+                            .splineTo(new Vector2d(-56, drive.getPoseEstimate().getY() + 6), Math.PI, omegaGas)
                             .build();
                     drive.followTrajectory(toPark);
 
@@ -591,7 +630,7 @@ public class AllPathsVisionDistance extends LinearOpMode {
     public void imuTurn(double angle) {
         //Radians
         double imuHeading = drive.imu.getAngularOrientation().firstAngle;
-        while((Math.abs(imuHeading - angle)>Math.toRadians(3)) && !isStopRequested() && opModeIsActive()){
+        while((Math.abs(imuHeading - angle)>Math.toRadians(2)) && !isStopRequested() && opModeIsActive()){
             System.out.println("Heading check: " + Math.abs(imuHeading - angle));
             System.out.println("Angle: " + angle);
             drive.update();
@@ -666,10 +705,62 @@ public class AllPathsVisionDistance extends LinearOpMode {
         return new Pose2d(poseX, poseY, imuHeading);
     }
 
+    public Pose2d sensorPoseNoBack() {
+        //Do not call this in a situation where distance sensors could hit the same wall
+        //NOTE: DO NOT call repeatedly (aka every loop) or the y position will not update properly (while using odo).
+
+        double imuHeading = drive.imu.getAngularOrientation().firstAngle;
+        double left = drive.leftDist.getDistance(DistanceUnit.INCH);
+        double right = drive.rightDist.getDistance(DistanceUnit.INCH);
+        double front = drive.frontDist.getDistance(DistanceUnit.INCH);
+        double back = drive.backDist.getDistance(DistanceUnit.INCH);
+        System.out.println("Input : " + left);
+        System.out.println("Right input: " + right);
+        System.out.println("Front input : " + front);
+        System.out.println("Back input: " + back);
+        double correctedSideAngle = sensorSideAngle; //Accounts for X vs. Y.
+        double correctedStraightAngle = sensorStrightAngle; //Accounts for X vs. Y.
+        double correctedHeading = imuHeading > 0 ? (imuHeading + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4 : -((Math.abs(imuHeading) + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4); //Correct heading in each quadrant, as a new quadrant switches what wall it should be seeing.
+        left *= (left < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0; //Gets distance from wall as a straight line
+        System.out.println("Distance : " + left);
+        right *= (right < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier * rightDistMult : 0;
+        front *= (front < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0;
+        back *= (back < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0;
+        left += (left > 0) ? sensorSideOffset * Math.abs(Math.cos(correctedSideAngle + correctedHeading)) : 200; //First quadrant, deals with small cosine values
+        System.out.println("Center Distance : " + left);
+        right += (right > 0) ? sensorSideOffset * Math.abs(Math.cos(-correctedSideAngle + correctedHeading)) : 200; //Second quadrant, deals with small cosine values
+        System.out.println("Right : " + right);
+        front += (front > 0) ? sensorStrightOffset * Math.abs(Math.cos(correctedStraightAngle + correctedHeading)) : 200; //First quadrant, deals with small cosine values
+        System.out.println("Front center : " + front);
+        back += (back > 0) ? sensorStrightOffset * Math.abs(Math.cos(-correctedStraightAngle + correctedHeading)) : 200; //Second quadrant, deals with small cosine values
+        System.out.println("Back center: " + back);
+
+        double distanceYLeft = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? left : front) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? right : back); //Switches which distance sensor input corresponds to what actual side relative to robot.
+        System.out.println("Actual dist : " + distanceYLeft);
+        double distanceYRight = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? right : back) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? left : front);
+        System.out.println("Actual right : " + distanceYRight);
+        double distanceXFront = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? front : right) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? back : left);
+        System.out.println("Actual front : " + distanceXFront);
+        double distanceXBack = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? back : left) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? front : right);
+        System.out.println("Actual back : " + distanceXBack);
+
+        Pose2d currentPose = drive.getPoseEstimate();
+        double poseX = currentPose.getX(), poseY = currentPose.getY();
+
+        poseY = (distanceYRight < distanceYLeft) ? - 87 + Math.abs(distanceYRight) : (distanceYLeft < 100) ? 9 - Math.abs(distanceYLeft) : poseY; //Sets up 0 when robot jammed against left wall, grabs smaller of two distances.
+        poseX = (distanceXBack < 100) ? - 135 + Math.abs(distanceXBack) : poseX; //Sets up 0 when robot jammed against front wall
+        System.out.println("Pose Y: " + poseY);
+        System.out.println("Pose X: " + poseX);
+
+        System.out.println("IMU: " + imuHeading);
+
+        return new Pose2d(poseX, poseY, imuHeading);
+    }
+
     public void turnToPowershot(int pixel) {
-        while(Math.abs(minX - pixel) > 2) {
+        while(Math.abs(minX - pixel) > 3) {
             if(minX == 640) break; //If no value
-            double p = 0.0008, f = 0.025;
+            double p = 0.0008, f = 0.03;
             double power = p * (minX - pixel);
             power += power > 0 ? f : -f;
             drive.setMotorPowers(power, power, -power, -power);

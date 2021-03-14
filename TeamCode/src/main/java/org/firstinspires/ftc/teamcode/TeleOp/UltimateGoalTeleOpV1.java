@@ -51,12 +51,12 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     private final int rows = 640;
     private final int cols = 480;
     public static int sampleWidth = 30;
-    public static int sampleHeight = 3;
+    public static int sampleHeight = 3, leftOff = 20;
     public static org.opencv.core.Point topCenter = new org.opencv.core.Point(510, 420);
     public static org.opencv.core.Point bottomCenter = new org.opencv.core.Point(510, 350);
     public static org.opencv.core.Point leftBar1 = new org.opencv.core.Point(442, 360), leftBar2 = new org.opencv.core.Point(451, 436), rightBar1 = new org.opencv.core.Point(198, 359), rightBar2 = new org.opencv.core.Point(207, 435);
     public static int thresh = 140, redThresh = 137;
-    public static int wobbleThresh = 145, initThresh = 133, targetHighGoalX = 180, pshotLeft = 70, pshotMid = 22, pshotRight = 10; //Right is seeing middle powershot
+    public static int wobbleThresh = 145, initThresh = 133, targetHighGoalX = 180, pshotLeft = 64, pshotMid = 64, pshotRight = 64; //Right does not see far left powershot, calibrate these with Dash
     public static int stackSize = -1;
     private static double color1, color2;
     public static boolean initDetect = true, lameMode = true;
@@ -65,7 +65,8 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     public static double rotateAngle = 180;
 
     public static int upperCameraCenter = 0;
-    public static double minX;
+    public static double maxX = -1;
+    public static int height = 130;
 
     public static int extract = 1;
     public static int row = 320;
@@ -78,7 +79,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     ValueStorage vals = new ValueStorage();
     HardwareThread hardware;
     Thread returnToShoot, powerShots, shootMacro, grabWobble, dropWobble, lowerWobble;
-    public static double wobbleUp = 0.4, wobbleDown = 0.87, wobbleMid = 0.67, gripperOpen = 0, gripperClosed = 1, load = 0.5, reload = 0.1, shooterSpeed = -1640, multiplier = 0.97, sensorSideOffset = 8.20, sensorSideAngle = 0.66, sensorStrightOffset = 8, sensorStrightAngle = 0, rightDistMult = 1; //Sheets had 1.15 as multiplier, seeing if just my house that's off
+    public static double wobbleUp = 0.4, wobbleDown = 0.85, wobbleMid = 0.67, gripperOpen = 0, gripperClosed = 1, load = 0.5, reload = 0.1, shooterSpeed = -1640, multiplier = 0.97, sensorSideOffset = 8.20, sensorSideAngle = 0.66, sensorStrightOffset = 8, sensorStrightAngle = 0, rightDistMult = 1; //Sheets had 1.15 as multiplier, seeing if just my house that's off
 
     public static double highGoalX = 0, highGoalY = 0, powerShotX = 0, powerShotY = 0, wallDistance = 18, distanceLeft = 21, distanceRight = 15;
 
@@ -131,9 +132,9 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         //Main loop
         System.out.println("Input loop: " + time.milliseconds());
         config.update();
-        config.imu.retrievingHardware(true);
+        //config.imu.retrievingHardware(true);
         telemetry.addData("Pose: ", config.getPoseEstimate());
-        double head = config.imu.get()[0];
+        //double head = config.imu.get()[0];
         telemetry.update();
         if(gamepad2.a && !pressedShooter) {
             pressedShooter = true;
@@ -147,10 +148,10 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             System.out.println("Angle: " + Math.atan((currentPose.getY() + 64) / currentPose.getX()));
             double dist = Math.sqrt(Math.pow((currentPose.getY() + 60), 2) + Math.pow(currentPose.getX(), 2));
             System.out.println("Distance: " + dist);
-            if(dist < 96) shooterSpeed = -1580;
-            else if(dist < 105) shooterSpeed = -1600;
-            else if(dist < 112) shooterSpeed = -1620;
-            else shooterSpeed = -1640;
+            if(dist < 96) shooterSpeed = -1600;
+            else if(dist < 105) shooterSpeed = -1620;
+            else if(dist < 112) shooterSpeed = -1640;
+            else shooterSpeed = -1660;
             telemetry.addData("Current Pose: ", currentPose);
             telemetry.addData("Angle: ", Math.atan((currentPose.getY() + 64) / currentPose.getX()));
             telemetry.update();
@@ -163,8 +164,8 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             config.imu.resetIMU();
         }
         if(gamepad2.left_stick_y > 0.5) shooterSpeed = -1540;
-        else if(gamepad2.left_stick_y < -0.5) shooterSpeed = -1620;
-        config.shooter.set(shooterFast ? shooterSpeed : 0);
+        else if(gamepad2.left_stick_y < -0.5) shooterSpeed = -1640;
+        if(!shootMacro.isAlive()) config.shooter.set(shooterFast ? shooterSpeed : 0);
         if(gamepad1.start && !shootMacro.isAlive()) {
             returnToShoot.start();
             while(returnToShoot.isAlive());
@@ -178,20 +179,11 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         }
         System.out.println("Time 1: " + time.milliseconds());
         double speedMultiplier = -1;
-        if(gamepad1.left_bumper) speedMultiplier = -0.2;
-        if(gamepad1.right_bumper) setPower(speedMultiplier * (gamepad1.left_stick_x * Math.cos(head) + gamepad1.left_stick_y * Math.sin(head)), speedMultiplier * (gamepad1.left_stick_x * Math.sin(head) + gamepad1.left_stick_y * Math.cos(head)), -speedMultiplier * gamepad1.right_stick_x); //Should be field-centric
-        else setPower(speedMultiplier * gamepad1.left_stick_x, speedMultiplier * gamepad1.left_stick_y, -speedMultiplier * gamepad1.right_stick_x);
-        if(!pressedOdoAdjust && (gamepad2.dpad_left || gamepad2.dpad_right || gamepad2.dpad_up || gamepad2.dpad_down)) {
-            pressedOdoAdjust = true;
-        }
-        else if(pressedOdoAdjust && !(gamepad2.dpad_left || gamepad2.dpad_right || gamepad2.dpad_up || gamepad2.dpad_down)) pressedOdoAdjust = false;
+        if(gamepad1.left_bumper) speedMultiplier = -0.3;
+        //if(gamepad1.right_bumper) setPower(speedMultiplier * (gamepad1.left_stick_x * Math.cos(head) + gamepad1.left_stick_y * Math.sin(head)), speedMultiplier * (gamepad1.left_stick_x * Math.sin(head) + gamepad1.left_stick_y * Math.cos(head)), -speedMultiplier * gamepad1.right_stick_x); //Should be field-centric
+        setPower(speedMultiplier * gamepad1.left_stick_x, speedMultiplier * gamepad1.left_stick_y, speedMultiplier * gamepad1.right_stick_x);
         if(shootMacro.isAlive()) {}
-        else if(gamepad2.back && !pressedLock) {
-            lockedLoader = !lockedLoader;
-            pressedLock = true;
-        }
-        else if(pressedLock && !gamepad1.right_bumper && !gamepad2.back) pressedLock = false;
-        else if(gamepad1.b || lockedLoader && config.ingester.get()[0] >= shooterSpeed - 500) config.loader.set(load);
+        else if((gamepad1.b || gamepad2.back) && config.ingester.get()[0] >= shooterSpeed - 500) config.loader.set(load);
         else config.loader.set(reload);
 
         if(gamepad1.x && !grabWobble.isAlive() && !dropWobble.isAlive() && !lowerWobble.isAlive()) grabWobble.start();
@@ -206,9 +198,9 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         else if(gamepad2.left_trigger > 0.2) config.wobble.set(wobbleUp); //Change to g2
         else if(gamepad2.right_trigger > 0.2) config.wobble.set(wobbleDown); //Change to g2
 
-        if(gamepad2.right_stick_button) intakeSpeed = -1;
+        if(gamepad2.dpad_up || gamepad1.dpad_right) intakeSpeed = -1;
         else if(gamepad2.b) intakeSpeed = 0;
-        else if(gamepad2.left_stick_button) intakeSpeed = 1;
+        else if(gamepad2.dpad_down || gamepad1.dpad_left) intakeSpeed = 1;
         config.ingester.set(intakeSpeed);
         config.preIngest.set(-intakeSpeed);
     }
@@ -225,28 +217,26 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             return null;
         });
         Sequence tripleShoot = new Sequence(() -> {
-            for(int i = 0; i < 3; i++) {
+            config.shooter.set(shooterSpeed);
+            shootOnce();
+            for(int i = 0; i < 2; i++) {
+                sleep(400);
                 shootOnce();
-                config.shooter.set(-1620);
-                sleep(500);
             }
-            config.loader.set(load);
             return null;
         }, returnToHighGoalDistance);
         returnToShoot = new Thread(tripleShoot);
 
         Sequence shootThrice = new Sequence(() -> {
-            if(lockedLoader) {
-                config.loader.set(reload);
-                lockedLoader = false;
-                sleep(300);
-            }
+            config.shooter.set(shooterSpeed + 20);
             for(int i = 0; i < 2; i++) {
+                sleep(400);
                 shootOnce();
-                sleep(300);
+                config.shooter.set(shooterSpeed);
             }
+            config.shooter.set(shooterSpeed - 20);
+            sleep(400);
             shootOnce();
-            config.loader.set(load);
             return null;
         });
         shootMacro = new Thread(shootThrice);
@@ -254,23 +244,24 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         Sequence returnToPowerShot = new Sequence(() -> {
             config.setPoseEstimate(sensorPose());
             config.shooter.set(-1520);
-            roadRunnerToPositionSlow(new Pose2d(-72, -30));
+            roadRunnerToPositionSlow(new Pose2d(-80, -30));
             config.setPoseEstimate(sensorPose());
-            imuTurn(Math.toRadians(-10));
-            sleep(200);
+            imuTurn(0);
+            sleep(400);
             turnToPowershot(pshotRight);
             return null;
         });
         Sequence pivotShoot = new Sequence(() -> {
-            sleep(600);
+            sleep(400);
             shootOnce();
-            imuTurn(Math.toRadians(2));
-            sleep(600);
+            imuTurn(0);
+            sleep(400);
             turnToPowershot(pshotMid);
+            sleep(400);
             shootOnce();
-            System.out.println("here");
-            sleep(600);
+            sleep(400);
             turnToPowershot(pshotLeft);
+            sleep(400);
             shootOnce();
             config.loader.set(load);
             return null;
@@ -451,19 +442,21 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     }
 
     public void turnToPowershot(int pixel) {
-        while(Math.abs(minX - pixel) > 2) {
-            //if(minX == 640) break; //If no value
-            double p = 0.00008, f = 0.025;
-            double power = p * (minX - pixel);
+        while(Math.abs(maxX - pixel) > 5) {
+            if(maxX == -1) break; //If no value
+            double p = 0.0004, f = 0.05;
+            double power = p * (maxX - pixel);
             power += power > 0 ? f : -f;
             drive.setPower(0, 0, power);
+            System.out.println("Max X: " + maxX + ", power: " + power);
+            vals.waitForCycle();
         }
         drive.setPower(0, 0, 0);
     }
 
     public void shootOnce() {
         config.loader.set(load);
-        sleep(400);
+        sleep(450);
         config.loader.set(reload);
     }
 
@@ -553,17 +546,42 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
             upperCameraCenter = contours.size() >= 1 ? (int) (boundRect[contours.size()-1].tl().x+boundRect[contours.size()-1].br().x) : 0;
 
-            minX = 640;
-            for(int i = 0; i<contours.size()-1; i++){
-                if(boundRect[i].tl().x < minX){
-                    minX = boundRect[i].tl().x;
+            maxX = -1;
+            ArrayList<Double> pshotsX = new ArrayList<>();
+            /*for(int i = 0; i<contours.size()-1; i++){
+                if(boundRect[i].tl().x > maxX && boundRect[i].br().y < 230){
+                    maxX = boundRect[i].tl().x;
                 }
             }
-            Imgproc.line(outputMat, new org.opencv.core.Point(minX, 0), new org.opencv.core.Point(minX, 480),new Scalar(255,0,255), 2);
-            Imgproc.putText(outputMat, "Powershot Corner: " + minX, new org.opencv.core.Point(minX, 100), Imgproc.FONT_HERSHEY_DUPLEX, 0.3, new Scalar(255,255,255));
-            //RIGHT POWERSHOT == 70 @ 1600, CENTER == 110 @ 1580, LEFT == 147 @ 1600
+             */
+            //minX = boundRect[n].tl().x;
+            for(int i = 0; i < contours.size()-1; i++) {
+                if(Math.abs(boundRect[i].tl().y - height) < 15 && boundRect[i].tl().x < boundRect[contours.size() - 1].tl().x - leftOff) {
+                    if(pshotsX.size() == 1 && boundRect[i].tl().x > pshotsX.get(0))
+                        pshotsX.add(0, boundRect[i].tl().x);
+                    else if(pshotsX.size() == 2 && boundRect[i].tl().x > pshotsX.get(1))
+                        if(boundRect[i].tl().x > pshotsX.get(0)) pshotsX.add(0, boundRect[i].tl().x);
+                        else pshotsX.add(1, boundRect[i].tl().x);
+                    else pshotsX.add(boundRect[i].tl().x);
+                }
+            }
 
-            if(contours.size() >= 1) Imgproc.putText(outputMat, "Center: " + (boundRect[contours.size()-1].tl().x+boundRect[contours.size()-1].br().x), boundRect[contours.size() - 1].tl(), Imgproc.FONT_HERSHEY_DUPLEX, 0.7, new Scalar(255, 255, 255));
+            if(pshotsX.size() > 0) {
+                maxX = pshotsX.get(0);
+                Imgproc.line(outputMat, new org.opencv.core.Point(maxX, 100), new org.opencv.core.Point(maxX, 480), new Scalar(255, 0, 255), 2);
+                Imgproc.putText(outputMat, "Powershot Corner: " + maxX, new org.opencv.core.Point(maxX, 100), Imgproc.FONT_HERSHEY_DUPLEX, 0.3, new Scalar(255, 255, 255));
+            /*Imgproc.putText(outputMat, "0: " + boundRect[0].tl().y, new org.opencv.core.Point(boundRect[0].tl().x, 100), Imgproc.FONT_HERSHEY_DUPLEX, 0.5, new Scalar(255,255,255));
+            Imgproc.line(outputMat, new org.opencv.core.Point(boundRect[0].tl().x, 100), new org.opencv.core.Point(boundRect[0].tl().x, 480),new Scalar(255,0,255), 2);
+            Imgproc.putText(outputMat, "1: " + boundRect[1].tl().y, new org.opencv.core.Point(boundRect[1].tl().x, 100), Imgproc.FONT_HERSHEY_DUPLEX, 0.5, new Scalar(255,255,255));
+            Imgproc.line(outputMat, new org.opencv.core.Point(boundRect[1].tl().x, 100), new org.opencv.core.Point(boundRect[1].tl().x, 480),new Scalar(255,0,255), 2);
+            Imgproc.putText(outputMat, "2: " + boundRect[2].tl().y, new org.opencv.core.Point(boundRect[2].tl().x, 100), Imgproc.FONT_HERSHEY_DUPLEX, 0.5, new Scalar(255,255,255));
+            Imgproc.line(outputMat, new org.opencv.core.Point(boundRect[2].tl().x, 100), new org.opencv.core.Point(boundRect[2].tl().x, 480),new Scalar(255,0,255), 2);
+            Imgproc.putText(outputMat, "3: " + boundRect[3].tl().y, new org.opencv.core.Point(boundRect[3].tl().x, 100), Imgproc.FONT_HERSHEY_DUPLEX, 0.5, new Scalar(255,255,255));
+            Imgproc.line(outputMat, new org.opencv.core.Point(boundRect[3].tl().x, 100), new org.opencv.core.Point(boundRect[3].tl().x, 480),new Scalar(255,0,255), 2);
+*/
+            }
+
+            if (contours.size() >= 1) Imgproc.putText(outputMat, "Center: " + (boundRect[contours.size() - 1].tl().x + boundRect[contours.size() - 1].br().x), boundRect[contours.size() - 1].tl(), Imgproc.FONT_HERSHEY_DUPLEX, 0.7, new Scalar(255, 255, 255));
 
             switch (stageToRenderToViewport){
                 case INPUT:

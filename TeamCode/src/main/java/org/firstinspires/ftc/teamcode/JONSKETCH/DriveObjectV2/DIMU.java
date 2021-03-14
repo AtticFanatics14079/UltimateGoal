@@ -74,7 +74,7 @@ public class DIMU implements Sensor, BNO055IMU {
             gettingInput = true;
             Sequence delay = new Sequence(() -> {
                 try {
-                    Thread.sleep(30);
+                    vals.waitForCycle();
                     imuOffset += get()[0];
                     gettingInput = false;
                 } catch (Exception e) {

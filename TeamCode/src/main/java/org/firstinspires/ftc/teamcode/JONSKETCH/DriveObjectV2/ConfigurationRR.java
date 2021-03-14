@@ -146,7 +146,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         gripper = new DServo(vals, hwMap, "gripper", i++);
         wobble = new DServo(vals, hwMap, "wobble", i++);
         shooter = new DMotor(vals, hwMap, "shooter", i++);
-        ingester = new DEncoderlessMotor(vals, hwMap, "frontEncoder", i++);
+        ingester = new DEncoderlessMotor(vals, hwMap, "rightEncoder", i++);
         preIngest = new DEncoderlessMotor(vals, hwMap, "leftEncoder", i++);
         leftDist = new DDistanceSensor(vals, hwMap, "distanceLeft", i++);
         rightDist = new DDistanceSensor(vals, hwMap, "distanceRight", i++);
