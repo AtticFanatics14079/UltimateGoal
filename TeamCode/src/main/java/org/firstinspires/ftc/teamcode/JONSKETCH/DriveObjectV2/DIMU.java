@@ -26,7 +26,7 @@ public class DIMU implements Sensor, BNO055IMU {
 
     private double imuOffset = 0;
 
-    private DThread thread = new NullThread();
+    private Thread t;
 
     private int partNum;
 
@@ -58,8 +58,26 @@ public class DIMU implements Sensor, BNO055IMU {
         return val;
     }
 
+    public void pingSensor() {
+        Sequence pingSensor = new Sequence(() -> {
+            double currentVal = get()[0];
+            gettingInput = true;
+            vals.waitForCycle();
+            while(get()[0] != currentVal) {
+                try{
+                    Thread.sleep(2);
+                } catch(Exception e) {}
+            }
+            gettingInput = false;
+            return null;
+        });
+        if(t != null && t.isAlive()) return;
+        t = new Thread(pingSensor);
+        t.start();
+    }
+
     public void endThreads() {
-        thread.Stop();
+        if(t != null && t.isAlive()) t.stop();
     }
 
     public void setUnit(BNO055IMU.AngleUnit unit) {
