@@ -4,8 +4,6 @@ import java.util.Arrays;
 
 public class ValueStorage {
 
-    private volatile int hardwareCycle = 0;
-
     private double[][] hardwareValues; //Values returned by hardware
 
     private double[] runValues; //Values to for the robot to be set to (e.g. velocity for a DMotor).

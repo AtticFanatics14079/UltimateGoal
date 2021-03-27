@@ -64,6 +64,8 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     public static double offsetDivisor = 50;
     public static double rotateAngle = 180;
 
+    public static double fastImuP = 0.5, fastImuF = 0.15, highGoalFastP = 0.0005, highGoalFastF = 0.08;
+
     public static int upperCameraCenter = 0;
     public static double maxX = -1;
     public static int height = 130;
@@ -79,7 +81,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     ValueStorage vals = new ValueStorage();
     HardwareThread hardware;
     Thread returnToShoot, powerShots, shootMacro, grabWobble, dropWobble, lowerWobble;
-    public static double wobbleUp = 0.4, wobbleDown = 0.85, wobbleMid = 0.67, gripperOpen = 0, gripperClosed = 1, load = 0.5, reload = 0.1, shooterSpeed = -1640, multiplier = 0.97, sensorSideOffset = 8.20, sensorSideAngle = 0.66, sensorStrightOffset = 8, sensorStraightAngle = 0, rightDistMult = 1; //Sheets had 1.15 as multiplier, seeing if just my house that's off
+    public static double wobbleUp = 0.4, wobbleDown = 0.85, wobbleMid = 0.67, gripperOpen = 0, gripperClosed = 1, load = 0.5, reload = 0.1, shooterSpeed = -1640, multiplier = 1, sensorSideOffset = 8.20, sensorSideAngle = 0.66, sensorStrightOffset = 9, sensorStraightAngle = 0, rightDistMult = 1; //Sheets had 1.15 as multiplier, seeing if just my house that's off
 
     public static double highGoalX = 0, highGoalY = 0, powerShotX = 0, powerShotY = 0, wallDistance = 18, distanceLeft = 21, distanceRight = 15;
 
@@ -133,6 +135,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         System.out.println("Input loop: " + time.milliseconds());
         config.update();
         //config.imu.retrievingHardware(true);
+        config.setPoseEstimate(sensorPoseNew());
         telemetry.addData("Pose: ", config.getPoseEstimate());
         //double head = config.imu.get()[0];
         telemetry.update();
@@ -157,6 +160,24 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             telemetry.update();
             imuTurn(Math.atan((currentPose.getY() + 64) / currentPose.getX())); //Testing 60, there was a consistent trend of turning too far left. May need to later either change the target or add a constant turn to better match camera.
             sleep(300);
+            turnUntilHighGoal((int)(100 / dist * 30));
+        }
+        if(gamepad1.left_stick_button) {
+            config.setPoseEstimate(sensorPoseNew());
+            Pose2d currentPose = config.getPoseEstimate();
+            System.out.println("Current pose: " + currentPose);
+            System.out.println("Angle: " + Math.atan((currentPose.getY() + 64) / currentPose.getX()));
+            double dist = Math.sqrt(Math.pow((currentPose.getY() + 60), 2) + Math.pow(currentPose.getX(), 2));
+            System.out.println("Distance: " + dist);
+            if(dist < 96) shooterSpeed = -1600;
+            else if(dist < 105) shooterSpeed = -1620;
+            else if(dist < 112) shooterSpeed = -1640;
+            else shooterSpeed = -1660;
+            telemetry.addData("Current Pose: ", currentPose);
+            telemetry.addData("Angle: ", Math.atan((currentPose.getY() + 64) / currentPose.getX()));
+            telemetry.update();
+            imuTurnFast(Math.atan((currentPose.getY() + 64) / currentPose.getX())); //Testing 60, there was a consistent trend of turning too far left. May need to later either change the target or add a constant turn to better match camera.
+            sleep(200);
             turnUntilHighGoal((int)(100 / dist * 30));
         }
         if(gamepad2.start) {
@@ -346,6 +367,40 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         config.imu.retrievingHardware(false);
     }
 
+    public void imuTurnFast(double angle) {
+        //Radians
+        config.imu.retrievingHardware(true);
+        vals.waitForCycle();
+        vals.waitForCycle();
+        config.imu.retrievingHardware(true);
+        double imuHeading = config.imu.get()[0];
+        drive.runWithEncoder(true);
+        while((Math.abs(imuHeading - angle)>Math.toRadians(10)) && !isStopRequested() && opModeIsActive()){
+            System.out.println("Heading check: " + Math.abs(imuHeading - angle));
+            System.out.println("Angle: " + angle);
+            config.update();
+            imuHeading = config.imu.get()[0];
+            double tempHeading = imuHeading;
+            double tempTarget = angle;
+            System.out.println("Heading: " + imuHeading);
+            if(tempHeading < 0) tempHeading += 2 * Math.PI;
+            if(angle < 0) tempTarget += 2 * Math.PI;
+            double p = fastImuP, f = fastImuF;
+            //int invert = tempHeading + (2 * Math.PI - tempTarget) % (2 * Math.PI) > Math.PI ? 1 : -1;
+            double invert = angle - imuHeading;
+            if(invert > Math.PI) invert -= 2 * Math.PI;
+            else if(invert < -Math.PI) invert += 2 * Math.PI;
+            invert = invert < 0 ? 1 : -1;
+            double power = invert * p * (Math.abs(tempHeading - tempTarget) > Math.PI ? (Math.abs(tempHeading > Math.PI ? 2 * Math.PI - tempHeading : tempHeading) + Math.abs(tempTarget > Math.PI ? 2 * Math.PI - tempTarget : tempTarget)) : Math.abs(tempHeading - tempTarget)); //Long line, but the gist is if you're calculating speed in the wrong direction, git gud.
+            power += (power > 0 ? f : -f);
+            drive.setPower(0, 0, power);
+            vals.waitForCycle();
+            System.out.println("End of cycle");
+        }
+        drive.setPower(0, 0, 0);
+        config.imu.retrievingHardware(false);
+    }
+
     public void roadRunnerToPosition(Pose2d targetPose) {
         drive.runWithEncoder(true);
         Pose2d currentPose = config.getPoseEstimate();
@@ -377,20 +432,28 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         //Do not call this in a situation where distance sensors could hit the same wall
         //NOTE: DO NOT call repeatedly (aka every loop) or the y position will not update properly (while using odo).
 
-        config.imu.gettingInput = true;
+        System.out.println("1");
+
+        //config.imu.gettingInput = true;
         config.rightDist.pingSensor();
         config.leftDist.pingSensor();
         config.frontDist.pingSensor();
         config.backDist.pingSensor();
+        config.imu.pingSensor();
         vals.waitForCycle();
-        vals.waitForCycle();
+        if(isStopRequested()) return null;
         double imuHeading = config.imu.get()[0];
-        config.imu.gettingInput = false;
         double left = config.leftDist.getDistance(DistanceUnit.INCH);
         double right = config.rightDist.getDistance(DistanceUnit.INCH);
         double front = config.frontDist.getDistance(DistanceUnit.INCH);
         double back = config.backDist.getDistance(DistanceUnit.INCH);
-        double correctedHeading = imuHeading % (Math.PI / 2); //Correct heading in each quadrant, as a new quadrant switches what wall it should be seeing.
+        double correctedHeading = imuHeading % Math.PI; //Correct heading in each quadrant, as a new quadrant switches what wall it should be seeing.
+
+        System.out.println("2");
+        System.out.println("Left: " + left);
+        System.out.println("Right: " + right);
+        System.out.println("Front: " + front);
+        System.out.println("Back: " + back);
 
         //Getting distance from distance sensor to either wall.
         double leftCos = left * Math.abs(Math.cos(correctedHeading)) * multiplier;
@@ -402,15 +465,49 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         double backCos = back * Math.abs(Math.cos(correctedHeading)) * multiplier;
         double backSin = back * Math.abs(Math.sin(correctedHeading)) * multiplier;
 
+        System.out.println("3");
+        System.out.println("Left Cos: " + leftCos);
+        System.out.println("Left Sin: " + leftSin);
+        System.out.println("Right Cos: " + rightCos);
+        System.out.println("Right Sin: " + rightSin);
+        System.out.println("Front Cos: " + frontCos);
+        System.out.println("Front Sin: " + frontSin);
+        System.out.println("Back Cos: " + backCos);
+        System.out.println("Back Sin: " + backSin);
+        System.out.println();
+
         //Converting distance from sensors to distance from robot center.
-        leftCos += Math.abs(Math.cos(sensorSideAngle + correctedHeading));
-        leftSin += Math.abs(Math.sin(sensorSideAngle + correctedHeading));
-        rightCos += Math.abs(Math.cos(-sensorSideAngle + correctedHeading));
-        rightSin += Math.abs(Math.sin(-sensorSideAngle + correctedHeading));
-        frontCos += Math.abs(Math.cos(sensorStraightAngle + correctedHeading));
-        frontSin += Math.abs(Math.sin(sensorStraightAngle + correctedHeading));
-        backCos += Math.abs(Math.cos(-sensorStraightAngle + correctedHeading));
-        backSin += Math.abs(Math.sin(-sensorStraightAngle + correctedHeading));
+        /*leftCos += Math.abs(Math.cos(sensorSideAngle + Math.max(correctedHeading, Math.PI / 2 - correctedHeading)));
+        leftSin += Math.abs(Math.sin(sensorSideAngle + Math.max(correctedHeading, Math.PI / 2 - correctedHeading)));
+        rightCos += Math.abs(Math.cos(-sensorSideAngle + Math.max(correctedHeading, Math.PI / 2 - correctedHeading))); //Test using negative sensorSideAngle more, I think it's wrong.
+        rightSin += Math.abs(Math.sin(-sensorSideAngle + Math.max(correctedHeading, Math.PI / 2 - correctedHeading)));
+        frontCos += Math.abs(Math.cos(sensorStraightAngle + Math.max(correctedHeading, Math.PI / 2 - correctedHeading)));
+        frontSin += Math.abs(Math.sin(sensorStraightAngle + Math.max(correctedHeading, Math.PI / 2 - correctedHeading)));
+        backCos += Math.abs(Math.cos(-sensorStraightAngle + Math.max(correctedHeading, Math.PI / 2 - correctedHeading)));
+        backSin += Math.abs(Math.sin(-sensorStraightAngle + Math.max(correctedHeading, Math.PI / 2 - correctedHeading)));\
+         */
+
+        //double sensorAngle = Math.tan(imuHeading) < 0 ? Math.PI / 2 - correctedHeading : correctedHeading;
+        leftCos += sensorSideOffset * Math.abs(Math.cos(correctedHeading));
+        leftSin += sensorSideOffset * Math.abs(Math.sin(correctedHeading));
+        rightCos += sensorSideOffset * Math.abs(Math.cos(correctedHeading));
+        rightSin += sensorSideOffset * Math.abs(Math.sin(correctedHeading));
+        frontCos += sensorStrightOffset * Math.abs(Math.cos(correctedHeading));
+        frontSin += sensorStrightOffset * Math.abs(Math.sin(correctedHeading));
+        backCos += sensorStrightOffset * Math.abs(Math.cos(correctedHeading));
+        backSin += sensorStrightOffset * Math.abs(Math.sin(correctedHeading));
+
+        System.out.println("4");
+
+        System.out.println("Left Cos: " + leftCos);
+        System.out.println("Left Sin: " + leftSin);
+        System.out.println("Right Cos: " + rightCos);
+        System.out.println("Right Sin: " + rightSin);
+        System.out.println("Front Cos: " + frontCos);
+        System.out.println("Front Sin: " + frontSin);
+        System.out.println("Back Cos: " + backCos);
+        System.out.println("Back Sin: " + backSin);
+        System.out.println();
 
         //Get actual X and Y of each position, assuming each input is good, based on heading for every value.
         leftCos = Math.abs(imuHeading) < Math.PI / 2 ? 9 - leftCos : leftCos - 87; //Left or right
@@ -424,25 +521,36 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
         //TODO: Do comparisons to determine which wall each distance sensor is seeing. Do this by first checking to see if opposites actually see opposites for cos and sin.
 
+        //MARCH 20 NOTES: Appears to be working fine for cases that worked previously, but needs more testing on off cases to find what is wrong (and it is). Changed the way of finding distance to center.
+
         Pose2d currentPose = config.getPoseEstimate();
         double poseX = currentPose.getX(), poseY = currentPose.getY();
-        double confidence = 3;
+        double confidence = 4;
+
+        System.out.println("Left Cos: " + leftCos);
+        System.out.println("Left Sin: " + leftSin);
+        System.out.println("Right Cos: " + rightCos);
+        System.out.println("Right Sin: " + rightSin);
+        System.out.println("Front Cos: " + frontCos);
+        System.out.println("Front Sin: " + frontSin);
+        System.out.println("Back Cos: " + backCos);
+        System.out.println("Back Sin: " + backSin);
 
         //Going to use a ton of if statements here until I figure out how to be smart.
         //Beginning of 3 wall cases
-        if(Math.abs(leftCos - rightCos) < confidence) {
+        if(left < 60 && right < 60 && Math.abs(leftCos - rightCos) < confidence) {
             poseY = (leftCos + rightCos) / 2;
             poseX = back > 60 ? (front > 60 ? poseX : frontCos) : backCos; //Later maybe switch to comparing to odo.
         }
-        else if(Math.abs(leftSin - rightSin) < confidence) {
+        else if(left < 60 && right < 60 && Math.abs(leftSin - rightSin) < confidence) {
             poseY = back > 60 ? (front > 60 ? poseX : frontSin) : backSin; //Later maybe switch to comparing to odo.
             poseX = (leftSin + rightSin) / 2;
         }
-        else if(Math.abs(frontCos - backCos) < confidence) {
+        else if(front < 60 && back < 60 && Math.abs(frontCos - backCos) < confidence) {
             poseY = left > 60 ? (right > 60 ? poseX : rightCos) : leftCos; //Later maybe switch to comparing to odo.
             poseX = (frontCos + backCos) / 2;
         }
-        else if(Math.abs(frontSin - backSin) < confidence) {
+        else if(front < 60 && back < 60 && Math.abs(frontSin - backSin) < confidence) {
             poseY = (frontSin + backSin) / 2;
             poseX = left > 60 ? (right > 60 ? poseX : rightSin) : leftSin; //Later maybe switch to comparing to odo.
         }
@@ -506,6 +614,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
                 }
             }
             else if(right < 60) {
+                System.out.println("Yate");
                 if(Math.abs(rightCos - frontSin) < confidence) {
                     poseY = (rightCos + frontSin) / 2;
                     poseX = backCos;
@@ -525,6 +634,20 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             }
             //If neither sees, we can't figure it out, so just use odo input.
         }
+        else {
+            if(Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2) {
+                poseY = imuHeading < Math.PI / 4 ? (left < right ? leftCos : rightCos) : (front < back ? frontSin : backSin);
+                poseX = imuHeading < Math.PI / 4 ? (front < back ? frontCos : backCos) : (left < right ? leftSin : rightSin);
+                System.out.println("Yeet");
+            }
+            else {
+                poseY = Math.abs(imuHeading) > 3 * Math.PI / 4 ? (left < right ? leftCos : rightCos) : (front < back ? frontSin : backSin);
+                poseX = Math.abs(imuHeading) > 3 * Math.PI / 4 ? (front < back ? frontCos : backCos) : (left < right ? leftSin : rightSin);
+            }
+        }
+
+        System.out.println("5");
+        System.out.println("PoseX: " + poseX + ", Pose Y: " + poseY);
 
         return new Pose2d(poseX, poseY, imuHeading);
     }
@@ -590,6 +713,17 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         while(Math.abs(upperCameraCenter - targetHighGoalX) > threshold) {
             if(upperCameraCenter == 0) break;
             double p = 0.0005, f = 0.02;
+            double power = p * (upperCameraCenter - targetHighGoalX);
+            power += power > 0 ? f : -f;
+            drive.setPower(0, 0, power);
+        }
+        drive.setPower(0, 0, 0);
+    }
+
+    public void turnUntilHighGoalFast(int threshold) {
+        while(Math.abs(upperCameraCenter - targetHighGoalX) > threshold) {
+            if(upperCameraCenter == 0) break;
+            double p = highGoalFastP, f = highGoalFastF;
             double power = p * (upperCameraCenter - targetHighGoalX);
             power += power > 0 ? f : -f;
             drive.setPower(0, 0, power);

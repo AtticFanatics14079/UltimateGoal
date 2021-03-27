@@ -73,7 +73,7 @@ public class twoScanPipeline extends LinearOpMode {
         webCam.setPipeline(new lowerCameraPipeline());//different stages
         webcam2.setPipeline(new upperCameraPipeline());//different stages
         webCam.startStreaming(rows, cols, OpenCvCameraRotation.UPRIGHT);//display on RC
-        webcam2.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);//display on RC
+        webcam2.startStreaming(rows, cols, OpenCvCameraRotation.UPRIGHT);//display on RC
         //width, height
         //width = height in this case, because camera is in portrait mode.
 
@@ -208,7 +208,7 @@ public class twoScanPipeline extends LinearOpMode {
                 Core.flip(MediumRareMat, MediumRareMat, -1);
                 Core.flip(redMat, redMat, -1);
             }
-            else{
+            else if(!lameMode){
                 rawMat = input;
                 //Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2YCrCb);
                 //YCRCBMat = rawMat;
@@ -234,6 +234,7 @@ public class twoScanPipeline extends LinearOpMode {
                     offset = (320 - middle) / offsetDivisor - 2.5;
                 }
             }
+            else MediumRareMat = input;
             switch (stageToRenderToViewport){
                 case RAW:
                 {
@@ -297,6 +298,7 @@ public class twoScanPipeline extends LinearOpMode {
         @Override
         public Mat processFrame(Mat input)
         {
+            if(lameMode) return input;
             inputMat = input;
             Mat rota = Imgproc.getRotationMatrix2D(new Point(160, 120), rotateAngle,1);
             Imgproc.warpAffine(inputMat, inputMat, rota, new Size(320,240));

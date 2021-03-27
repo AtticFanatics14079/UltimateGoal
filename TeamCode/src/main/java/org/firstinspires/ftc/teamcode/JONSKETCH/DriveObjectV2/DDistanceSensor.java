@@ -40,7 +40,8 @@ public class DDistanceSensor implements Sensor, DriveObject, DistanceSensor {
 
     @Override
     public void endThreads() {
-        if(t != null && t.isAlive()) t.stop();
+        //if(t != null && t.isAlive()) t.stop();
+        //Extra cycle should take care of this.
     }
 
     @Override

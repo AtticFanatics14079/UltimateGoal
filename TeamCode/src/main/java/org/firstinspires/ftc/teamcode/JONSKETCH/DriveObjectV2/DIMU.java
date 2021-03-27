@@ -60,14 +60,8 @@ public class DIMU implements Sensor, BNO055IMU {
 
     public void pingSensor() {
         Sequence pingSensor = new Sequence(() -> {
-            double currentVal = get()[0];
             gettingInput = true;
             vals.waitForCycle();
-            while(get()[0] != currentVal) {
-                try{
-                    Thread.sleep(2);
-                } catch(Exception e) {}
-            }
             gettingInput = false;
             return null;
         });
@@ -77,7 +71,7 @@ public class DIMU implements Sensor, BNO055IMU {
     }
 
     public void endThreads() {
-        if(t != null && t.isAlive()) t.stop();
+        if(t != null && t.isAlive());
     }
 
     public void setUnit(BNO055IMU.AngleUnit unit) {

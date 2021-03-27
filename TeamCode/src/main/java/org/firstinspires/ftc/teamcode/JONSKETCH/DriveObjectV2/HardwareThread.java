@@ -11,7 +11,7 @@ public class HardwareThread extends Thread {
     double[][] hardwareVals; //Holds the values received from hardware of each part.
     double[] lastRun; //Previous run values.
     public Configuration config;
-    private volatile boolean stop, resetIMU = false;
+    private volatile boolean stop = false, resetIMU = false;
     private boolean setTime = false; //Vestigial variable
     public double voltMult = 1, lastTime = 0; //Vestigial variables
 
@@ -32,7 +32,6 @@ public class HardwareThread extends Thread {
         time = new ElapsedTime();
 
         try {
-
             while(!stop) {
                 System.out.println("Hardware cycle: " + time.milliseconds());
                 vals.updateCycle(); //Should allow every other thread to simply wait for cycle. Consider moving this or adding a sleep to prevent runValues being off by a cycle.
@@ -49,6 +48,9 @@ public class HardwareThread extends Thread {
             for(DriveObject d : config.hardware) {
                 d.endThreads();
             }
+            System.out.println("Hardware Time 1: " + time.milliseconds());
+            vals.updateCycle();
+            System.out.println("Hardware Time 2: " + time.milliseconds());
             vals.clear();
         }
     }
