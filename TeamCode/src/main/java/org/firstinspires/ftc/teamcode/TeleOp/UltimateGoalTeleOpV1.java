@@ -178,7 +178,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             telemetry.update();
             imuTurnFast(Math.atan((currentPose.getY() + 64) / currentPose.getX())); //Testing 60, there was a consistent trend of turning too far left. May need to later either change the target or add a constant turn to better match camera.
             sleep(200);
-            turnUntilHighGoal((int)(100 / dist * 30));
+            turnUntilHighGoalFast((int)(100 / dist * 30));
         }
         if(gamepad2.start) {
             config.setPoseEstimate(new Pose2d(0, 0, 0));
@@ -722,11 +722,13 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
     public void turnUntilHighGoalFast(int threshold) {
         while(Math.abs(upperCameraCenter - targetHighGoalX) > threshold) {
+            System.out.println("Center: " + upperCameraCenter);
             if(upperCameraCenter == 0) break;
             double p = highGoalFastP, f = highGoalFastF;
             double power = p * (upperCameraCenter - targetHighGoalX);
             power += power > 0 ? f : -f;
             drive.setPower(0, 0, power);
+            vals.waitForCycle();
         }
         drive.setPower(0, 0, 0);
     }
