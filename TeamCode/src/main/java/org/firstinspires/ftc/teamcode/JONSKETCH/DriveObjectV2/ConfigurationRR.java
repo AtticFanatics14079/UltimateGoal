@@ -61,6 +61,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     public static PIDCoefficients HEADING_PID = new PIDCoefficients(1, 0, 0);
 
     public static double LATERAL_MULTIPLIER = 1;
+    public static double inchMult = 59.65;
 
     public enum Mode {
         IDLE,
@@ -94,6 +95,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     public List<DEncoderlessMotor> motors;
     private List<LynxModule> allHubs;
     public DIMU imu;
+    public DAnalogSensor left, right, front, back;
     private VoltageSensor batteryVoltageSensor;
 
     public ConfigurationRR(HardwareMap hardwareMap) {
@@ -136,6 +138,8 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
         hardware.clear();
 
+        DAnalogSensor.InterpretVoltage distance = ((double voltage, double max) -> inchMult * voltage / max);
+
         leftFront = new DEncoderlessMotor(vals, hwMap, "front_left_motor", i++);
         leftRear = new DEncoderlessMotor(vals, hwMap, "back_left_motor", i++);
         rightRear = new DEncoderlessMotor(vals, hwMap, "back_right_motor", i++);
@@ -153,6 +157,10 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         rightDist = new DDistanceSensor(vals, hwMap, "distanceRight", i++);
         frontDist = new DDistanceSensor(vals, hwMap, "distanceFront", i++);
         backDist = new DDistanceSensor(vals, hwMap, "distanceBack", i++);
+        left = new DAnalogSensor(vals, hwMap, "leftDist", i++, distance);
+        right = new DAnalogSensor(vals, hwMap, "rightDist", i++, distance);
+        front = new DAnalogSensor(vals, hwMap, "frontDist", i++, distance);
+        back = new DAnalogSensor(vals, hwMap, "backDist", i++, distance);
         imu = new DIMU(vals, hwMap, i++);
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
         pods = Arrays.asList(leftEncoder, rightEncoder, frontEncoder);
