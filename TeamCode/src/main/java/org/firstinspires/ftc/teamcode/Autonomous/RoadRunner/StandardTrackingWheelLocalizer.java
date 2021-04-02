@@ -12,8 +12,6 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorImplEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
-import com.example.pleasework.FanaticsThreeWheelTrackingLocalizer;
-
 import org.firstinspires.ftc.teamcode.Utils.Encoder;
 import org.jetbrains.annotations.Nullable;
 

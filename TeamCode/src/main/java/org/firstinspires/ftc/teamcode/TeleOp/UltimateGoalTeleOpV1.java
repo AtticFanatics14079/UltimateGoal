@@ -525,7 +525,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
         Pose2d currentPose = config.getPoseEstimate();
         double poseX = currentPose.getX(), poseY = currentPose.getY();
-        double confidence = 4;
+        double confidence = 1;
 
         System.out.println("Left Cos: " + leftCos);
         System.out.println("Left Sin: " + leftSin);
