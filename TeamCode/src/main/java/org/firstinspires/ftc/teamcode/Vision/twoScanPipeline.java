@@ -38,13 +38,13 @@ import java.util.List;
 @Autonomous
 public class twoScanPipeline extends LinearOpMode {
 
-    private final int rows = 640;
-    private final int cols = 480;
+    private static int rows = 320;
+    private static int cols = 240;
     public static int sampleWidth = 30;
     public static int sampleHeight = 3;
-    public static Point topCenter = new Point(510, 420);
-    public static Point bottomCenter = new Point(510, 350);
-    public static Point leftBar1 = new Point(442, 360), leftBar2 = new Point(451, 436), rightBar1 = new Point(198, 359), rightBar2 = new Point(207, 435);
+    public static Point topCenter = new Point(510/2, 420/2);
+    public static Point bottomCenter = new Point(510/2, 350/2);
+    public static Point leftBar1 = new Point(442/2, 360/2), leftBar2 = new Point(451/2, 436/2), rightBar1 = new Point(198/2, 359/2), rightBar2 = new Point(207/2, 435/2);
     public static int thresh = 140, redThresh = 137;
     public static int wobbleThresh = 145, initThresh = 133;
     public static int stackSize = -1;
@@ -55,7 +55,7 @@ public class twoScanPipeline extends LinearOpMode {
     public static double rotateAngle = 195;
 
     public static int extract = 1;
-    public static int row = 320;
+    public static int row = 320/2;
 
     OpenCvCamera webCam, webcam2;
 
@@ -208,7 +208,7 @@ public class twoScanPipeline extends LinearOpMode {
                 Core.flip(MediumRareMat, MediumRareMat, -1);
                 Core.flip(redMat, redMat, -1);
             }
-            else if(!lameMode){
+            else{
                 rawMat = input;
                 //Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2YCrCb);
                 //YCRCBMat = rawMat;
@@ -234,7 +234,6 @@ public class twoScanPipeline extends LinearOpMode {
                     offset = (320 - middle) / offsetDivisor - 2.5;
                 }
             }
-            else MediumRareMat = input;
             switch (stageToRenderToViewport){
                 case RAW:
                 {
@@ -298,10 +297,9 @@ public class twoScanPipeline extends LinearOpMode {
         @Override
         public Mat processFrame(Mat input)
         {
-            if(lameMode) return input;
             inputMat = input;
-            Mat rota = Imgproc.getRotationMatrix2D(new Point(160, 120), rotateAngle,1);
-            Imgproc.warpAffine(inputMat, inputMat, rota, new Size(320,240));
+            //Mat rota = Imgproc.getRotationMatrix2D(new Point(160, 120), rotateAngle,1);
+            //Imgproc.warpAffine(inputMat, inputMat, rota, new Size(320,240));
             Imgproc.cvtColor(inputMat, interMat, Imgproc.COLOR_RGB2YCrCb);
             Core.extractChannel(interMat, interMat, extract);
             Imgproc.medianBlur(interMat, interMat, 5);
