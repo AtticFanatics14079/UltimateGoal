@@ -24,6 +24,14 @@ public class DAnalogSensor implements Sensor, AnalogSensor {
         maxVolt = getMaxVoltage();
     }
 
+    public DAnalogSensor(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum, double maxVoltage, InterpretVoltage method) {
+        sensor = hwMap.get(AnalogInput.class, objectName);
+        this.partNum = partNum;
+        this.vals = vals;
+        interpret = method;
+        maxVolt = maxVoltage;
+    }
+
     public interface InterpretVoltage {
         //Does something with the voltage
         double interpret(double voltage, double maxVoltage);

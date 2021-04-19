@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Autonomous.PurePursuit.DriveObjectRobotMovement;
@@ -131,6 +132,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     }
 
     public void getInput(){
+        telemetry.addLine("Le Sense 0: " + config.leSense.get()[0] + ", Le Sense 1: " + config.leSense.get()[1]);
         //Main loop
         System.out.println("Input loop: " + time.milliseconds());
         config.update();
@@ -428,9 +430,13 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         drive.runWithEncoder(false);
     }
 
-    public Pose2d sensorPoseAnalog() {
+    public Pose2d sensorPoseAnalogOffset() {
         //Do not call this in a situation where distance sensors could hit the same wall
         //NOTE: DO NOT call repeatedly (aka every loop) or the y position will not update properly (while using odo).
+
+        //Assuming distance sensors set at 20 degrees from perpendicular, treating under 30 degrees as viable readings.
+
+        //At the moment, system has 2 on back and left and right pointing back to minimize chance of seeing wobble goals, etc. when facing towards goal.
 
         System.out.println("1");
 
@@ -451,14 +457,15 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         System.out.println("Back: " + back);
 
         //Getting distance from distance sensor to either wall.
-        double leftCos = left * Math.abs(Math.cos(imuHeading)) * multiplier;
-        double leftSin = left * Math.abs(Math.sin(imuHeading)) * multiplier;
-        double rightCos = right * Math.abs(Math.cos(imuHeading)) * multiplier;
-        double rightSin = right * Math.abs(Math.sin(imuHeading)) * multiplier;
-        double frontCos = front * Math.abs(Math.cos(imuHeading)) * multiplier;
-        double frontSin = front * Math.abs(Math.sin(imuHeading)) * multiplier;
-        double backCos = back * Math.abs(Math.cos(imuHeading)) * multiplier;
-        double backSin = back * Math.abs(Math.sin(imuHeading)) * multiplier;
+        //Weird thing at the start is to make sure everything is within 30 degrees.
+        double leftCos = left * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.cos(Math.toRadians(20) + imuHeading)), 2.2)) * multiplier * Math.abs(Math.cos(Math.toRadians(20) - imuHeading));
+        double leftSin = left * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.sin(Math.toRadians(20) + imuHeading)), 2.2)) * multiplier * Math.abs(Math.sin(imuHeading));
+        double rightCos = right * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.cos(Math.toRadians(20) - imuHeading)), 2.2)) * multiplier * Math.abs(Math.cos(imuHeading));
+        double rightSin = right * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.sin(Math.toRadians(20) - imuHeading)), 2.2)) * multiplier * Math.abs(Math.sin(imuHeading));
+        double frontCos = front * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.cos(imuHeading)), 2.2)) * multiplier * Math.abs(Math.cos(imuHeading));
+        double frontSin = front * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.sin(imuHeading)), 2.2)) * multiplier * Math.abs(Math.sin(imuHeading));
+        double backCos = back * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.cos(imuHeading)), 2.2)) * multiplier * Math.abs(Math.cos(imuHeading));
+        double backSin = back * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.sin(imuHeading)), 2.2)) * multiplier * Math.abs(Math.sin(imuHeading));
 
         System.out.println("3");
         System.out.println("Left Cos: " + leftCos);
@@ -586,7 +593,183 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             }
         }
         else if(y == poseY) {
-            //Doubled on a front wall.
+            //Doubled on a front wall, other cases accounted for.
+            if(Math.abs(x - leftSin) < confidence && Math.abs(leftSin - rightSin) > confidence) y = rightCos;
+            else if(Math.abs(x - rightSin) < confidence && Math.abs(leftSin - rightSin) > confidence) y = leftCos;
+            else if(Math.abs(x - frontCos) < confidence && Math.abs(frontCos - backCos) > confidence) y = backSin;
+            else if(Math.abs(x - backCos) < confidence && Math.abs(frontCos - backCos) > confidence) y = frontSin;
+            else ; //Currently trusting the odo over 50/50-ing which sensor is blocked.
+        }
+
+        System.out.println("5");
+        System.out.println("PoseX: " + x + ", Pose Y: " + y);
+
+        return new Pose2d(x, y, imuHeading);
+    }
+
+    public Pose2d sensorPoseAnalog() {
+        //Do not call this in a situation where distance sensors could hit the same wall
+        //NOTE: DO NOT call repeatedly (aka every loop) or the y position will not update properly (while using odo).
+
+        //CURRENTLY THE SYSTEM PERPENDICULAR TO WALLS since I would like to test whether the system works before I do fancy stuff.
+
+        //As of April 6, the sensors appear to have a tolerance for 40 degrees either side, with distance not seeming to matter. I would go 30 degrees to be safe.
+
+        System.out.println("1");
+
+        //config.imu.gettingInput = true;
+        config.imu.pingSensor();
+        vals.waitForCycle();
+        if(isStopRequested()) return null;
+        double imuHeading = config.imu.get()[0];
+        double left = config.left.get()[0];
+        double right = config.right.get()[0];
+        double front = config.front.get()[0];
+        double back = config.back.get()[0];
+
+        System.out.println("2");
+        System.out.println("Left: " + left);
+        System.out.println("Right: " + right);
+        System.out.println("Front: " + front);
+        System.out.println("Back: " + back);
+
+        //Getting distance from distance sensor to either wall.
+        double leftCos = left * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.cos(imuHeading)), 2.2)) * Math.abs(Math.cos(imuHeading)) * multiplier;
+        double leftSin = left * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.sin(imuHeading)), 2.2)) * Math.abs(Math.sin(imuHeading)) * multiplier;
+        double rightCos = right * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.cos(imuHeading)), 2.2)) * Math.abs(Math.cos(imuHeading)) * multiplier;
+        double rightSin = right * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.sin(imuHeading)), 2.2)) * Math.abs(Math.sin(imuHeading)) * multiplier;
+        double frontCos = front * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.cos(imuHeading)), 2.2)) * Math.abs(Math.cos(imuHeading)) * multiplier;
+        double frontSin = front * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.sin(imuHeading)), 2.2)) * Math.abs(Math.sin(imuHeading)) * multiplier;
+        double backCos = back * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.cos(imuHeading)), 2.2)) * Math.abs(Math.cos(imuHeading)) * multiplier;
+        double backSin = back * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.sin(imuHeading)), 2.2)) * Math.abs(Math.sin(imuHeading)) * multiplier;
+
+        System.out.println("3");
+        System.out.println("Left Cos: " + leftCos);
+        System.out.println("Left Sin: " + leftSin);
+        System.out.println("Right Cos: " + rightCos);
+        System.out.println("Right Sin: " + rightSin);
+        System.out.println("Front Cos: " + frontCos);
+        System.out.println("Front Sin: " + frontSin);
+        System.out.println("Back Cos: " + backCos);
+        System.out.println("Back Sin: " + backSin);
+        System.out.println();
+
+        //Converting distance from sensors to distance from robot center.
+        /*leftCos += Math.abs(Math.cos(sensorSideAngle + Math.max(correctedHeading, Math.PI / 2 - correctedHeading)));
+        leftSin += Math.abs(Math.sin(sensorSideAngle + Math.max(correctedHeading, Math.PI / 2 - correctedHeading)));
+        rightCos += Math.abs(Math.cos(-sensorSideAngle + Math.max(correctedHeading, Math.PI / 2 - correctedHeading))); //Test using negative sensorSideAngle more, I think it's wrong.
+        rightSin += Math.abs(Math.sin(-sensorSideAngle + Math.max(correctedHeading, Math.PI / 2 - correctedHeading)));
+        frontCos += Math.abs(Math.cos(sensorStraightAngle + Math.max(correctedHeading, Math.PI / 2 - correctedHeading)));
+        frontSin += Math.abs(Math.sin(sensorStraightAngle + Math.max(correctedHeading, Math.PI / 2 - correctedHeading)));
+        backCos += Math.abs(Math.cos(-sensorStraightAngle + Math.max(correctedHeading, Math.PI / 2 - correctedHeading)));
+        backSin += Math.abs(Math.sin(-sensorStraightAngle + Math.max(correctedHeading, Math.PI / 2 - correctedHeading)));\
+         */
+
+        //Assumes radially centered.
+        leftCos += sensorSideOffset * Math.abs(Math.cos(imuHeading));
+        leftSin += sensorSideOffset * Math.abs(Math.sin(imuHeading));
+        rightCos += sensorSideOffset * Math.abs(Math.cos(imuHeading));
+        rightSin += sensorSideOffset * Math.abs(Math.sin(imuHeading));
+        frontCos += sensorStrightOffset * Math.abs(Math.cos(imuHeading));
+        frontSin += sensorStrightOffset * Math.abs(Math.sin(imuHeading));
+        backCos += sensorStrightOffset * Math.abs(Math.cos(imuHeading));
+        backSin += sensorStrightOffset * Math.abs(Math.sin(imuHeading));
+
+        System.out.println("4");
+
+        System.out.println("Left Cos: " + leftCos);
+        System.out.println("Left Sin: " + leftSin);
+        System.out.println("Right Cos: " + rightCos);
+        System.out.println("Right Sin: " + rightSin);
+        System.out.println("Front Cos: " + frontCos);
+        System.out.println("Front Sin: " + frontSin);
+        System.out.println("Back Cos: " + backCos);
+        System.out.println("Back Sin: " + backSin);
+        System.out.println();
+
+        //Get actual X and Y of each position, assuming each input is good, based on heading for every value.
+        leftCos = Math.abs(imuHeading) < Math.PI / 2 ? 9 - leftCos : leftCos - 87; //Left or right
+        leftSin = imuHeading < 0 ? 9 - leftSin : leftSin - 135; //Front or back
+        rightCos = Math.abs(imuHeading) < Math.PI / 2 ? rightCos - 87 : 9 - rightCos; //Right or left
+        rightSin = imuHeading < 0 ? rightSin - 135 : 9 - rightSin; //Back or front
+        frontCos = Math.abs(imuHeading) < Math.PI / 2 ? 9 - frontCos : frontCos - 135; //Front or back
+        frontSin = imuHeading < 0 ? frontSin - 87 : 9 - frontSin; //Left or right
+        backCos = Math.abs(imuHeading) < Math.PI / 2 ? backCos - 135 : 9 - backCos; //Back or front
+        backSin = imuHeading < 0 ? 9 - backSin : backSin - 87; //Right or left
+
+        //TODO: Do comparisons to determine which wall each distance sensor is seeing. Do this by first checking to see if opposites actually see opposites for cos and sin.
+
+        //MARCH 20 NOTES: Appears to be working fine for cases that worked previously, but needs more testing on off cases to find what is wrong (and it is). Changed the way of finding distance to center.
+
+        Pose2d currentPose = config.getPoseEstimate();
+        double poseX = currentPose.getX(), poseY = currentPose.getY();
+        double confidence = 1;
+
+        System.out.println("Left Cos: " + leftCos);
+        System.out.println("Left Sin: " + leftSin);
+        System.out.println("Right Cos: " + rightCos);
+        System.out.println("Right Sin: " + rightSin);
+        System.out.println("Front Cos: " + frontCos);
+        System.out.println("Front Sin: " + frontSin);
+        System.out.println("Back Cos: " + backCos);
+        System.out.println("Back Sin: " + backSin);
+
+        //If robot sees the expected walls:
+        double x = Math.abs(frontCos - backCos) < confidence ? (frontCos + backCos) / 2 : Math.abs(leftSin - rightSin) < confidence ? (leftSin + rightSin) / 2 : poseX;
+        double y = Math.abs(leftCos - rightCos) < confidence ? (leftCos + rightCos) / 2 : Math.abs(frontSin - backSin) < confidence ? (frontSin + backSin) / 2 : poseY;
+
+        if(x == poseX) {
+            //Only 1 X wall seen. Need to find if a wall is seen twice and leave an else statement for cases where it was just a blocked sensor.
+
+            //NOTE: At the moment, this assumes that we aren't dumb enough to see 2 walls over 4 sensors, as the position needed to do that is both really precise and entirely useless.
+
+            //First check is to see if Y went through, in which case we know the overlap is on a Y wall.
+            if(y != poseY) {
+                if(Math.abs(y - frontSin) < confidence && Math.abs(frontSin - backSin) > confidence) x = backCos;
+                else if(Math.abs(y - backSin) < confidence && Math.abs(frontSin - backSin) > confidence) x = frontCos;
+                else if(Math.abs(y - leftCos) < confidence && Math.abs(leftCos - rightCos) > confidence) x = rightSin;
+                else if(Math.abs(y - rightCos) < confidence && Math.abs(leftCos - rightCos) > confidence) x = leftCos;
+                else ; //Currently trusting the odo over 50/50-ing which sensor is blocked.
+            }
+            //Now check for when an X wall is doubled.
+            else {
+                if(Math.abs(leftSin - frontCos) < confidence) {
+                    x = (leftSin + frontCos) / 2;
+                    y = Math.abs(backSin - rightCos) < confidence ? (backSin + rightCos) / 2 : y;
+                }
+                else if(Math.abs(leftSin - backCos) < confidence) {
+                    x = (leftSin + backCos) / 2;
+                    y = Math.abs(frontSin - rightCos) < confidence ? (frontSin + rightCos) / 2 : y;
+                }
+                else if(Math.abs(rightSin - backCos) < confidence) {
+                    x = (rightSin + backCos) / 2;
+                    y = Math.abs(frontSin - leftCos) < confidence ? (frontSin + leftCos) / 2 : y;
+                }
+                else if(Math.abs(rightSin - frontCos) < confidence) {
+                    x = (rightSin + frontCos) / 2;
+                    y = Math.abs(backSin - leftCos) < confidence ? (backSin + leftCos) / 2 : y;
+                }
+                else if(Math.abs(leftCos - frontSin) < confidence) {
+                    x = Math.abs(backCos - rightSin) < confidence ? (backCos + rightSin) / 2 : y;
+                    y = (leftCos + frontSin) / 2;
+                }
+                else if(Math.abs(leftCos - backSin) < confidence) {
+                    x = Math.abs(frontCos - rightSin) < confidence ? (frontCos + rightSin) / 2 : y;
+                    y = (leftCos + backSin) / 2;
+                }
+                else if(Math.abs(rightCos - frontSin) < confidence) {
+                    x = Math.abs(backCos - leftSin) < confidence ? (backCos + leftSin) / 2 : y;
+                    y = (rightCos + frontSin) / 2;
+                }
+                else if(Math.abs(rightCos - backSin) < confidence) {
+                    x = Math.abs(frontCos - leftSin) < confidence ? (frontCos + leftSin) / 2 : y;
+                    y = (rightCos + backSin) / 2;
+                }
+                else ; //Currently trusting the odo over 50/50-ing which sensor is blocked.
+            }
+        }
+        else if(y == poseY) {
+            //Doubled on a front wall, other cases accounted for.
             if(Math.abs(x - leftSin) < confidence && Math.abs(leftSin - rightSin) > confidence) y = rightCos;
             else if(Math.abs(x - rightSin) < confidence && Math.abs(leftSin - rightSin) > confidence) y = leftCos;
             else if(Math.abs(x - frontCos) < confidence && Math.abs(frontCos - backCos) > confidence) y = backSin;
@@ -619,6 +802,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         double right = config.rightDist.getDistance(DistanceUnit.INCH);
         double front = config.frontDist.getDistance(DistanceUnit.INCH);
         double back = config.backDist.getDistance(DistanceUnit.INCH);
+        telemetry.addLine("Calc: " + config.leSense.get()[0] * 11.2 / (6 + 5 * Math.pow(Math.abs(Math.cos(imuHeading)), 2.2))); //This is omega sketch, the numbers I slapped in are just estimates. We'll either need to tune this manually or get some really solid measurements and program a machine learning algorithm.
         double correctedHeading = imuHeading % Math.PI; //Correct heading in each quadrant, as a new quadrant switches what wall it should be seeing.
 
         System.out.println("2");
