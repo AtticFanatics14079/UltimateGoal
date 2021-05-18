@@ -95,7 +95,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     public List<DEncoderlessMotor> motors;
     private List<LynxModule> allHubs;
     public DIMU imu;
-    public DAnalogSensor left, right, front, back, leSense;
+    public DAnalogSensor left, right, back1, back2, leSense;
     private VoltageSensor batteryVoltageSensor;
 
     public ConfigurationRR(HardwareMap hardwareMap) {
@@ -128,62 +128,43 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
         // TODO: adjust the names of the following hardware devices to match your configuration
 
+
     }
 
     public void Configure(HardwareMap hwMap, ValueStorage vals){
         //Add all hardware devices here.
         //Example: hardware.put("motor1", new DriveObject(DriveObject.type.DcMotorImplEx, "left_back_motor", DriveObject.classification.Drivetrain, hwMap));
         //In this example, "left_back_motor" is whatever your configuration says.
-        int i = 0;
 
         hardware.clear();
 
         DAnalogSensor.InterpretVoltage distance = ((double voltage, double max) -> inchMult * (voltage - offset));
 
-        leftFront = new DEncoderlessMotor(vals, hwMap, "front_left_motor", i++);
-        leftRear = new DEncoderlessMotor(vals, hwMap, "back_left_motor", i++);
-        rightRear = new DEncoderlessMotor(vals, hwMap, "back_right_motor", i++);
-        rightFront = new DEncoderlessMotor(vals, hwMap, "front_right_motor", i++);
-        leftEncoder = new DOdometryPod(vals, hwMap, "leftEncoder", i++);
-        rightEncoder = new DOdometryPod(vals, hwMap, "rightEncoder", i++);
-        frontEncoder = new DOdometryPod(vals, hwMap, "frontEncoder", i++);
-        loader = new DServo(vals, hwMap, "loader", i++);
-        gripper = new DServo(vals, hwMap, "gripper", i++);
-        wobble = new DServo(vals, hwMap, "wobble", i++);
-        shooter = new DMotor(vals, hwMap, "shooter", i++);
-        ingester = new DEncoderlessMotor(vals, hwMap, "rightEncoder", i++);
-        preIngest = new DEncoderlessMotor(vals, hwMap, "leftEncoder", i++);
-        leftDist = new DDistanceSensor(vals, hwMap, "distanceLeft", i++);
-        rightDist = new DDistanceSensor(vals, hwMap, "distanceRight", i++);
-        frontDist = new DDistanceSensor(vals, hwMap, "distanceFront", i++);
-        backDist = new DDistanceSensor(vals, hwMap, "distanceBack", i++);
-        leSense = new DAnalogSensor(vals, hwMap, "leSense", i++, distance);
-        //left = new DAnalogSensor(vals, hwMap, "leftDist", i++, distance);
-        //right = new DAnalogSensor(vals, hwMap, "rightDist", i++, distance);
-        //front = new DAnalogSensor(vals, hwMap, "frontDist", i++, distance);
-        //back = new DAnalogSensor(vals, hwMap, "backDist", i++, distance);
-        imu = new DIMU(vals, hwMap, i++);
+        leftFront = new DEncoderlessMotor(hwMap, "front_left_motor");
+        leftRear = new DEncoderlessMotor(hwMap, "back_left_motor");
+        rightRear = new DEncoderlessMotor(hwMap, "back_right_motor");
+        rightFront = new DEncoderlessMotor(hwMap, "front_right_motor");
+        leftEncoder = new DOdometryPod(hwMap, "leftEncoder");
+        rightEncoder = new DOdometryPod(hwMap, "rightEncoder");
+        frontEncoder = new DOdometryPod(hwMap, "frontEncoder");
+        loader = new DServo(hwMap, "loader");
+        gripper = new DServo(hwMap, "gripper");
+        wobble = new DServo(hwMap, "wobble");
+        shooter = new DMotor(hwMap, "shooter");
+        ingester = new DEncoderlessMotor(hwMap, "rightEncoder");
+        preIngest = new DEncoderlessMotor(hwMap, "leftEncoder");
+        leftDist = new DDistanceSensor(hwMap, "distanceLeft");
+        rightDist = new DDistanceSensor(hwMap, "distanceRight");
+        frontDist = new DDistanceSensor(hwMap, "distanceFront");
+        backDist = new DDistanceSensor(hwMap, "distanceBack");
+        //leSense = new DAnalogSensor(hwMap, "leSense", distance);
+        left = new DAnalogSensor(hwMap, "leftDist", distance);
+        right = new DAnalogSensor(hwMap, "rightDist", distance);
+        back1 = new DAnalogSensor(hwMap, "back1", distance);
+        back2 = new DAnalogSensor(hwMap, "back2", distance);
+        imu = new DIMU(hwMap);
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
         pods = Arrays.asList(leftEncoder, rightEncoder, frontEncoder);
-        hardware.add(motors.get(0));
-        hardware.add(motors.get(1));
-        hardware.add(motors.get(2));
-        hardware.add(motors.get(3));
-        hardware.add(leftEncoder);
-        hardware.add(rightEncoder);
-        hardware.add(frontEncoder);
-        hardware.add(loader);
-        hardware.add(gripper);
-        hardware.add(wobble);
-        hardware.add(shooter);
-        hardware.add(ingester);
-        hardware.add(preIngest);
-        hardware.add(leftDist);
-        hardware.add(rightDist);
-        hardware.add(frontDist);
-        hardware.add(backDist);
-        hardware.add(leSense);
-        hardware.add(imu);
 
         // TODO: if your hub is mounted vertically, remap the IMU axes so that the z-axis points
         // upward (normal to the floor) using a command like the following:

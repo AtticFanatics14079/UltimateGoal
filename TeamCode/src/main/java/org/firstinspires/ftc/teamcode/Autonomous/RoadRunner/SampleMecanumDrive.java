@@ -23,6 +23,7 @@ import com.acmerobotics.roadrunner.trajectory.constraints.MecanumConstraints;
 import com.acmerobotics.roadrunner.util.NanoClock;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.lynx.LynxModule;
+import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorImpl;
@@ -88,6 +89,7 @@ public class SampleMecanumDrive extends MecanumDrive {
     public BNO055IMU imu;
     private VoltageSensor batteryVoltageSensor;
     public DistanceSensor leftDist, rightDist, frontDist, backDist;
+    public AnalogInput left, right, back1, back2;
 
     private Pose2d lastPoseOnTurn;
 
@@ -144,6 +146,11 @@ public class SampleMecanumDrive extends MecanumDrive {
         rightDist = hardwareMap.get(DistanceSensor.class, "distanceRight");
         frontDist = hardwareMap.get(DistanceSensor.class, "distanceFront");
         backDist = hardwareMap.get(DistanceSensor.class, "distanceBack");
+
+        left = hardwareMap.get(AnalogInput.class, "leftDist");
+        right = hardwareMap.get(AnalogInput.class, "rightDist");
+        back1 = hardwareMap.get(AnalogInput.class, "back1");
+        back2 = hardwareMap.get(AnalogInput.class, "back2");
 
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
 

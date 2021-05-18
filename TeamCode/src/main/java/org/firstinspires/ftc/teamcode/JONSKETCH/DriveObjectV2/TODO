@@ -1,6 +1,8 @@
-- Need to update all objects with implementing type (e.g. DMotor implements DcMotor)
 - Add a backup system to end Sequence threads on stop/crash
 - Fix-up PositionThread (again) as it is very clunky and hard to troubleshoot
+- Make ConfigurationRR clean
+- Rename stuff with people there so the names aren't garbage again
+- Deprecate useless methods
 
 Known potential issues:
 - No way to recognize end of servo movement (?)

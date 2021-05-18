@@ -11,7 +11,7 @@ public class Test extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         SampleConfiguration config = new SampleConfiguration();
-        HardwareThread hardware = new HardwareThread(hardwareMap, vals, config);
+        HardwareThread hardware = new HardwareThread(hardwareMap, config);
         hardware.start();
         //System.out.println(hardware.config.hardware.get(0).getPID()[0] + " hf");
         Sequence s = new Sequence(() -> config.backLeft.groupSetPosition(3000, 1, 10, config.backLeft, config.backRight, config.frontLeft, config.frontRight), null);

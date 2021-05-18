@@ -5,11 +5,6 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.teamcode.HardwareConfigs.OneHubDrive;
-
-import java.util.Arrays;
-
-import static org.firstinspires.ftc.teamcode.TeleOp.UltimateGoalTeleOpV1.multiplier;
 import static org.firstinspires.ftc.teamcode.TeleOp.UltimateGoalTeleOpV1.sensorSideOffset;
 import static org.firstinspires.ftc.teamcode.TeleOp.UltimateGoalTeleOpV1.sensorStrightOffset;
 
@@ -23,15 +18,13 @@ public class SampleTeleOp extends LinearOpMode {
     public void runOpMode() throws InterruptedException {
         try {
             config = new SampleConfiguration();
-            ValueStorage vals = new ValueStorage();
-            hardware = new HardwareThread(hardwareMap, vals, config);
-            //hardware.config.ExtendGripper.setPID(2, 0, 0); //Gonna need to mess with this one
+            hardware = new HardwareThread(hardwareMap, config);
             config.imu.gettingInput = true;
             waitForStart();
             ElapsedTime time = new ElapsedTime();
             hardware.start();
             while(!isStopRequested()){
-                vals.waitForCycle();
+                hardware.vals.waitForCycle();
                 System.out.println("Finshed waiting, " + time.milliseconds());
                 getInput();
             }
@@ -44,12 +37,15 @@ public class SampleTeleOp extends LinearOpMode {
 
     private void getInput(){
         setPower(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
-        double imuHeading = config.imu.get()[0];
-        double imuDegrees = Math.toDegrees(imuHeading);
-        double hypotenuse = config.back2.get()[0] * (1 - 0.00000706 * imuDegrees + 0.000114 * Math.pow(imuDegrees, 2));
-        telemetry.addData("Hypot: ", hypotenuse);
-        telemetry.addData("Adjacent: ", hypotenuse * Math.cos(imuHeading));
-        telemetry.addData("IMU: ", Math.toDegrees(imuHeading));
+        //double imuHeading = config.imu.get()[0];
+        //double imuDegrees = Math.toDegrees(Math.abs(imuHeading));
+        //imuDegrees = imuDegrees > 90 ? 180 - imuDegrees : imuDegrees;
+        //imuDegrees = Math.abs(imuDegrees - 90) < 25 ? Math.abs(imuDegrees - 90) : imuDegrees;
+        //double hypotenuse = config.back2.get()[0] * (1 - 0.00000706 * imuDegrees + 0.000114 * Math.pow(imuDegrees, 2));
+        //telemetry.addData("Hypot: ", hypotenuse);
+        //telemetry.addData("Wall: ", hypotenuse * Math.cos(Math.toRadians(imuDegrees)));
+        //telemetry.addData("IMU: ", imuDegrees);
+        telemetry.addData("Pose: ", sensorPoseAnalog());
         telemetry.update();
     }
 
@@ -87,24 +83,44 @@ public class SampleTeleOp extends LinearOpMode {
         config.vals.waitForCycle();
         if(isStopRequested()) return null;
         double imuHeading = config.imu.get()[0];
-        double angleCompensator = 1 - 0.0002 * imuHeading + 0.0000069 * Math.pow(imuHeading, 2) + 0.00000428 * Math.pow(imuHeading, 3);
-        double left = config.left.get()[0] * angleCompensator;
-        double right = config.right.get()[0] * angleCompensator;
-        double back1 = config.back1.get()[0] * angleCompensator;
-        double back2 = config.back2.get()[0] * angleCompensator;
+        double headingOffsetPlus = imuHeading + Math.toRadians(12.5);
+        double headingOffsetMinus = imuHeading - Math.toRadians(12.5);
+        double anglePlus = Math.toDegrees(Math.abs(headingOffsetPlus)) % 90;
+        anglePlus = anglePlus > 45 ? Math.abs(anglePlus - 90) : anglePlus;
+        double angleMinus = Math.toDegrees(Math.abs(headingOffsetMinus)) % 90;
+        angleMinus = angleMinus > 45 ? Math.abs(angleMinus - 90) : angleMinus;
+        double angleCompensatorPlus = 1 - 0.0002 * anglePlus + 0.0000069 * Math.pow(anglePlus, 2) + 0.00000428 * Math.pow(anglePlus, 3);
+        double angleCompensatorMinus = 1 - 0.0002 * angleMinus + 0.0000069 * Math.pow(angleMinus, 2) + 0.00000428 * Math.pow(angleMinus, 3);
+        double left = config.left.get()[0];
+        double right = config.right.get()[0];
+        double back1 = config.back1.get()[0];
+        double back2 = config.back2.get()[0];
 
-        double headingOffsetPlus = Math.toRadians(20) + imuHeading;
-        double headingOffsetMinus = Math.toRadians(20) - imuHeading;
+        telemetry.addLine("Left: " + left);
+        telemetry.addLine("Right: " + right);
+        telemetry.addLine("Back1: " + back1);
+        telemetry.addLine("Back2: " + back2);
 
         //Getting distance from distance sensor to either wall.
-        double leftCos = left * Math.abs(Math.cos(headingOffsetPlus));
-        double leftSin = left * Math.abs(Math.sin(headingOffsetPlus));
-        double rightCos = right * Math.abs(Math.cos(headingOffsetMinus));
-        double rightSin = right * Math.abs(Math.sin(headingOffsetMinus));
-        double back1Cos = back1 * Math.abs(Math.cos(headingOffsetMinus));
-        double back1Sin = back1 * Math.abs(Math.sin(headingOffsetMinus));
-        double back2Cos = back2 * Math.abs(Math.cos(headingOffsetPlus));
-        double back2Sin = back2 * Math.abs(Math.sin(headingOffsetPlus));
+        double leftCos = left * Math.abs(Math.cos(headingOffsetPlus)) * angleCompensatorPlus;
+        double leftSin = left * Math.abs(Math.sin(headingOffsetPlus)) * angleCompensatorPlus;
+        double rightCos = right * Math.abs(Math.cos(headingOffsetMinus)) * angleCompensatorMinus;
+        double rightSin = right * Math.abs(Math.sin(headingOffsetMinus)) * angleCompensatorMinus;
+        double back1Cos = back1 * Math.abs(Math.cos(headingOffsetMinus)) * angleCompensatorMinus;
+        double back1Sin = back1 * Math.abs(Math.sin(headingOffsetMinus)) * angleCompensatorMinus;
+        double back2Cos = back2 * Math.abs(Math.cos(headingOffsetPlus)) * angleCompensatorPlus;
+        double back2Sin = back2 * Math.abs(Math.sin(headingOffsetPlus)) * angleCompensatorPlus;
+
+        /*telemetry.addLine("Left Cos: " + leftCos);
+        telemetry.addLine("Left Sin: " + leftSin);
+        telemetry.addLine("Right Cos: " + rightCos);
+        telemetry.addLine("Right Sin: " + rightSin);
+        telemetry.addLine("Back1 Cos: " + back1Cos);
+        telemetry.addLine("Back1 Sin: " + back1Sin);
+        telemetry.addLine("Back2 Cos: " + back2Cos);
+        telemetry.addLine("Back2 Sin: " + back2Sin);
+
+         */
 
         //Assumes radially centered.
         leftCos += sensorSideOffset * Math.abs(Math.cos(imuHeading));
@@ -116,15 +132,27 @@ public class SampleTeleOp extends LinearOpMode {
         back2Cos += sensorStrightOffset * Math.abs(Math.cos(imuHeading));
         back2Sin += sensorStrightOffset * Math.abs(Math.sin(imuHeading));
 
+        /*
+        telemetry.addLine("Left Cos: " + leftCos);
+        telemetry.addLine("Left Sin: " + leftSin);
+        telemetry.addLine("Right Cos: " + rightCos);
+        telemetry.addLine("Right Sin: " + rightSin);
+        telemetry.addLine("Back1 Cos: " + back1Cos);
+        telemetry.addLine("Back1 Sin: " + back1Sin);
+        telemetry.addLine("Back2 Cos: " + back2Cos);
+        telemetry.addLine("Back2 Sin: " + back2Sin);
+
+         */
+
         //Get actual X and Y of each position, assuming each input is good, based on heading for every value.
-        leftCos = Math.abs(Math.cos(headingOffsetPlus)) < Math.sqrt(3)/2.0 ? 10 : Math.abs(headingOffsetPlus) < Math.PI / 2 ? 9 - leftCos : leftCos - 87; //Left or right
-        leftSin = Math.abs(Math.sin(headingOffsetPlus)) < Math.sqrt(3)/2.0 ? 10 : headingOffsetPlus < 0 ? 9 - leftSin : leftSin - 135; //Front or back
-        rightCos = Math.abs(Math.cos(headingOffsetMinus)) < Math.sqrt(3)/2.0 ? 10 : Math.abs(headingOffsetMinus) < Math.PI / 2 ? rightCos - 87 : 9 - rightCos; //Right or left
-        rightSin = Math.abs(Math.sin(headingOffsetMinus)) < Math.sqrt(3)/2.0 ? 10 : headingOffsetMinus < 0 ? rightSin - 135 : 9 - rightSin; //Back or front
-        back1Cos = Math.abs(Math.cos(headingOffsetMinus)) < Math.sqrt(3)/2.0 ? 10 : Math.abs(headingOffsetMinus) < Math.PI / 2 ? 9 - back1Cos : back1Cos - 135; //Front or back
-        back1Sin = Math.abs(Math.sin(headingOffsetMinus)) < Math.sqrt(3)/2.0 ? 10 : headingOffsetMinus < 0 ? back1Sin - 87 : 9 - back1Sin; //Left or right
-        back2Cos = Math.abs(Math.cos(headingOffsetPlus)) < Math.sqrt(3)/2.0 ? 10 : Math.abs(headingOffsetPlus) < Math.PI / 2 ? back2Cos - 135 : 9 - back2Cos; //Back or front
-        back2Sin = Math.abs(Math.sin(headingOffsetPlus)) < Math.sqrt(3)/2.0 ? 10 : headingOffsetPlus < 0 ? 9 - back2Sin : back2Sin - 87; //Right or left
+        leftCos = Math.abs(headingOffsetPlus) < Math.PI / 2 ? -leftCos : leftCos - 94; //Left or right
+        leftSin = headingOffsetPlus < 0 ? -leftSin : leftSin - 142; //Front or back
+        rightCos = Math.abs(headingOffsetMinus) < Math.PI / 2 ? rightCos - 94 : -rightCos; //Right or left
+        rightSin = headingOffsetMinus < 0 ? rightSin - 142 : -rightSin; //Back or front
+        back1Cos = Math.abs(headingOffsetMinus) < Math.PI / 2 ? back1Cos - 142 : -back1Cos; //Front or back
+        back1Sin = headingOffsetMinus < 0 ? -back1Sin : back1Sin - 94; //Left or right
+        back2Cos = Math.abs(headingOffsetPlus) < Math.PI / 2 ? back2Cos - 142 : -back2Cos; //Back or front
+        back2Sin = headingOffsetPlus < 0 ? -back2Sin : back2Sin - 94; //Right or left
 
         double poseX = 0, poseY = 0;
         double confidence = 5;
@@ -133,13 +161,22 @@ public class SampleTeleOp extends LinearOpMode {
         telemetry.addLine("Left Sin: " + leftSin);
         telemetry.addLine("Right Cos: " + rightCos);
         telemetry.addLine("Right Sin: " + rightSin);
-        telemetry.addLine("Front Cos: " + back1Cos);
-        telemetry.addLine("Front Sin: " + back1Sin);
+        telemetry.addLine("Back1 Cos: " + back1Cos);
+        telemetry.addLine("Back1 Sin: " + back1Sin);
         telemetry.addLine("Back Cos: " + back2Cos);
         telemetry.addLine("Back Sin: " + back2Sin);
 
+        if(Math.abs(Math.cos(headingOffsetPlus)) > Math.cos(Math.toRadians(20)) || Math.abs(Math.cos(headingOffsetMinus)) > Math.cos(Math.toRadians(20))) {
+            poseX = Math.abs(leftCos - rightCos) < confidence ? (leftCos + rightCos) / 2 : Math.abs(Math.cos(headingOffsetPlus)) > Math.abs(Math.cos(headingOffsetMinus)) ? leftCos : rightCos;
+            poseY = Math.abs(back2Cos - back1Cos) < confidence ? (back2Cos + back1Cos) / 2 : Math.abs(Math.cos(headingOffsetPlus)) > Math.abs(Math.cos(headingOffsetMinus)) ? back2Cos : back1Cos;
+        }
+        else if(Math.abs(Math.sin(headingOffsetPlus)) > Math.cos(Math.toRadians(20)) || Math.abs(Math.sin(headingOffsetMinus)) > Math.cos(Math.toRadians(20))) {
+            poseX = Math.abs(back2Sin - back1Sin) < confidence ? (back2Sin + back1Sin) / 2 : Math.abs(Math.sin(headingOffsetPlus)) > Math.abs(Math.sin(headingOffsetMinus)) ? back2Sin : back1Sin;
+            poseY = Math.abs(leftSin - rightSin) < confidence ? (leftSin + rightSin) / 2 : Math.abs(Math.sin(headingOffsetPlus)) > Math.abs(Math.sin(headingOffsetMinus)) ? leftSin : rightSin;
+        }
+
         //If robot sees the expected walls:
-        double x = Math.abs(back1Cos - back2Cos) < confidence ? (back1Cos + back2Cos) / 2 : Math.abs(leftSin - rightSin) < confidence ? (leftSin + rightSin) / 2 : poseX;
+        /*double x = Math.abs(back1Cos - back2Cos) < confidence ? (back1Cos + back2Cos) / 2 : Math.abs(leftSin - rightSin) < confidence ? (leftSin + rightSin) / 2 : poseX;
         double y = Math.abs(leftCos - rightCos) < confidence ? (leftCos + rightCos) / 2 : Math.abs(back1Sin - back2Sin) < confidence ? (back1Sin + back2Sin) / 2 : poseY;
 
         if(x == poseX) {
@@ -163,6 +200,8 @@ public class SampleTeleOp extends LinearOpMode {
 
         System.out.println("PoseX: " + x + ", Pose Y: " + y);
 
-        return new Pose2d(x, y, imuHeading);
+         */
+
+        return new Pose2d(poseX, poseY, imuHeading);
     }
 }

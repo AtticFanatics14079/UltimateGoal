@@ -31,37 +31,22 @@ public class SampleConfiguration implements Configuration {
 
         int i = 0;
         hardware.clear();
-        backLeft = new DMotor(vals, hwMap, "back_left_motor", i++);
-        frontLeft = new DMotor(vals, hwMap, "front_left_motor", i++);
-        frontRight = new DMotor(vals, hwMap, "front_right_motor", i++);
-        backRight = new DMotor(vals, hwMap, "back_right_motor", i++);
+        backLeft = new DMotor(hwMap, "back_left_motor");
+        frontLeft = new DMotor(hwMap, "front_left_motor");
+        frontRight = new DMotor(hwMap, "front_right_motor");
+        backRight = new DMotor(hwMap, "back_right_motor");
         //frontOdoPod = new DOdometryPod(vals, hwMap, "frontEncoder", i++);
         //leftOdoPod = new DOdometryPod(vals, hwMap, "leftEncoder", i++);
         //rightOdoPod = new DOdometryPod(vals, hwMap, "rightEncoder", i++);
         //servo = new DServo(vals, hwMap, "servo", i++);
         //motor = new DMotor(vals, hwMap, "motor", i++);
         //odometry = new DThreeWheelOdo(0, 0, 0, vals, new DOdometryPod[]{leftOdoPod, rightOdoPod, frontOdoPod}, 1/274.29, 9.92, 0, 13.5);
-        left = new DAnalogSensor(vals, hwMap, "left", i++, distance);
-        right = new DAnalogSensor(vals, hwMap, "right", i++, distance);
-        back1 = new DAnalogSensor(vals, hwMap, "front", i++, distance); //Switch these later
-        back2 = new DAnalogSensor(vals, hwMap, "back", i++, distance);
-        imu = new DIMU(vals, hwMap, i++);
+        left = new DAnalogSensor(hwMap, "left", distance);
+        right = new DAnalogSensor(hwMap, "right", distance);
+        back1 = new DAnalogSensor(hwMap, "back1", distance); //Switch these later
+        back2 = new DAnalogSensor(hwMap, "back2", distance);
+        imu = new DIMU(hwMap);
 
-        hardware.add(backLeft);
-        hardware.add(frontLeft);
-        hardware.add(frontRight);
-        hardware.add(backRight);
-        //hardware.add(frontOdoPod);
-        //hardware.add(leftOdoPod);
-        //hardware.add(rightOdoPod);
-        //hardware.add(servo);
-        //hardware.add(motor);
-        //hardware.add(odometry);
-        hardware.add(left);
-        hardware.add(right);
-        hardware.add(back1);
-        hardware.add(back2);
-        hardware.add(imu);
         frontRight.reverse(true);
         backRight.reverse(true);
         //Adding more later

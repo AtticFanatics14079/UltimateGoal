@@ -14,15 +14,13 @@ public class DOdometryPod implements Sensor, DriveObject {
     private int partNum;
     private double ticksPerInch = 1000; //MODIFY WITH THE EXACT VALUE
 
-    private ValueStorage vals;
-
-    public DOdometryPod(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum) {
+    public DOdometryPod(HardwareMap hwMap, String objectName) {
         DcMotorImplEx d = hwMap.get(DcMotorImplEx.class, objectName);
         d.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         d.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         odoPod = new Encoder(d);
-        this.vals = vals;
-        this.partNum = partNum;
+        this.partNum = hardware.size();
+        hardware.add(this);
     }
 
     public int getPartNum() {

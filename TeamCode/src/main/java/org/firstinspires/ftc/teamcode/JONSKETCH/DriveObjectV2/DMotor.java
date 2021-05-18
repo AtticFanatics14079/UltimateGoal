@@ -18,14 +18,12 @@ public class DMotor implements Active, DcMotor {
     private double powerToVelocity = 2700; //MODIFY WITH THE EXACT VALUE
 
     private DThread thread = new NullThread();
-    private ValueStorage vals;
 
-    public DMotor(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum) {
+    public DMotor(HardwareMap hwMap, String objectName) {
         motor = hwMap.get(DcMotorImplEx.class, objectName);
         motor.setMode(RunMode.RUN_USING_ENCODER);
-        this.partNum = partNum;
-        this.vals = vals;
-        //Goal: use super and hwMap.get() in a way that doesn't
+        this.partNum = hardware.size();
+        hardware.add(this);
     }
 
     //Constructors

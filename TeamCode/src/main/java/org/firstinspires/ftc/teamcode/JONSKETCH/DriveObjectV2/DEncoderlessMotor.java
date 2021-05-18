@@ -14,13 +14,12 @@ public class DEncoderlessMotor implements Active, DcMotor {
     private int partNum;
 
     private DThread thread = new NullThread();
-    private ValueStorage vals;
 
-    public DEncoderlessMotor(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum) {
+    public DEncoderlessMotor(HardwareMap hwMap, String objectName) {
         motor = hwMap.get(DcMotorImpl.class, objectName);
         motor.setMode(RunMode.RUN_WITHOUT_ENCODER);
-        this.partNum = partNum;
-        this.vals = vals;
+        this.partNum = hardware.size();
+        hardware.add(this);
         //Goal: use super and hwMap.get() in a way that doesn't
     }
 
@@ -58,12 +57,12 @@ public class DEncoderlessMotor implements Active, DcMotor {
 
     @Override
     public void setDirection(Direction direction) {
-
+        motor.setDirection(direction);
     }
 
     @Override
     public Direction getDirection() {
-        return null;
+        return motor.getDirection();
     }
 
     public void setPower(double power) {

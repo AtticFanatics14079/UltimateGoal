@@ -11,14 +11,13 @@ public class DDigitalSensor implements Sensor, DigitalChannel {
 
     //Maybe add a thread to stop when a condition is met
     //private DOThread thread = new NullThread();
-    private ValueStorage vals;
 
     //Constructors
 
-    public DDigitalSensor(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum) {
+    public DDigitalSensor(HardwareMap hwMap, String objectName) {
         sensor = hwMap.get(DigitalChannel.class, objectName);
-        this.partNum = partNum;
-        this.vals = vals;
+        this.partNum = hardware.size();
+        hardware.add(this);
     }
 
     //Interface methods

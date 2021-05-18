@@ -13,14 +13,13 @@ public class DDistanceSensor implements Sensor, DriveObject, DistanceSensor {
 
     private Thread t = null;
 
-    private ValueStorage vals;
-
     public volatile boolean gettingInput = true;
 
-    public DDistanceSensor(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum) {
+    public DDistanceSensor(HardwareMap hwMap, String objectName) {
         sensor = hwMap.get(DistanceSensor.class, objectName);
-        this.partNum = partNum;
-        this.vals = vals;
+        this.partNum = hardware.size();
+
+        hardware.add(this);
     }
 
     @Override

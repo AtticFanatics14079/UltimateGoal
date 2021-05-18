@@ -29,15 +29,15 @@ public class UltimateGoalConfig implements Configuration {
         //In this example, "left_back_motor" is whatever your configuration says.
         int i = 0;
         hardware.clear();
-        backLeft = new DMotor(vals, hwMap, "back_left_motor", i++);
-        frontLeft = new DMotor(vals, hwMap, "front_left_motor", i++);
-        frontRight = new DMotor(vals, hwMap, "front_right_motor", i++);
-        backRight = new DMotor(vals, hwMap, "back_right_motor", i++);
-        frontOdoPod = new DOdometryPod(vals, hwMap, "frontEncoder", i++);
-        leftOdoPod = new DOdometryPod(vals, hwMap, "leftEncoder", i++);
-        rightOdoPod = new DOdometryPod(vals, hwMap, "rightEncoder", i++);
-        servo = new DServo(vals, hwMap, "servo", i++);
-        shooter = new DMotor(vals, hwMap, "shooter", i++);
+        backLeft = new DMotor(hwMap, "back_left_motor");
+        frontLeft = new DMotor(hwMap, "front_left_motor");
+        frontRight = new DMotor(hwMap, "front_right_motor");
+        backRight = new DMotor(hwMap, "back_right_motor");
+        frontOdoPod = new DOdometryPod(hwMap, "frontEncoder");
+        leftOdoPod = new DOdometryPod(hwMap, "leftEncoder");
+        rightOdoPod = new DOdometryPod(hwMap, "rightEncoder");
+        servo = new DServo(hwMap, "servo");
+        shooter = new DMotor(hwMap, "shooter");
         odometry = new DThreeWheelOdo(0, 0, 0, vals, new DOdometryPod[]{leftOdoPod, rightOdoPod, frontOdoPod}, 1/274.29, 9.92, 0, 13.5);
 
         hardware.add(backLeft);

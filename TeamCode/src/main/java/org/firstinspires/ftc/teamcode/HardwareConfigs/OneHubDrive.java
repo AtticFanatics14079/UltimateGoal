@@ -29,10 +29,10 @@ public class OneHubDrive implements Configuration {
         //In this example, "left_back_motor" is whatever your configuration says.
         int i = 0;
         hardware.clear();
-        backLeft = new DMotor(vals, hwMap, "back_left_motor", i++);
-        frontLeft = new DMotor(vals, hwMap, "front_left_motor", i++);
-        frontRight = new DMotor(vals, hwMap, "front_right_motor", i++);
-        backRight = new DMotor(vals, hwMap, "back_right_motor", i++);
+        backLeft = new DMotor(hwMap, "back_left_motor");
+        frontLeft = new DMotor(hwMap, "front_left_motor");
+        frontRight = new DMotor(hwMap, "front_right_motor");
+        backRight = new DMotor(hwMap, "back_right_motor");
 
         hardware.add(backLeft);
         hardware.add(frontLeft);

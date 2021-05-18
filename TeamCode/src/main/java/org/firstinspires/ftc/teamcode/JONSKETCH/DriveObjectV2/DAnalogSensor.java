@@ -12,24 +12,22 @@ public class DAnalogSensor implements Sensor, AnalogSensor {
 
     private InterpretVoltage interpret;
 
-    private ValueStorage vals;
-
     private double maxVolt;
 
-    public DAnalogSensor(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum, InterpretVoltage method) {
+    public DAnalogSensor(HardwareMap hwMap, String objectName, InterpretVoltage method) {
         sensor = hwMap.get(AnalogInput.class, objectName);
-        this.partNum = partNum;
-        this.vals = vals;
+        this.partNum = hardware.size();
         interpret = method;
         maxVolt = getMaxVoltage();
+        hardware.add(this);
     }
 
-    public DAnalogSensor(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum, double maxVoltage, InterpretVoltage method) {
+    public DAnalogSensor(HardwareMap hwMap, String objectName, double maxVoltage, InterpretVoltage method) {
         sensor = hwMap.get(AnalogInput.class, objectName);
-        this.partNum = partNum;
-        this.vals = vals;
+        this.partNum = hardware.size();
         interpret = method;
         maxVolt = maxVoltage;
+        hardware.add(this);
     }
 
     public interface InterpretVoltage {
@@ -59,7 +57,7 @@ public class DAnalogSensor implements Sensor, AnalogSensor {
     @Override
     public double[] getHardware() {
         double input = sensor.getVoltage();
-        return new double[]{interpret.interpret(input, maxVolt), input, sensor.getMaxVoltage()};
+        return new double[]{interpret.interpret(input, maxVolt), input};
     }
 
     @Override

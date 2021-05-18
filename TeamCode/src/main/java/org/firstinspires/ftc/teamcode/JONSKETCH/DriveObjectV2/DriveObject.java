@@ -1,12 +1,9 @@
 package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
 
-import com.qualcomm.robotcore.hardware.HardwareMap;
-
-public interface DriveObject {
+public interface DriveObject extends SharedObjects {
 
     int getPartNum();
     double[] get();
     double[] getHardware();
     void endThreads();
-
 }

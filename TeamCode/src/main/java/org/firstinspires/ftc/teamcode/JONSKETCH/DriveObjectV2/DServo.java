@@ -9,14 +9,13 @@ public class DServo implements Active {
     private int partNum;
 
     private DThread thread = new NullThread();
-    private ValueStorage vals;
 
     //Constructors
 
-    public DServo(ValueStorage vals, HardwareMap hwMap, String objectName, int partNum){
+    public DServo(HardwareMap hwMap, String objectName){
         servo = hwMap.get(Servo.class, objectName);
-        this.partNum = partNum;
-        this.vals = vals;
+        this.partNum = hardware.size();
+        hardware.add(this);
     }
 
     //Interface methods

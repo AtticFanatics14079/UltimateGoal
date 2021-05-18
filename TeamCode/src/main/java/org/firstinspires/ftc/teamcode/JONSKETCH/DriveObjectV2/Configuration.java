@@ -4,9 +4,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import java.util.ArrayList;
 
-public interface Configuration {
-
-    ArrayList<DriveObject> hardware = new ArrayList<>();
+public interface Configuration extends SharedObjects {
 
     void Configure(HardwareMap hwMap, ValueStorage vals);
     void setBulkCachingManual(boolean manual);

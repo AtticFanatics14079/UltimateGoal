@@ -26,10 +26,10 @@ public class DriveObjectRobotMovement {
     public DriveObjectRobotMovement(HardwareMap hwMap){
         int i = 0;
 
-        Motors[0] = new DEncoderlessMotor(vals, hwMap, "back_left_motor", i++);
-        Motors[1] = new DEncoderlessMotor(vals, hwMap, "front_left_motor", i++);
-        Motors[2] = new DEncoderlessMotor(vals, hwMap, "front_right_motor", i++);
-        Motors[3] = new DEncoderlessMotor(vals, hwMap, "back_right_motor", i++);
+        Motors[0] = new DEncoderlessMotor(hwMap, "back_left_motor");
+        Motors[1] = new DEncoderlessMotor(hwMap, "front_left_motor");
+        Motors[2] = new DEncoderlessMotor(hwMap, "front_right_motor");
+        Motors[3] = new DEncoderlessMotor(hwMap, "back_right_motor");
 
         Motors[2].setDirection(DcMotorSimple.Direction.REVERSE);
         Motors[3].setDirection(DcMotorSimple.Direction.REVERSE);

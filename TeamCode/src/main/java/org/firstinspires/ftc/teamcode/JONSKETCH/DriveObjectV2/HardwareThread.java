@@ -4,10 +4,9 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 
-public class HardwareThread extends Thread {
+public class HardwareThread extends Thread implements SharedObjects {
 
     ElapsedTime time;
-    private ValueStorage vals;
     double[][] hardwareVals; //Holds the values received from hardware of each part.
     double[] lastRun; //Previous run values.
     public Configuration config;
@@ -15,15 +14,13 @@ public class HardwareThread extends Thread {
     private boolean setTime = false; //Vestigial variable
     public double voltMult = 1, lastTime = 0; //Vestigial variables
 
-    public HardwareThread(HardwareMap hwMap, ValueStorage vals, Configuration configuration){
+    public HardwareThread(HardwareMap hwMap, Configuration configuration){
         config = configuration;
         config.Configure(hwMap, vals);
-        int size = config.hardware.size();
-        this.vals = vals;
-        this.vals.setup(size);
+        int size = hardware.size();
+        vals.setup(size);
         hardwareVals = new double[size][];
         lastRun = new double[size];
-        //voltMult = 13.0/config.voltSense.getVoltage();
         config.setBulkCachingManual(true);
     }
 
@@ -39,13 +36,11 @@ public class HardwareThread extends Thread {
                 readHardware(); //Longest section by a ridiculous margin (about 90% of time).
 
                 runHardware(vals.runValues(false, 0, 0));
-
-                //updateHardware();
             }
         }
         catch(Exception e) {}
         finally {
-            for(DriveObject d : config.hardware) {
+            for(DriveObject d : hardware) {
                 d.endThreads();
             }
             System.out.println("Hardware Time 1: " + time.milliseconds());
@@ -60,9 +55,9 @@ public class HardwareThread extends Thread {
         config.clearBulkCache(); //Miniscule time
 
         for(int i = 0; i < hardwareVals.length; i++) {
-            if(config.hardware.get(i) instanceof DIMU && !((DIMU) config.hardware.get(i)).gettingInput) hardwareVals[i] = new double[]{};
-            else if(config.hardware.get(i) instanceof DDistanceSensor && !((DDistanceSensor) config.hardware.get(i)).gettingInput) hardwareVals[i] = new double[]{};
-            else hardwareVals[i] = config.hardware.get(i).getHardware(); //Majority of time in this loop
+            if(hardware.get(i) instanceof DIMU && !((DIMU) hardware.get(i)).gettingInput) hardwareVals[i] = new double[]{};
+            else if(hardware.get(i) instanceof DDistanceSensor && !((DDistanceSensor) hardware.get(i)).gettingInput) hardwareVals[i] = new double[]{};
+            else hardwareVals[i] = hardware.get(i).getHardware(); //Majority of time in this loop
         }
 
         vals.hardware(true, hardwareVals, 0);
@@ -71,27 +66,13 @@ public class HardwareThread extends Thread {
     private void runHardware(double[] Values) {
 
         for(int i = 0; i < this.hardwareVals.length; i++) {
-            if(config.hardware.get(i) instanceof Active && lastRun[i] != Values[i]) {
-                ((Active) (config.hardware.get(i))).setHardware(Values[i]);
+            if(hardware.get(i) instanceof Active && lastRun[i] != Values[i]) {
+                ((Active) (hardware.get(i))).setHardware(Values[i]);
             }
             //instanceof and typecasting allows for sensors to not include setHardware.
         }
 
         lastRun = Values;
-    }
-
-    private void updateHardware() {
-        for(int i = 0; i < this.hardwareVals.length; i++) {
-            if(config.hardware.get(i) instanceof DIMU && resetIMU) {
-                ((DIMU) config.hardware.get(i)).resetIMU();
-                resetIMU = false;
-            }
-            //instanceof and typecasting allows for sensors to not include setHardware.
-        }
-    }
-
-    public void resetIMU() {
-        resetIMU = true;
     }
 
     public void Stop(){

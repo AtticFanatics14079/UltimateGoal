@@ -20,7 +20,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 public class DIMU implements Sensor, BNO055IMU {
 
     private BNO055IMU imu;
-    private ValueStorage vals;
 
     public volatile boolean gettingInput = true;
 
@@ -30,14 +29,25 @@ public class DIMU implements Sensor, BNO055IMU {
 
     private int partNum;
 
-    public DIMU(ValueStorage vals, HardwareMap hwMap, int partnum) {
+    //Defaults to name "imu"
+    public DIMU(HardwareMap hwMap) {
         imu = hwMap.get(BNO055IMU.class, "imu");
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS; //Default radians
         initialize(parameters);
 
-        this.vals = vals;
-        this.partNum = partnum;
+        this.partNum = hardware.size();
+        hardware.add(this);
+    }
+
+    public DIMU(HardwareMap hwMap, String objectName) {
+        imu = hwMap.get(BNO055IMU.class, objectName);
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS; //Default radians
+        initialize(parameters);
+
+        this.partNum = hardware.size();
+        hardware.add(this);
     }
 
     public int getPartNum() {
