@@ -136,8 +136,6 @@ public class AllPathsVisionDistance extends LinearOpMode {
             drive = new SampleMecanumDrive(hardwareMap);
             telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
-            DistanceSensor leSense = hardwareMap.get(DistanceSensor.class, "distanceRight");
-
             if (usingCamera) {
                 int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
                 int[] viewportContainerIds = OpenCvCameraFactory.getInstance()
@@ -169,7 +167,6 @@ public class AllPathsVisionDistance extends LinearOpMode {
             while (!isStarted() && !isStopRequested()) {
                 telemetry.addData("Le stack: ", stackSize);
                 telemetry.addData("Setup: ", properSetup);
-                telemetry.addData("Distance from wall: ", leSense.getDistance(DistanceUnit.INCH));
                 telemetry.update();
                 if(gamepad1.start) {
                     drive.setPoseEstimate(startPose);
@@ -673,110 +670,110 @@ public class AllPathsVisionDistance extends LinearOpMode {
 
         return new Pose2d(poseX, poseY, imuHeading);
     }
-
-    public Pose2d sensorPose() {
-        //Do not call this in a situation where distance sensors could hit the same wall
-        //NOTE: DO NOT call repeatedly (aka every loop) or the y position will not update properly (while using odo).
-
-        double imuHeading = drive.imu.getAngularOrientation().firstAngle;
-        double left = drive.leftDist.getDistance(DistanceUnit.INCH);
-        double right = drive.rightDist.getDistance(DistanceUnit.INCH);
-        double front = drive.frontDist.getDistance(DistanceUnit.INCH);
-        double back = drive.backDist.getDistance(DistanceUnit.INCH);
-        System.out.println("Input : " + left);
-        System.out.println("Right input: " + right);
-        System.out.println("Front input : " + front);
-        System.out.println("Back input: " + back);
-        double correctedSideAngle = sensorSideAngle; //Accounts for X vs. Y.
-        double correctedStraightAngle = sensorStrightAngle; //Accounts for X vs. Y.
-        double correctedHeading = imuHeading > 0 ? (imuHeading + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4 : -((Math.abs(imuHeading) + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4); //Correct heading in each quadrant, as a new quadrant switches what wall it should be seeing.
-        left *= (left < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0; //Gets distance from wall as a straight line
-        System.out.println("Distance : " + left);
-        right *= (right < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier * rightDistMult : 0;
-        front *= (front < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0;
-        back *= (back < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0;
-        left += (left > 0) ? sensorSideOffset * Math.abs(Math.cos(correctedSideAngle + correctedHeading)) : 200; //First quadrant, deals with small cosine values
-        System.out.println("Center Distance : " + left);
-        right += (right > 0) ? sensorSideOffset * Math.abs(Math.cos(-correctedSideAngle + correctedHeading)) : 200; //Second quadrant, deals with small cosine values
-        System.out.println("Right : " + right);
-        front += (front > 0) ? sensorStrightOffset * Math.abs(Math.cos(correctedStraightAngle + correctedHeading)) : 200; //First quadrant, deals with small cosine values
-        System.out.println("Front center : " + front);
-        back += (back > 0) ? sensorStrightOffset * Math.abs(Math.cos(-correctedStraightAngle + correctedHeading)) : 200; //Second quadrant, deals with small cosine values
-        System.out.println("Back center: " + back);
-
-        double distanceYLeft = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? left : front) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? right : back); //Switches which distance sensor input corresponds to what actual side relative to robot.
-        System.out.println("Actual dist : " + distanceYLeft);
-        double distanceYRight = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? right : back) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? left : front);
-        System.out.println("Actual right : " + distanceYRight);
-        double distanceXFront = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? front : right) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? back : left);
-        System.out.println("Actual front : " + distanceXFront);
-        double distanceXBack = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? back : left) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? front : right);
-        System.out.println("Actual back : " + distanceXBack);
-
-        Pose2d currentPose = drive.getPoseEstimate();
-        double poseX = currentPose.getX(), poseY = currentPose.getY();
-
-        poseY = (distanceYRight < distanceYLeft) ? - 87 + Math.abs(distanceYRight) : (distanceYLeft < 100) ? 9 - Math.abs(distanceYLeft) : poseY; //Sets up 0 when robot jammed against left wall, grabs smaller of two distances.
-        poseX = (distanceXBack < distanceXFront) ? - 135 + Math.abs(distanceXBack) : (distanceXFront < 100) ? 9 - Math.abs(distanceXFront) : poseX; //Sets up 0 when robot jammed against front wall
-        System.out.println("Pose Y: " + poseY);
-        System.out.println("Pose X: " + poseX);
-
-        System.out.println("IMU: " + imuHeading);
-
-        return new Pose2d(poseX, poseY, imuHeading);
-    }
-
-    public Pose2d sensorPoseNoBack() {
-        //Do not call this in a situation where distance sensors could hit the same wall
-        //NOTE: DO NOT call repeatedly (aka every loop) or the y position will not update properly (while using odo).
-
-        double imuHeading = drive.imu.getAngularOrientation().firstAngle;
-        double left = drive.leftDist.getDistance(DistanceUnit.INCH);
-        double right = drive.rightDist.getDistance(DistanceUnit.INCH);
-        double front = drive.frontDist.getDistance(DistanceUnit.INCH);
-        double back = drive.backDist.getDistance(DistanceUnit.INCH);
-        System.out.println("Input : " + left);
-        System.out.println("Right input: " + right);
-        System.out.println("Front input : " + front);
-        System.out.println("Back input: " + back);
-        double correctedSideAngle = sensorSideAngle; //Accounts for X vs. Y.
-        double correctedStraightAngle = sensorStrightAngle; //Accounts for X vs. Y.
-        double correctedHeading = imuHeading > 0 ? (imuHeading + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4 : -((Math.abs(imuHeading) + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4); //Correct heading in each quadrant, as a new quadrant switches what wall it should be seeing.
-        left *= (left < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0; //Gets distance from wall as a straight line
-        System.out.println("Distance : " + left);
-        right *= (right < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier * rightDistMult : 0;
-        front *= (front < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0;
-        back *= (back < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0;
-        left += (left > 0) ? sensorSideOffset * Math.abs(Math.cos(correctedSideAngle + correctedHeading)) : 200; //First quadrant, deals with small cosine values
-        System.out.println("Center Distance : " + left);
-        right += (right > 0) ? sensorSideOffset * Math.abs(Math.cos(-correctedSideAngle + correctedHeading)) : 200; //Second quadrant, deals with small cosine values
-        System.out.println("Right : " + right);
-        front += (front > 0) ? sensorStrightOffset * Math.abs(Math.cos(correctedStraightAngle + correctedHeading)) : 200; //First quadrant, deals with small cosine values
-        System.out.println("Front center : " + front);
-        back += (back > 0) ? sensorStrightOffset * Math.abs(Math.cos(-correctedStraightAngle + correctedHeading)) : 200; //Second quadrant, deals with small cosine values
-        System.out.println("Back center: " + back);
-
-        double distanceYLeft = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? left : front) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? right : back); //Switches which distance sensor input corresponds to what actual side relative to robot.
-        System.out.println("Actual dist : " + distanceYLeft);
-        double distanceYRight = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? right : back) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? left : front);
-        System.out.println("Actual right : " + distanceYRight);
-        double distanceXFront = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? front : right) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? back : left);
-        System.out.println("Actual front : " + distanceXFront);
-        double distanceXBack = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? back : left) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? front : right);
-        System.out.println("Actual back : " + distanceXBack);
-
-        Pose2d currentPose = drive.getPoseEstimate();
-        double poseX = currentPose.getX(), poseY = currentPose.getY();
-
-        poseY = (distanceYRight < distanceYLeft) ? - 87 + Math.abs(distanceYRight) : (distanceYLeft < 100) ? 9 - Math.abs(distanceYLeft) : poseY; //Sets up 0 when robot jammed against left wall, grabs smaller of two distances.
-        poseX = (distanceXBack < 100) ? - 135 + Math.abs(distanceXBack) : poseX; //Sets up 0 when robot jammed against front wall
-        System.out.println("Pose Y: " + poseY);
-        System.out.println("Pose X: " + poseX);
-
-        System.out.println("IMU: " + imuHeading);
-
-        return new Pose2d(poseX, poseY, imuHeading);
-    }
+//
+//    public Pose2d sensorPose() {
+//        //Do not call this in a situation where distance sensors could hit the same wall
+//        //NOTE: DO NOT call repeatedly (aka every loop) or the y position will not update properly (while using odo).
+//
+//        double imuHeading = drive.imu.getAngularOrientation().firstAngle;
+//        double left = drive.leftDist.getDistance(DistanceUnit.INCH);
+//        double right = drive.rightDist.getDistance(DistanceUnit.INCH);
+//        double front = drive.frontDist.getDistance(DistanceUnit.INCH);
+//        double back = drive.backDist.getDistance(DistanceUnit.INCH);
+//        System.out.println("Input : " + left);
+//        System.out.println("Right input: " + right);
+//        System.out.println("Front input : " + front);
+//        System.out.println("Back input: " + back);
+//        double correctedSideAngle = sensorSideAngle; //Accounts for X vs. Y.
+//        double correctedStraightAngle = sensorStrightAngle; //Accounts for X vs. Y.
+//        double correctedHeading = imuHeading > 0 ? (imuHeading + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4 : -((Math.abs(imuHeading) + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4); //Correct heading in each quadrant, as a new quadrant switches what wall it should be seeing.
+//        left *= (left < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0; //Gets distance from wall as a straight line
+//        System.out.println("Distance : " + left);
+//        right *= (right < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier * rightDistMult : 0;
+//        front *= (front < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0;
+//        back *= (back < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0;
+//        left += (left > 0) ? sensorSideOffset * Math.abs(Math.cos(correctedSideAngle + correctedHeading)) : 200; //First quadrant, deals with small cosine values
+//        System.out.println("Center Distance : " + left);
+//        right += (right > 0) ? sensorSideOffset * Math.abs(Math.cos(-correctedSideAngle + correctedHeading)) : 200; //Second quadrant, deals with small cosine values
+//        System.out.println("Right : " + right);
+//        front += (front > 0) ? sensorStrightOffset * Math.abs(Math.cos(correctedStraightAngle + correctedHeading)) : 200; //First quadrant, deals with small cosine values
+//        System.out.println("Front center : " + front);
+//        back += (back > 0) ? sensorStrightOffset * Math.abs(Math.cos(-correctedStraightAngle + correctedHeading)) : 200; //Second quadrant, deals with small cosine values
+//        System.out.println("Back center: " + back);
+//
+//        double distanceYLeft = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? left : front) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? right : back); //Switches which distance sensor input corresponds to what actual side relative to robot.
+//        System.out.println("Actual dist : " + distanceYLeft);
+//        double distanceYRight = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? right : back) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? left : front);
+//        System.out.println("Actual right : " + distanceYRight);
+//        double distanceXFront = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? front : right) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? back : left);
+//        System.out.println("Actual front : " + distanceXFront);
+//        double distanceXBack = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? back : left) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? front : right);
+//        System.out.println("Actual back : " + distanceXBack);
+//
+//        Pose2d currentPose = drive.getPoseEstimate();
+//        double poseX = currentPose.getX(), poseY = currentPose.getY();
+//
+//        poseY = (distanceYRight < distanceYLeft) ? - 87 + Math.abs(distanceYRight) : (distanceYLeft < 100) ? 9 - Math.abs(distanceYLeft) : poseY; //Sets up 0 when robot jammed against left wall, grabs smaller of two distances.
+//        poseX = (distanceXBack < distanceXFront) ? - 135 + Math.abs(distanceXBack) : (distanceXFront < 100) ? 9 - Math.abs(distanceXFront) : poseX; //Sets up 0 when robot jammed against front wall
+//        System.out.println("Pose Y: " + poseY);
+//        System.out.println("Pose X: " + poseX);
+//
+//        System.out.println("IMU: " + imuHeading);
+//
+//        return new Pose2d(poseX, poseY, imuHeading);
+//    }
+//
+//    public Pose2d sensorPoseNoBack() {
+//        //Do not call this in a situation where distance sensors could hit the same wall
+//        //NOTE: DO NOT call repeatedly (aka every loop) or the y position will not update properly (while using odo).
+//
+//        double imuHeading = drive.imu.getAngularOrientation().firstAngle;
+//        double left = drive.leftDist.getDistance(DistanceUnit.INCH);
+//        double right = drive.rightDist.getDistance(DistanceUnit.INCH);
+//        double front = drive.frontDist.getDistance(DistanceUnit.INCH);
+//        double back = drive.backDist.getDistance(DistanceUnit.INCH);
+//        System.out.println("Input : " + left);
+//        System.out.println("Right input: " + right);
+//        System.out.println("Front input : " + front);
+//        System.out.println("Back input: " + back);
+//        double correctedSideAngle = sensorSideAngle; //Accounts for X vs. Y.
+//        double correctedStraightAngle = sensorStrightAngle; //Accounts for X vs. Y.
+//        double correctedHeading = imuHeading > 0 ? (imuHeading + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4 : -((Math.abs(imuHeading) + Math.PI / 4) % (Math.PI / 2) - Math.PI / 4); //Correct heading in each quadrant, as a new quadrant switches what wall it should be seeing.
+//        left *= (left < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0; //Gets distance from wall as a straight line
+//        System.out.println("Distance : " + left);
+//        right *= (right < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier * rightDistMult : 0;
+//        front *= (front < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0;
+//        back *= (back < 100) ? Math.abs(Math.cos(correctedHeading)) * multiplier : 0;
+//        left += (left > 0) ? sensorSideOffset * Math.abs(Math.cos(correctedSideAngle + correctedHeading)) : 200; //First quadrant, deals with small cosine values
+//        System.out.println("Center Distance : " + left);
+//        right += (right > 0) ? sensorSideOffset * Math.abs(Math.cos(-correctedSideAngle + correctedHeading)) : 200; //Second quadrant, deals with small cosine values
+//        System.out.println("Right : " + right);
+//        front += (front > 0) ? sensorStrightOffset * Math.abs(Math.cos(correctedStraightAngle + correctedHeading)) : 200; //First quadrant, deals with small cosine values
+//        System.out.println("Front center : " + front);
+//        back += (back > 0) ? sensorStrightOffset * Math.abs(Math.cos(-correctedStraightAngle + correctedHeading)) : 200; //Second quadrant, deals with small cosine values
+//        System.out.println("Back center: " + back);
+//
+//        double distanceYLeft = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? left : front) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? right : back); //Switches which distance sensor input corresponds to what actual side relative to robot.
+//        System.out.println("Actual dist : " + distanceYLeft);
+//        double distanceYRight = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? right : back) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? left : front);
+//        System.out.println("Actual right : " + distanceYRight);
+//        double distanceXFront = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? front : right) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? back : left);
+//        System.out.println("Actual front : " + distanceXFront);
+//        double distanceXBack = Math.abs(imuHeading - Math.PI / 4) < Math.PI / 2 ? (Math.abs(imuHeading) < Math.PI / 4 ? back : left) : (Math.abs(imuHeading) > 3 * Math.PI / 4 ? front : right);
+//        System.out.println("Actual back : " + distanceXBack);
+//
+//        Pose2d currentPose = drive.getPoseEstimate();
+//        double poseX = currentPose.getX(), poseY = currentPose.getY();
+//
+//        poseY = (distanceYRight < distanceYLeft) ? - 87 + Math.abs(distanceYRight) : (distanceYLeft < 100) ? 9 - Math.abs(distanceYLeft) : poseY; //Sets up 0 when robot jammed against left wall, grabs smaller of two distances.
+//        poseX = (distanceXBack < 100) ? - 135 + Math.abs(distanceXBack) : poseX; //Sets up 0 when robot jammed against front wall
+//        System.out.println("Pose Y: " + poseY);
+//        System.out.println("Pose X: " + poseX);
+//
+//        System.out.println("IMU: " + imuHeading);
+//
+//        return new Pose2d(poseX, poseY, imuHeading);
+//    }
 
     public void turnToPowershot(int pixel) {
         while(Math.abs(minX - pixel) > 3) {
