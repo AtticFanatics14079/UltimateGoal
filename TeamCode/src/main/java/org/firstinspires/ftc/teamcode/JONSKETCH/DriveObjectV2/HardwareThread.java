@@ -24,6 +24,10 @@ public class HardwareThread extends Thread implements SharedObjects {
         config.setBulkCachingManual(true);
     }
 
+    public ValueStorage getVals() {
+        return vals;
+    }
+
     public void run(){
 
         time = new ElapsedTime();

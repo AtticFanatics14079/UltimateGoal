@@ -152,12 +152,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         wobble = new DServo(hwMap, "wobble");
         shooter = new DMotor(hwMap, "shooter");
         ingester = new DEncoderlessMotor(hwMap, "rightEncoder");
-        preIngest = new DEncoderlessMotor(hwMap, "leftEncoder");
-        leftDist = new DDistanceSensor(hwMap, "distanceLeft");
-        rightDist = new DDistanceSensor(hwMap, "distanceRight");
-        frontDist = new DDistanceSensor(hwMap, "distanceFront");
-        backDist = new DDistanceSensor(hwMap, "distanceBack");
-        //leSense = new DAnalogSensor(hwMap, "leSense", distance);
+        preIngest = new DEncoderlessMotor(hwMap, "frontEncoder");
         left = new DAnalogSensor(hwMap, "leftDist", distance);
         right = new DAnalogSensor(hwMap, "rightDist", distance);
         back1 = new DAnalogSensor(hwMap, "back1", distance);

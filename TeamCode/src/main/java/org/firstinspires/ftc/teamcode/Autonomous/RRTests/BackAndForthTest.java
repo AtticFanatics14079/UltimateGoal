@@ -52,15 +52,11 @@ public class BackAndForthTest extends LinearOpMode {
             drive.followTrajectory(trajectoryForward);
             drive.followTrajectory(trajectoryBackward);
 
-            TelemetryPacket packet = new TelemetryPacket();
-
             Pose2d estimate = drive.getPoseEstimate();
-
-            Canvas fieldOverlay = packet.fieldOverlay();
-            fieldOverlay.setStroke("#F44336");
-            DashboardUtil.drawRobot(fieldOverlay, new Pose2d(estimate.getX(), estimate.getY(), estimate.getHeading()));
-
-            FtcDashboard.getInstance().sendTelemetryPacket(packet);
+            telemetry.addData("X", estimate.getX());
+            telemetry.addData("Y", estimate.getY());
+            telemetry.addData("Heading", estimate.getHeading());
+            telemetry.update();
         }
     }
 }

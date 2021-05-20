@@ -79,7 +79,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
     ConfigurationRR config;
     DriveObjectRobotMovement drive;
-    ValueStorage vals = new ValueStorage();
+    ValueStorage vals;
     HardwareThread hardware;
     Thread returnToShoot, powerShots, shootMacro, grabWobble, dropWobble, lowerWobble;
     public static double wobbleUp = 0.4, wobbleDown = 0.85, wobbleMid = 0.67, gripperOpen = 0, gripperClosed = 1, load = 0.5, reload = 0.1, shooterSpeed = -1640, multiplier = 1, sensorSideOffset = 8.20, sensorSideAngle = 0.66, sensorStrightOffset = 9, sensorStraightAngle = 0, rightDistMult = 1; //Sheets had 1.15 as multiplier, seeing if just my house that's off
@@ -95,7 +95,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
     private boolean lockedLoader = false, pressedLock = false, pressedShooter = false, shooterFast = false, pressedOdoAdjust = false;
 
-    double intakeSpeed = 0;
+    public static double intakeSpeed = 0;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -103,6 +103,8 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             config = new ConfigurationRR(hardwareMap);
             hardware = new HardwareThread(hardwareMap, config);
             hardware.start();
+            vals = hardware.getVals();
+            System.out.println("Not dead yet");
 
             int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
 
@@ -111,15 +113,20 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             webcam2.setPipeline(new upperCameraPipeline());//different stages
             webcam2.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);//display on RC
             drive = new DriveObjectRobotMovement(config);
+            System.out.println("Omegalul");
             for(DEncoderlessMotor d : config.motors) d.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             configureMacros();
             config.setPoseEstimate(new Pose2d(0, 0, 0));
+            System.out.println("Kek");
             waitForStart();
+            System.out.println("Kekw");
             time = new ElapsedTime();
             if(!isStopRequested()) {
                 //config.setPoseEstimate(new Pose2d(-1, 0, 0));
                 while(opModeIsActive()){
+                    System.out.println("random shut");
                     vals.waitForCycle();
+                    System.out.println("random shut");
                     getInput();
                 }
             }
@@ -132,12 +139,11 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     }
 
     public void getInput(){
-        telemetry.addLine("Le Sense 0: " + config.leSense.get()[0] + ", Le Sense 1: " + config.leSense.get()[1]);
         //Main loop
         System.out.println("Input loop: " + time.milliseconds());
         config.update();
         //config.imu.retrievingHardware(true);
-        config.setPoseEstimate(sensorPose());
+        config.setPoseEstimate(sensorPoseAnalog());
         telemetry.addData("Pose: ", config.getPoseEstimate());
         //double head = config.imu.get()[0];
         telemetry.update();
@@ -147,7 +153,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         }
         else if(pressedShooter && !gamepad2.a) pressedShooter = false;
         if(gamepad1.right_stick_button) {
-            config.setPoseEstimate(sensorPose());
+            config.setPoseEstimate(sensorPoseAnalog());
             Pose2d currentPose = config.getPoseEstimate();
             System.out.println("Current pose: " + currentPose);
             System.out.println("Angle: " + Math.atan((currentPose.getY() + 64) / currentPose.getX()));
@@ -165,7 +171,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             turnUntilHighGoal((int)(100 / dist * 30));
         }
         if(gamepad1.left_stick_button) {
-            config.setPoseEstimate(sensorPose());
+            config.setPoseEstimate(sensorPoseAnalog());
             Pose2d currentPose = config.getPoseEstimate();
             System.out.println("Current pose: " + currentPose);
             System.out.println("Angle: " + Math.atan((currentPose.getY() + 64) / currentPose.getX()));
@@ -230,12 +236,12 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
     public void configureMacros() {
         Sequence returnToHighGoalDistance = new Sequence(() -> {
-            config.setPoseEstimate(sensorPose());
+            config.setPoseEstimate(sensorPoseAnalog());
             System.out.println("Pose: " + config.getPoseEstimate());
             config.shooter.set(-1640);
             roadRunnerToPosition(new Pose2d(-90, -62));
             imuTurn(0);
-            config.setPoseEstimate(sensorPose());
+            config.setPoseEstimate(sensorPoseAnalog());
             turnUntilHighGoal(30);
             return null;
         });
@@ -265,10 +271,10 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         shootMacro = new Thread(shootThrice);
 
         Sequence returnToPowerShot = new Sequence(() -> {
-            config.setPoseEstimate(sensorPose());
+            config.setPoseEstimate(sensorPoseAnalog());
             config.shooter.set(-1520);
             roadRunnerToPositionSlow(new Pose2d(-80, -30));
-            config.setPoseEstimate(sensorPose());
+            config.setPoseEstimate(sensorPoseAnalog());
             imuTurn(0);
             sleep(400);
             turnToPowershot(pshotRight);

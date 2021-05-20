@@ -58,7 +58,7 @@ public class SampleMecanumDrive extends MecanumDrive {
 
     public static AxesOrder axes = AxesOrder.YZX;
 
-    public static double LATERAL_MULTIPLIER = 1;
+    public static double LATERAL_MULTIPLIER = 1.04;
 
     public enum Mode {
         IDLE,
