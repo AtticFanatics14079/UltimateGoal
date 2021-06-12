@@ -57,10 +57,10 @@ import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstant
 @Config
 public class ConfigurationRR extends MecanumDrive implements Configuration {
 
-    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(2, 0, 0);
-    public static PIDCoefficients HEADING_PID = new PIDCoefficients(1, 0, 0);
+    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(5, 0, 0);
+    public static PIDCoefficients HEADING_PID = new PIDCoefficients(5, 0, 0);
 
-    public static double LATERAL_MULTIPLIER = 1;
+    public static double LATERAL_MULTIPLIER = 1.04;
     public static double inchMult = 86, offset = 0.135;
 
     public enum Mode {
@@ -85,21 +85,21 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
     private Pose2d lastPoseOnTurn;
 
-    public DEncoderlessMotor leftFront, leftRear, rightRear, rightFront;
+    public DMotor leftFront, leftRear, rightRear, rightFront;
     public DOdometryPod leftEncoder, rightEncoder, frontEncoder;
     public DServo loader, gripper, wobble;
     public DMotor shooter;
     public DDistanceSensor leftDist, rightDist, frontDist, backDist;
     public DEncoderlessMotor ingester, preIngest;
     public List<DOdometryPod> pods;
-    public List<DEncoderlessMotor> motors;
+    public List<DMotor> motors;
     private List<LynxModule> allHubs;
     public DIMU imu;
     public DAnalogSensor left, right, back1, back2, leSense;
     private VoltageSensor batteryVoltageSensor;
 
     public ConfigurationRR(HardwareMap hardwareMap) {
-        super(DriveConstants.kV, DriveConstants.kA, DriveConstants.kStatic, TRACK_WIDTH);
+        super(DriveConstants.kV, DriveConstants.kA, DriveConstants.kStatic, TRACK_WIDTH, TRACK_WIDTH, LATERAL_MULTIPLIER);
 
         dashboard = FtcDashboard.getInstance();
         dashboard.setTelemetryTransmissionInterval(25);
@@ -140,10 +140,10 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
         DAnalogSensor.InterpretVoltage distance = ((double voltage, double max) -> inchMult * (voltage - offset));
 
-        leftFront = new DEncoderlessMotor(hwMap, "front_left_motor");
-        leftRear = new DEncoderlessMotor(hwMap, "back_left_motor");
-        rightRear = new DEncoderlessMotor(hwMap, "back_right_motor");
-        rightFront = new DEncoderlessMotor(hwMap, "front_right_motor");
+        leftFront = new DMotor(hwMap, "front_left_motor");
+        leftRear = new DMotor(hwMap, "back_left_motor");
+        rightRear = new DMotor(hwMap, "back_right_motor");
+        rightFront = new DMotor(hwMap, "front_right_motor");
         leftEncoder = new DOdometryPod(hwMap, "leftEncoder");
         rightEncoder = new DOdometryPod(hwMap, "rightEncoder");
         frontEncoder = new DOdometryPod(hwMap, "frontEncoder");
@@ -166,7 +166,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         // BNO055IMUUtil.remapAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);
 
         //Not sure what the next part does so if stuff is wonky check it.
-        for (DEncoderlessMotor motor : motors) {
+        for (DMotor motor : motors) {
             MotorConfigurationType motorConfigurationType = motor.getMotorType().clone();
             motorConfigurationType.setAchieveableMaxRPMFraction(1.0);
             motor.setMotorType(motorConfigurationType);
@@ -183,8 +183,8 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         }
 
         // TODO: reverse any motors using DcMotor.setDirection()
-        motors.get(2).reverse(true);
-        motors.get(3).reverse(true);
+        motors.get(0).reverse(true);
+        motors.get(1).reverse(true);
 
         //preIngest.reverse(true);
 
@@ -192,7 +192,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
         //leftEncoder.reverse(true);
         rightEncoder.reverse(true);
-        //frontEncoder.reverse(true);
+        frontEncoder.reverse(true);
         // TODO: if desired, use setLocalizer() to change the localization method
         setLocalizer(new DriveObjectTrackingWheelLocalizer(vals, this));
     }
@@ -364,13 +364,13 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
     //Need to fix these at some point
     public void setMode(DcMotor.RunMode runMode) {
-        for (DEncoderlessMotor motor : motors) {
+        for (DMotor motor : motors) {
             motor.setMode(runMode);
         }
     }
 
     public void setZeroPowerBehavior(DcMotor.ZeroPowerBehavior zeroPowerBehavior) {
-        for (DEncoderlessMotor motor : motors) {
+        for (DMotor motor : motors) {
             motor.setZeroPowerBehavior(zeroPowerBehavior);
         }
     }
@@ -382,11 +382,11 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     }
 
     public void setPIDFCoefficients(PIDFCoefficients coefficients) { //Removed DcMotor.RunMode runMode,
-        for (DEncoderlessMotor motor : motors) {
+        for (DMotor motor : motors) {
 
             //ONLY ENCODERLESS FOR THIS SPECIFIC SCRIM
 
-            //motor.setInternalPID(coefficients.p, coefficients.p, coefficients.d, coefficients.f * 12 / batteryVoltageSensor.getVoltage());
+            motor.setInternalPID(coefficients.p, coefficients.p, coefficients.d, coefficients.f * 12 / batteryVoltageSensor.getVoltage());
         }
     }
 

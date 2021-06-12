@@ -16,6 +16,7 @@ public class DMotor implements Active, DcMotor {
     private double[] pid = new double[]{30.0, 0.0, 0.0, 2700};
     private int partNum;
     private double powerToVelocity = 2700; //MODIFY WITH THE EXACT VALUE
+    private volatile boolean powerMode = false;
 
     private DThread thread = new NullThread();
 
@@ -45,7 +46,8 @@ public class DMotor implements Active, DcMotor {
     }
 
     public void setHardware(double velocity) {
-        motor.setVelocity(velocity);
+        if(powerMode) motor.setPower(velocity);
+        else motor.setVelocity(velocity);
     }
 
     public double[] getHardware() {
@@ -69,7 +71,8 @@ public class DMotor implements Active, DcMotor {
     }
 
     public void setPower(double power) {
-        set(power * powerToVelocity);
+        if(powerMode) set(power);
+        else set(power * powerToVelocity);
     }
 
     @Override
@@ -110,6 +113,10 @@ public class DMotor implements Active, DcMotor {
     //RUN_TO_POSITION not supported, use setTargetPosition instead.
     public void setMode(DcMotor.RunMode mode){
         if(mode != DcMotor.RunMode.RUN_TO_POSITION) motor.setMode(mode);
+    }
+
+    public void setPowerMode(boolean power) {
+        powerMode = power;
     }
 
     @Override

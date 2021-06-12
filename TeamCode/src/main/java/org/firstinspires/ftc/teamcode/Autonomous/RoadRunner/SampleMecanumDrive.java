@@ -54,7 +54,7 @@ import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstant
 @Config
 public class SampleMecanumDrive extends MecanumDrive {
     public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(5, 0, 0);
-    public static PIDCoefficients HEADING_PID = new PIDCoefficients(10, 0, 0);
+    public static PIDCoefficients HEADING_PID = new PIDCoefficients(5, 0, 0);
 
     public static AxesOrder axes = AxesOrder.YZX;
 
@@ -139,7 +139,7 @@ public class SampleMecanumDrive extends MecanumDrive {
         wobble = hardwareMap.get(Servo.class, "wobble");
         gripper = hardwareMap.get(Servo.class, "gripper");
         ingester = hardwareMap.get(DcMotorSimple.class, "rightEncoder");
-        preIngest = hardwareMap.get(DcMotorSimple.class, "leftEncoder");
+        preIngest = hardwareMap.get(DcMotorSimple.class, "frontEncoder");
 
         left = hardwareMap.get(AnalogInput.class, "leftDist");
         right = hardwareMap.get(AnalogInput.class, "rightDist");

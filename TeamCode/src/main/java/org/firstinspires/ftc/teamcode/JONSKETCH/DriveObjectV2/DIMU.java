@@ -34,7 +34,7 @@ public class DIMU implements Sensor, BNO055IMU {
         imu = hwMap.get(BNO055IMU.class, "imu");
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS; //Default radians
-        initialize(parameters);
+        imu.initialize(parameters);
 
         this.partNum = hardware.size();
         hardware.add(this);

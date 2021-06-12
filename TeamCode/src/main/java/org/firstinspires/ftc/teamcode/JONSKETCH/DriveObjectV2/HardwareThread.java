@@ -56,12 +56,12 @@ public class HardwareThread extends Thread implements SharedObjects {
 
     private void readHardware(){
 
-        config.clearBulkCache(); //Miniscule time
+        config.clearBulkCache(); //Minuscule time
 
         for(int i = 0; i < hardwareVals.length; i++) {
-            if(hardware.get(i) instanceof DIMU && !((DIMU) hardware.get(i)).gettingInput) hardwareVals[i] = new double[]{};
-            else if(hardware.get(i) instanceof DDistanceSensor && !((DDistanceSensor) hardware.get(i)).gettingInput) hardwareVals[i] = new double[]{};
-            else hardwareVals[i] = hardware.get(i).getHardware(); //Majority of time in this loop
+            //if(hardware.get(i) instanceof DIMU && !((DIMU) hardware.get(i)).gettingInput) hardwareVals[i] = new double[]{};
+            //else if(hardware.get(i) instanceof DDistanceSensor && !((DDistanceSensor) hardware.get(i)).gettingInput) hardwareVals[i] = new double[]{};
+            hardwareVals[i] = hardware.get(i).getHardware(); //Majority of time in this loop
         }
 
         vals.hardware(true, hardwareVals, 0);

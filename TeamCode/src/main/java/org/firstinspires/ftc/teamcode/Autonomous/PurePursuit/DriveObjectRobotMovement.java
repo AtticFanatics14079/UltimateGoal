@@ -7,8 +7,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ConfigurationRR;
-import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DEncoderlessMotor;
-import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DEncoderlessMotor;
+import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DMotor;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ValueStorage;
 
 import java.util.ArrayList;
@@ -17,7 +16,7 @@ import java.util.ArrayList;
 public class DriveObjectRobotMovement {
     public Point robotPosition = new Point(0,0);//NEED TO UPDATE ROBOT WORLD POSITION
     public double worldAngle = 0;  //NEED TO UPDATE WORLD ANGLE
-    public DEncoderlessMotor[] Motors = new DEncoderlessMotor[4];
+    public DMotor[] Motors = new DMotor[4];
     private ValueStorage vals = new ValueStorage();
     private CurvePoint[] pointsInReference = null;
     private int targetPoint = 1;
@@ -26,10 +25,10 @@ public class DriveObjectRobotMovement {
     public DriveObjectRobotMovement(HardwareMap hwMap){
         int i = 0;
 
-        Motors[0] = new DEncoderlessMotor(hwMap, "back_left_motor");
-        Motors[1] = new DEncoderlessMotor(hwMap, "front_left_motor");
-        Motors[2] = new DEncoderlessMotor(hwMap, "front_right_motor");
-        Motors[3] = new DEncoderlessMotor(hwMap, "back_right_motor");
+        Motors[0] = new DMotor(hwMap, "back_left_motor");
+        Motors[1] = new DMotor(hwMap, "front_left_motor");
+        Motors[2] = new DMotor(hwMap, "front_right_motor");
+        Motors[3] = new DMotor(hwMap, "back_right_motor");
 
         Motors[2].setDirection(DcMotorSimple.Direction.REVERSE);
         Motors[3].setDirection(DcMotorSimple.Direction.REVERSE);
@@ -53,7 +52,7 @@ public class DriveObjectRobotMovement {
     }
 
     public void runWithEncoder(boolean with) {
-        for(DEncoderlessMotor d : Motors) d.setMode(with ? DcMotor.RunMode.RUN_USING_ENCODER : DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        for(DMotor d : Motors) d.setMode(with ? DcMotor.RunMode.RUN_USING_ENCODER : DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
     public boolean followCurve(ArrayList<CurvePoint> allPoints, double followAngle) {
