@@ -4,6 +4,6 @@ public interface DriveObject extends SharedObjects {
 
     int getPartNum();
     double[] get();
-    double[] getHardware();
+    void getHardware();
     void endThreads();
 }

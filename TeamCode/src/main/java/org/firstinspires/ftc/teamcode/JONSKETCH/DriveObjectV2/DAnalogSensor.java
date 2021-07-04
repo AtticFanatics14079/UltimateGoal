@@ -14,6 +14,12 @@ public class DAnalogSensor implements Sensor, AnalogSensor {
 
     private double maxVolt;
 
+    //Array holding all the hardware inputs.
+    private double[] hardwareVals;
+
+    //This variable is here to make sure that hardwareVals is visible to every thread. The value of this variable does not matter.
+    private volatile boolean updateHardware = true;
+
     public DAnalogSensor(HardwareMap hwMap, String objectName, InterpretVoltage method) {
         sensor = hwMap.get(AnalogInput.class, objectName);
         this.partNum = hardware.size();
@@ -51,13 +57,15 @@ public class DAnalogSensor implements Sensor, AnalogSensor {
 
     @Override
     public double[] get() {
-        return vals.hardware(false, null, partNum);
+        return hardwareVals;
     }
 
     @Override
-    public double[] getHardware() {
+    public void getHardware() {
         double input = sensor.getVoltage();
-        return new double[]{interpret.interpret(input, maxVolt), input};
+        hardwareVals = new double[]{interpret.interpret(input, maxVolt), input};
+
+        updateHardware = !updateHardware;
     }
 
     @Override

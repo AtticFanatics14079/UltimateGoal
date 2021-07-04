@@ -15,6 +15,15 @@ public class DEncoderlessMotor implements Active, DcMotor {
 
     private DThread thread = new NullThread();
 
+    //Array holding all the hardware inputs.
+    private double[] hardwareVals;
+
+    //This variable is here to make sure that hardwareVals is visible to every thread.
+    private volatile boolean updateHardware = true;
+
+    //Value that the motor is set to
+    private volatile double runVal = 0;
+
     public DEncoderlessMotor(HardwareMap hwMap, String objectName) {
         motor = hwMap.get(DcMotorImpl.class, objectName);
         motor.setMode(RunMode.RUN_WITHOUT_ENCODER);
@@ -30,7 +39,7 @@ public class DEncoderlessMotor implements Active, DcMotor {
     //Interface methods
 
     public void set(double power) {
-        vals.runValues(true, power, partNum);
+        runVal = power;
     }
 
     public int getPartNum() {
@@ -38,15 +47,17 @@ public class DEncoderlessMotor implements Active, DcMotor {
     }
 
     public double[] get() {
-        return vals.hardware(false, null, partNum);
+        return hardwareVals;
     }
 
-    public void setHardware(double power) {
-        motor.setPower(power);
+    public void setHardware() {
+        motor.setPower(runVal);
     }
 
-    public double[] getHardware() {
-        return new double[]{motor.getPower()};
+    public void getHardware() {
+        hardwareVals = new double[]{motor.getPower()};
+
+        updateHardware = !updateHardware;
     }
 
     public void endThreads() {

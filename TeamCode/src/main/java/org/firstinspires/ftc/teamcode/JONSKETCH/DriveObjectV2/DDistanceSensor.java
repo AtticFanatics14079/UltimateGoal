@@ -15,6 +15,12 @@ public class DDistanceSensor implements Sensor, DriveObject, DistanceSensor {
 
     public volatile boolean gettingInput = true;
 
+    //Array holding all the hardware inputs.
+    private double[] hardwareVals;
+
+    //This variable is here to make sure that hardwareVals is visible to every thread.
+    private volatile boolean updateHardware = true;
+
     public DDistanceSensor(HardwareMap hwMap, String objectName) {
         sensor = hwMap.get(DistanceSensor.class, objectName);
         this.partNum = hardware.size();
@@ -29,12 +35,14 @@ public class DDistanceSensor implements Sensor, DriveObject, DistanceSensor {
 
     @Override
     public double[] get() {
-        return vals.hardware(false, null, partNum);
+        return hardwareVals;
     }
 
     @Override
-    public double[] getHardware() {
-        return new double[]{sensor.getDistance(DistanceUnit.INCH)};
+    public void getHardware() {
+        hardwareVals = new double[]{sensor.getDistance(DistanceUnit.INCH)};
+
+        updateHardware = !updateHardware;
     }
 
     @Override
@@ -57,7 +65,7 @@ public class DDistanceSensor implements Sensor, DriveObject, DistanceSensor {
     public void pingSensor() {
         Sequence pingSensor = new Sequence(() -> {
             gettingInput = true;
-            vals.waitForCycle();
+            //Need to add something to wait on at some point
             gettingInput = false;
             return null;
         });

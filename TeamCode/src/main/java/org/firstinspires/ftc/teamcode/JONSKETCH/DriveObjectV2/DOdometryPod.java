@@ -14,6 +14,12 @@ public class DOdometryPod implements Sensor, DriveObject {
     private int partNum;
     private double ticksPerInch = 1000; //MODIFY WITH THE EXACT VALUE
 
+    //Array holding all the hardware inputs.
+    private double[] hardwareVals;
+
+    //This variable is here to make sure that hardwareVals is visible to every thread.
+    private volatile boolean updateHardware = true;
+
     public DOdometryPod(HardwareMap hwMap, String objectName) {
         DcMotorImplEx d = hwMap.get(DcMotorImplEx.class, objectName);
         d.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -28,11 +34,12 @@ public class DOdometryPod implements Sensor, DriveObject {
     }
 
     public double[] get() {
-        return vals.hardware(false, null, partNum);
+        return hardwareVals;
     }
 
-    public double[] getHardware() {
-        return new double[]{odoPod.getCurrentPosition(), odoPod.getCorrectedVelocity()};
+    public void getHardware() {
+        hardwareVals = new double[]{odoPod.getCurrentPosition(), odoPod.getCorrectedVelocity()};
+        updateHardware = !updateHardware;
     }
 
     public void endThreads() {

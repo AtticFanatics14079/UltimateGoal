@@ -10,6 +10,15 @@ public class DServo implements Active {
 
     private DThread thread = new NullThread();
 
+    //Array holding all the hardware inputs.
+    private double[] hardwareVals;
+
+    //This variable is here to make sure that hardwareVals is visible to every thread.
+    private volatile boolean updateHardware = true;
+
+    //Value that the motor is set to
+    private volatile double runVal = 0;
+
     //Constructors
 
     public DServo(HardwareMap hwMap, String objectName){
@@ -21,7 +30,7 @@ public class DServo implements Active {
     //Interface methods
 
     public void set(double position) {
-        vals.runValues(true, position, partNum);
+        runVal = position;
     }
 
     public int getPartNum() {
@@ -29,15 +38,16 @@ public class DServo implements Active {
     }
 
     public double[] get() {
-        return vals.hardware(false, null, partNum);
+        return hardwareVals;
     }
 
-    public void setHardware(double position) {
-        servo.setPosition(position);
+    public void setHardware() {
+        servo.setPosition(runVal);
     }
 
-    public double[] getHardware() {
-        return new double[]{servo.getPosition()};
+    public void getHardware() {
+        hardwareVals = new double[]{servo.getPosition()};
+        updateHardware = !updateHardware;
     }
 
     public void endThreads() {

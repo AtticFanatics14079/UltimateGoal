@@ -9,6 +9,12 @@ public class DDigitalSensor implements Sensor, DigitalChannel {
     private DigitalChannel sensor;
     private int partNum;
 
+    //Array holding all the hardware inputs.
+    private double[] hardwareVals;
+
+    //This variable is here to make sure that hardwareVals is visible to every thread.
+    private volatile boolean updateVals = true;
+
     //Maybe add a thread to stop when a condition is met
     //private DOThread thread = new NullThread();
 
@@ -27,11 +33,16 @@ public class DDigitalSensor implements Sensor, DigitalChannel {
     }
 
     public double[] get() {
-        return vals.hardware(false, null, partNum);
+        return hardwareVals;
     }
 
     //Binarizes boolean for easier math
-    public double[] getHardware() { return new double[]{sensor.getState() ? 1 : 0}; }
+    public void getHardware() {
+        hardwareVals = new double[]{sensor.getState() ? 1 : 0};
+
+        //Setting a volatile variable saves all values to main memory
+        updateVals = !updateVals;
+    }
 
     public void endThreads() {
         //thread.Stop();

@@ -20,6 +20,15 @@ public class DMotor implements Active, DcMotor {
 
     private DThread thread = new NullThread();
 
+    //Array holding all the hardware inputs.
+    private double[] hardwareVals;
+
+    //This variable is here to make sure that hardwareVals is visible to every thread.
+    private volatile boolean updateHardware = true;
+
+    //Value that the motor is set to
+    private volatile double runVal = 0;
+
     public DMotor(HardwareMap hwMap, String objectName) {
         motor = hwMap.get(DcMotorImplEx.class, objectName);
         motor.setMode(RunMode.RUN_USING_ENCODER);
@@ -34,7 +43,7 @@ public class DMotor implements Active, DcMotor {
     //Interface methods
 
     public void set(double velocity) {
-        vals.runValues(true, velocity, partNum);
+        runVal = velocity;
     }
 
     public int getPartNum() {
@@ -42,16 +51,18 @@ public class DMotor implements Active, DcMotor {
     }
 
     public double[] get() {
-        return vals.hardware(false, null, partNum);
+        return hardwareVals;
     }
 
-    public void setHardware(double velocity) {
-        if(powerMode) motor.setPower(velocity);
-        else motor.setVelocity(velocity);
+    public void setHardware() {
+        if(powerMode) motor.setPower(runVal);
+        else motor.setVelocity(runVal);
     }
 
-    public double[] getHardware() {
-        return new double[]{motor.getVelocity(), (double) motor.getCurrentPosition()};
+    public void getHardware() {
+        hardwareVals = new double[]{motor.getVelocity(), (double) motor.getCurrentPosition()};
+
+        updateHardware = !updateHardware;
     }
 
     public void endThreads() {
@@ -62,7 +73,7 @@ public class DMotor implements Active, DcMotor {
 
     @Override
     public void setDirection(Direction direction) {
-
+        motor.setDirection(direction);
     }
 
     @Override
@@ -98,14 +109,17 @@ public class DMotor implements Active, DcMotor {
     public DThread setPosition(int position, double relativeSpeed, double tolerance) {
         //Trying out never overriding threads (aka forcing use of endThreads() when need to replace active thread)
         if(thread != null && thread.isAlive()) return null;
-        thread = new PositionThread(position, relativeSpeed, tolerance, this, vals);
+
+        //Need to work on positionThread soon.
+
+        //thread = new PositionThread(position, relativeSpeed, tolerance, this, vals);
         thread.start();
         return thread;
     }
 
     public DThread groupSetPosition(int position, double relativeSpeed, double tolerance, DMotor... motors) {
         if(thread.isAlive()) thread.Stop();
-        thread = new PositionThread(position, relativeSpeed, tolerance, motors, vals);
+        //thread = new PositionThread(position, relativeSpeed, tolerance, motors, vals);
         thread.start();
         return thread;
     }

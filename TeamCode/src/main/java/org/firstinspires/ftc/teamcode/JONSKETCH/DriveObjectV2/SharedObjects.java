@@ -7,6 +7,5 @@ import java.util.ArrayList;
 public interface SharedObjects {
 
     ArrayList<DriveObject> hardware = new ArrayList<>();
-    ValueStorage vals = new ValueStorage();
 
 }

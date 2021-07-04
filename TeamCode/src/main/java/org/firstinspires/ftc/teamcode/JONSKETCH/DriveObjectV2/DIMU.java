@@ -29,6 +29,12 @@ public class DIMU implements Sensor, BNO055IMU {
 
     private int partNum;
 
+    //Array holding all the hardware inputs.
+    private double[] hardwareVals;
+
+    //This variable is here to make sure that hardwareVals is visible to every thread.
+    private volatile boolean updateHardware = true;
+
     //Defaults to name "imu"
     public DIMU(HardwareMap hwMap) {
         imu = hwMap.get(BNO055IMU.class, "imu");
@@ -55,11 +61,13 @@ public class DIMU implements Sensor, BNO055IMU {
     }
 
     public double[] get() {
-        return vals.hardware(false, null, partNum);
+        return hardwareVals;
     }
 
-    public double[] getHardware() {
-        return new double[]{calculateOffset(imu.getAngularOrientation().firstAngle), imu.getAngularOrientation().secondAngle, imu.getAngularOrientation().thirdAngle};
+    public void getHardware() {
+        hardwareVals = new double[]{calculateOffset(imu.getAngularOrientation().firstAngle), imu.getAngularOrientation().secondAngle, imu.getAngularOrientation().thirdAngle};
+
+        updateHardware = !updateHardware;
     }
 
     private double calculateOffset(double input) {
@@ -71,7 +79,7 @@ public class DIMU implements Sensor, BNO055IMU {
     public void pingSensor() {
         Sequence pingSensor = new Sequence(() -> {
             gettingInput = true;
-            vals.waitForCycle();
+            //Wait on some object
             gettingInput = false;
             return null;
         });
@@ -96,7 +104,7 @@ public class DIMU implements Sensor, BNO055IMU {
             gettingInput = true;
             Sequence delay = new Sequence(() -> {
                 try {
-                    vals.waitForCycle();
+                    //Need to find another object to wait on
                     imuOffset += get()[0];
                     gettingInput = false;
                 } catch (Exception e) {
