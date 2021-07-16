@@ -5,6 +5,7 @@ import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDrive;
 
@@ -13,21 +14,33 @@ import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDrive;
  */
 @Config
 @Autonomous(group = "drive")
-public class LineToHeadingTest extends LinearOpMode {
-    public static double DISTANCE = 30, ANGLE = Math.PI; // in
-
+public class LineToLinear180 extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
 
-        Trajectory trajectory = drive.trajectoryBuilder(new Pose2d())
-                .lineToLinearHeading(new Pose2d(DISTANCE, DISTANCE, ANGLE))
-                .build();
+        ElapsedTime time = new ElapsedTime();
 
         waitForStart();
 
         if (isStopRequested()) return;
 
-        drive.followTrajectory(trajectory);
+        double startTime = time.time();
+        System.out.println(startTime);
+
+
+
+        double endTime = time.time();
+        System.out.println(endTime);
+        Pose2d poseEstimate = drive.getPoseEstimate();
+        telemetry.addData("finalX", poseEstimate.getX());
+        telemetry.addData("finalY", poseEstimate.getY());
+        telemetry.addData("finalHeading", poseEstimate.getHeading());
+        telemetry.addData("Elapsed Time: ", endTime - startTime);
+        telemetry.update();
+
+        System.out.println(endTime - startTime);
+
+        while (!isStopRequested() && opModeIsActive()) ;
     }
 }

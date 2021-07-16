@@ -12,7 +12,7 @@ import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDrive;
 
 @Config
 @Autonomous
-public class LineToLinearTest extends LinearOpMode {
+public class DiagonalStrafeTest extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
@@ -27,7 +27,7 @@ public class LineToLinearTest extends LinearOpMode {
         System.out.println(startTime);
 
         Trajectory traj = drive.trajectoryBuilder(new Pose2d())
-                .lineToLinearHeading(new Pose2d(24, 24, 0))
+                .strafeTo(new Vector2d(24, 24))
                 .build();
 
         drive.followTrajectory(traj);
