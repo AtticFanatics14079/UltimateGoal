@@ -24,7 +24,7 @@ public class SampleTeleOp extends LinearOpMode {
             ElapsedTime time = new ElapsedTime();
             hardware.start();
             while(!isStopRequested()){
-                hardware.vals.waitForCycle();
+                hardware.waitForCycle();
                 System.out.println("Finshed waiting, " + time.milliseconds());
                 getInput();
             }

@@ -1,3 +1,5 @@
+/* THIS CLASS WILL LIKELY NOT BE INCLUDED INTO THE PUBLISHED LIBRARY, but I would like to try and make an odometry class so we can drop RR completely.
+
 package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
 
 public class DThreeWheelOdo implements Odometry {
@@ -83,3 +85,4 @@ public class DThreeWheelOdo implements Odometry {
         thread.Stop();
     }
 }
+*/

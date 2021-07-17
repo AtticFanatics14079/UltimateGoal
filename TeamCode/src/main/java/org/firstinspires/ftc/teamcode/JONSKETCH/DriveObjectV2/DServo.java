@@ -16,8 +16,8 @@ public class DServo implements Active {
     //This variable is here to make sure that hardwareVals is visible to every thread.
     private volatile boolean updateHardware = true;
 
-    //Value that the motor is set to
-    private volatile double runVal = 0;
+    //Value that the servo is set to
+    protected volatile double runVal = 0;
 
     //Constructors
 
@@ -43,6 +43,11 @@ public class DServo implements Active {
 
     public void setHardware() {
         servo.setPosition(runVal);
+    }
+
+    @Override
+    public double getRunVal() {
+        return runVal;
     }
 
     public void getHardware() {

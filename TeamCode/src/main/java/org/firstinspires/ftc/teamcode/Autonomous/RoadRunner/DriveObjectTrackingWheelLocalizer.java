@@ -46,9 +46,7 @@ public class DriveObjectTrackingWheelLocalizer extends ThreeTrackingWheelLocaliz
 
     private DOdometryPod leftEncoder, rightEncoder, frontEncoder;
 
-    ValueStorage vals;
-
-    public DriveObjectTrackingWheelLocalizer(ValueStorage vals, ConfigurationRR config) {
+    public DriveObjectTrackingWheelLocalizer(ConfigurationRR config) {
 
         super(Arrays.asList(
                 new Pose2d(0, LATERAL_DISTANCE / 2, 0), // left
@@ -59,8 +57,6 @@ public class DriveObjectTrackingWheelLocalizer extends ThreeTrackingWheelLocaliz
         leftEncoder = config.leftEncoder;
         rightEncoder = config.rightEncoder;
         frontEncoder = config.frontEncoder;
-
-        this.vals = vals;
     }
 
     public static double encoderTicksToInches(double ticks) {

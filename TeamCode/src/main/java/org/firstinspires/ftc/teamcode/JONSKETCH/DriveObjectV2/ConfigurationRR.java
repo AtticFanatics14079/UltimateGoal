@@ -131,7 +131,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
     }
 
-    public void Configure(HardwareMap hwMap, ValueStorage vals){
+    public void Configure(HardwareMap hwMap){
         //Add all hardware devices here.
         //Example: hardware.put("motor1", new DriveObject(DriveObject.type.DcMotorImplEx, "left_back_motor", DriveObject.classification.Drivetrain, hwMap));
         //In this example, "left_back_motor" is whatever your configuration says.
@@ -194,7 +194,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         rightEncoder.reverse(true);
         frontEncoder.reverse(true);
         // TODO: if desired, use setLocalizer() to change the localization method
-        setLocalizer(new DriveObjectTrackingWheelLocalizer(vals, this));
+        setLocalizer(new DriveObjectTrackingWheelLocalizer(this));
     }
 
     public void setBulkCachingManual(boolean manual){

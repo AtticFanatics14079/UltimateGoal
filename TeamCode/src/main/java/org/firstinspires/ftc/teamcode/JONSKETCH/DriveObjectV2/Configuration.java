@@ -6,7 +6,7 @@ import java.util.ArrayList;
 
 public interface Configuration extends SharedObjects {
 
-    void Configure(HardwareMap hwMap, ValueStorage vals);
+    void Configure(HardwareMap hwMap);
     void setBulkCachingManual(boolean manual);
     void clearBulkCache();
 }

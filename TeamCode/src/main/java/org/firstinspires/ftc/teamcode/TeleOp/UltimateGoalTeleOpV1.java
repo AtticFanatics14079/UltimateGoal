@@ -19,7 +19,6 @@ import org.firstinspires.ftc.teamcode.Autonomous.PurePursuit.DriveObjectRobotMov
 import org.firstinspires.ftc.teamcode.Autonomous.PurePursuit.Point;
 import org.firstinspires.ftc.teamcode.Autonomous.PurePursuit.RobotMovement;
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants;
-import org.firstinspires.ftc.teamcode.HardwareConfigs.UltimateGoalConfig;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.Configuration;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ConfigurationRR;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DEncoderlessMotor;
@@ -105,7 +104,6 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             config = new ConfigurationRR(hardwareMap);
             hardware = new HardwareThread(hardwareMap, config);
             hardware.start();
-            vals = hardware.getVals();
 
             int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
 
@@ -124,7 +122,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             if(!isStopRequested()) {
                 //config.setPoseEstimate(new Pose2d(-1, 0, 0));
                 while(opModeIsActive()){
-                    vals.waitForCycle();
+                    hardware.waitForCycle();
                     getInput();
                 }
             }
@@ -437,7 +435,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
         //config.imu.gettingInput = true;
         config.imu.pingSensor();
-        config.vals.waitForCycle();
+        hardware.waitForCycle();
         if(isStopRequested()) return null;
         double imuHeading = config.imu.get()[0];
         double headingOffsetPlus = imuHeading + Math.toRadians(12.5);
@@ -515,7 +513,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
 
         //config.imu.gettingInput = true;
         config.imu.pingSensor();
-        config.vals.waitForCycle();
+        hardware.waitForCycle();
         if(isStopRequested()) return null;
         double imuHeading = config.imu.get()[0];
         double headingOffsetPlus = imuHeading + Math.toRadians(12.5);

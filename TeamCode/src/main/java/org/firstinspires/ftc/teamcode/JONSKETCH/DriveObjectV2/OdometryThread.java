@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
+/*package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
 
 public class OdometryThread extends Thread implements DThread {
 
@@ -81,7 +81,7 @@ public class OdometryThread extends Thread implements DThread {
         double newY = move * c - strafe * s;
         double newX = move * s + strafe * c;
          */
-        lastEncoderVals = encoderVals;
+        /*lastEncoderVals = encoderVals;
         lastPos[0] = x;
         lastPos[1] = y;
         lastPos[2] = heading;
@@ -89,3 +89,4 @@ public class OdometryThread extends Thread implements DThread {
         odo.setPosition(new Point(x, y, heading));
     }
 }
+*/

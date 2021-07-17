@@ -27,7 +27,7 @@ public class DMotor implements Active, DcMotor {
     private volatile boolean updateHardware = true;
 
     //Value that the motor is set to
-    private volatile double runVal = 0;
+    protected volatile double runVal = 0;
 
     public DMotor(HardwareMap hwMap, String objectName) {
         motor = hwMap.get(DcMotorImplEx.class, objectName);
@@ -57,6 +57,10 @@ public class DMotor implements Active, DcMotor {
     public void setHardware() {
         if(powerMode) motor.setPower(runVal);
         else motor.setVelocity(runVal);
+    }
+
+    public double getRunVal() {
+        return runVal;
     }
 
     public void getHardware() {

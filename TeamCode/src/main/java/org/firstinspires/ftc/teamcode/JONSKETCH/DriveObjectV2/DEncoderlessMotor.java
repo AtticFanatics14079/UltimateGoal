@@ -22,7 +22,7 @@ public class DEncoderlessMotor implements Active, DcMotor {
     private volatile boolean updateHardware = true;
 
     //Value that the motor is set to
-    private volatile double runVal = 0;
+    protected volatile double runVal = 0;
 
     public DEncoderlessMotor(HardwareMap hwMap, String objectName) {
         motor = hwMap.get(DcMotorImpl.class, objectName);
@@ -52,6 +52,10 @@ public class DEncoderlessMotor implements Active, DcMotor {
 
     public void setHardware() {
         motor.setPower(runVal);
+    }
+
+    public double getRunVal() {
+        return runVal;
     }
 
     public void getHardware() {

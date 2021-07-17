@@ -4,4 +4,6 @@ public interface Active extends DriveObject{
 
     void set(double value);
     void setHardware();
+
+    double getRunVal();
 }
