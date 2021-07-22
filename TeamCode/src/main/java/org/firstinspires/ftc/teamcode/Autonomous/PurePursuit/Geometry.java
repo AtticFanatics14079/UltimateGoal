@@ -1,4 +1,5 @@
 package org.firstinspires.ftc.teamcode.Autonomous.PurePursuit;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 public class Geometry {
@@ -8,7 +9,7 @@ public class Geometry {
         return hypotenuse;
     }
 
-    public static void spacePoints(Point startPoint, Point endPoint, double Spacing) {
+    public static Point[] spacePoints(Point startPoint, Point endPoint, double Spacing) {
         Point vector = startPoint.subtract(endPoint);
         Point[] pointsArray;
         double pointsThatFit = Math.ceil(distanceBetweenPoints(startPoint, endPoint) / Spacing);
@@ -20,6 +21,7 @@ public class Geometry {
         }
         pointsArray[(int) pointsThatFit] = endPoint;
 
+        return pointsArray;
     }
 
     public static ArrayList<Point> lineCircleIntersection(Point circleCenter, double radius, Point linePoint1, Point linePoint2) {
@@ -75,5 +77,44 @@ public class Geometry {
 
         }
         return allPoints;
+    }
+
+    public static ArrayList<CurvePoint> createArc(Point center, CurvePoint start, CurvePoint end, double numPoints, boolean shortArc) {
+        ArrayList<CurvePoint> points = new ArrayList<>();
+        points.add(start);
+
+        //First we find out the angle interval between points.
+        double a = Math.hypot(start.x-center.x, start.y-center.y), c = Math.hypot(start.x-end.x, start.y-end.y); //a is the radius.
+
+        double translateX = (start.x - center.x) / a, translateY = (start.y - center.y) / a;
+        double startAngle = Math.acos((2-Math.hypot(translateX, translateY - 1))/2) * (translateX < 0 ? -1 : 1); //Finds the angle between start and (1, 0) and makes negative if it is.
+
+        double endTranX = (end.x - center.x) / a, endTranY = (end.y - center.y) / a;
+        double endAngle = Math.acos((2-Math.hypot(endTranX, endTranY - 1))/2) * (endTranX < 0 ? -1 : 1); //Finds the angle between end and (1, 0) and makes negative if it is.
+
+        double angle = endAngle - startAngle;
+        if(!shortArc) angle = (2 * Math.PI - Math.abs(angle)) * Math.abs(angle) / angle; //Changes to longer arc
+        double angleStep = angle / numPoints; //Interval in radians between each point. Do something to allow for longer arc.
+
+        //Next step is to determine where start would be in the unit circle, where center is at (0, 0).
+
+
+        //System.out.println("Angle step * numPoints: " + angleStep * numPoints + ", Start angle: " + startAngle);
+        //System.out.println("Angle step check: " + Math.abs(startAngle + angleStep * numPoints - angle - 1));
+
+        //System.out.println("Start angle: " + startAngle + ", angle: " + angle);
+        //System.out.println("Angle step check: " + Math.abs(Math.sin(endAngle)*a+center.x - end.x) + " End angle: " + endAngle);
+
+        //if(Math.abs(Math.cos(startAngle + angle)) > 0.001) angleStep *= -1; //Makes sure the angle step goes from start to end.
+
+        for(int i = 1; i <= numPoints; i++) {
+            CurvePoint newPoint = new CurvePoint(end); //Keeps other variables from end.
+            newPoint.setPoint(new Point(a * Math.sin(startAngle + i * angleStep) + center.x, a * Math.cos(startAngle + i * angleStep) + center.y));
+            points.add(newPoint);
+        }
+
+        points.add(end);
+        
+        return points;
     }
 }

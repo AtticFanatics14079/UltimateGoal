@@ -23,8 +23,8 @@ public class RobotMovement {
         Motors[2] = hwMap.get(DcMotorImplEx.class, "front_right_motor");
         Motors[3] = hwMap.get(DcMotorImplEx.class, "back_right_motor");
 
-        Motors[2].setDirection(DcMotorSimple.Direction.REVERSE);
-        Motors[3].setDirection(DcMotorSimple.Direction.REVERSE);
+        Motors[0].setDirection(DcMotorSimple.Direction.REVERSE);
+        Motors[1].setDirection(DcMotorSimple.Direction.REVERSE);
 
         Motors[0].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         Motors[1].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -45,10 +45,13 @@ public class RobotMovement {
             pointsInReference[0] = allPoints.get(0);
             pointsInReference[1] = allPoints.get(1);
         }
-        if(targetPoint < allPoints.size()-1 && Math.hypot(robotPosition.x - pointsInReference[1].x, robotPosition.y - pointsInReference[1].y) < pointsInReference[1].followDistance-2) {
+        System.out.println("Hypotenuse: " + Math.hypot(robotPosition.x - pointsInReference[1].x, robotPosition.y - pointsInReference[1].y));
+        System.out.println("Robot pose: " + robotPosition);
+        if(targetPoint < allPoints.size()-1 && Math.hypot(robotPosition.x - pointsInReference[1].x, robotPosition.y - pointsInReference[1].y) < pointsInReference[1].followDistance-(2*pointsInReference[1].moveSpeed)) { //Arbitrary number multiplied
             targetPoint++;
             pointsInReference[0] = pointsInReference[1];
             pointsInReference[1] = allPoints.get(targetPoint);
+            System.out.println("Target point: " + targetPoint);
         }
 
         Point robotPoint = new Point(robotPosition.x,robotPosition.y);
