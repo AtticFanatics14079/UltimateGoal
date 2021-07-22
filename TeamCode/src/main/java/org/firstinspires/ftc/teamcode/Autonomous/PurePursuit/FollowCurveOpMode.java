@@ -18,23 +18,25 @@ public class FollowCurveOpMode extends LinearOpMode {
         RobotMovement drive = new RobotMovement(hardwareMap);
         MultipleTelemetry t = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         ArrayList<CurvePoint> aNtWoNsMoLbRaIn = new ArrayList<>();
-        aNtWoNsMoLbRaIn.add(new CurvePoint(0, 0, 0.5, 0.5, 15, Math.toRadians(50), 1));
-        aNtWoNsMoLbRaIn.add(new CurvePoint(0, 36, 0.5, 0.5, 15, Math.toRadians(50), 1));
-        aNtWoNsMoLbRaIn.add(new CurvePoint(36, 36, 0.5, 0.5, 15, Math.toRadians(50), 1));
-        aNtWoNsMoLbRaIn.add(new CurvePoint(36, 0, 0.5, 0.5, 15, Math.toRadians(50), 1));
-        aNtWoNsMoLbRaIn.add(new CurvePoint(18, 36, 0.5, 0.5, 15, Math.toRadians(50), 1));
-        aNtWoNsMoLbRaIn.add(new CurvePoint(0, 0, 0.5, 0.5, 15, Math.toRadians(50), 1));
+        aNtWoNsMoLbRaIn.add(new CurvePoint(0, 0, 0.5, 0.5, 10, Math.toRadians(50), 1));
+        aNtWoNsMoLbRaIn.add(new CurvePoint(0, 36, 0.5, 0.5, 10, Math.toRadians(50), 1));
+        aNtWoNsMoLbRaIn.add(new CurvePoint(36, 36, 0.5, 0.5, 10, Math.toRadians(50), 1));
+        aNtWoNsMoLbRaIn.add(new CurvePoint(36, 0, 0.5, 0.5, 10, Math.toRadians(50), 1));
+        aNtWoNsMoLbRaIn.add(new CurvePoint(18, 36, 0.5, 0.5, 10, Math.toRadians(50), 1));
+        aNtWoNsMoLbRaIn.add(new CurvePoint(0, 0, 0.5, 0.5, 10, Math.toRadians(50), 1));
 
         waitForStart();
 
         while(!isStopRequested()){
             odometry.update();
             Pose2d currentPose = odometry.getPoseEstimate();
-            Point targetPoint = new Point(2,2);
+            System.out.println("Odo pose: " + currentPose);
             drive.updatePose(new Point(currentPose.getX(), currentPose.getY()),currentPose.getHeading());
             if(drive.followCurve(aNtWoNsMoLbRaIn,270)){
                 requestOpModeStop();
             }
+            odometry.update();
+            currentPose = odometry.getPoseEstimate();
             t.addData("Current Position (Odo): ", currentPose);
             t.update();
         }
