@@ -17,21 +17,19 @@ public class DriveObjectRobotMovement {
     public Point robotPosition = new Point(0,0);//NEED TO UPDATE ROBOT WORLD POSITION
     public double worldAngle = 0;  //NEED TO UPDATE WORLD ANGLE
     public DMotor[] Motors = new DMotor[4];
-    private ValueStorage vals = new ValueStorage();
     private CurvePoint[] pointsInReference = null;
     private int targetPoint = 1;
 
     //add edge cases
     public DriveObjectRobotMovement(HardwareMap hwMap){
-        int i = 0;
 
         Motors[0] = new DMotor(hwMap, "back_left_motor");
         Motors[1] = new DMotor(hwMap, "front_left_motor");
         Motors[2] = new DMotor(hwMap, "front_right_motor");
         Motors[3] = new DMotor(hwMap, "back_right_motor");
 
-        Motors[2].setDirection(DcMotorSimple.Direction.REVERSE);
-        Motors[3].setDirection(DcMotorSimple.Direction.REVERSE);
+        Motors[0].setDirection(DcMotorSimple.Direction.REVERSE);
+        Motors[1].setDirection(DcMotorSimple.Direction.REVERSE);
 
         Motors[0].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         Motors[1].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -49,10 +47,7 @@ public class DriveObjectRobotMovement {
         Motors[0] = config.motors.get(1);
         Motors[3] = config.motors.get(2);
         Motors[2] = config.motors.get(3);
-    }
-
-    public void runWithEncoder(boolean with) {
-        for(DMotor d : Motors) d.setMode(with ? DcMotor.RunMode.RUN_USING_ENCODER : DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        System.out.println(config.hardware.size());
     }
 
     public boolean followCurve(ArrayList<CurvePoint> allPoints, double followAngle) {
@@ -63,10 +58,13 @@ public class DriveObjectRobotMovement {
             pointsInReference[0] = allPoints.get(0);
             pointsInReference[1] = allPoints.get(1);
         }
-        if(targetPoint < allPoints.size()-1 && Math.hypot(robotPosition.x - pointsInReference[1].x, robotPosition.y - pointsInReference[1].y) < pointsInReference[1].followDistance-2) {
+        System.out.println("Hypotenuse: " + Math.hypot(robotPosition.x - pointsInReference[1].x, robotPosition.y - pointsInReference[1].y));
+        System.out.println("Robot pose: " + robotPosition);
+        if(targetPoint < allPoints.size()-1 && Math.hypot(robotPosition.x - pointsInReference[1].x, robotPosition.y - pointsInReference[1].y) < pointsInReference[1].followDistance-(2*pointsInReference[1].moveSpeed)) { //Arbitrary number multiplied
             targetPoint++;
             pointsInReference[0] = pointsInReference[1];
             pointsInReference[1] = allPoints.get(targetPoint);
+            System.out.println("Target point: " + targetPoint);
         }
 
         Point robotPoint = new Point(robotPosition.x,robotPosition.y);

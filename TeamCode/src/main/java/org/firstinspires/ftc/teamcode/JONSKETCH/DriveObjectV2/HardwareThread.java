@@ -9,20 +9,16 @@ import java.util.Arrays;
 public class HardwareThread extends Thread implements SharedObjects {
 
     ElapsedTime time;
-    double[][] hardwareVals; //Holds the values received from hardware of each part.
     double[] lastRun; //Previous run values.
     public Configuration config;
     private volatile boolean stop = false, resetIMU = false;
-    private boolean setTime = false; //Vestigial variable
-    public double voltMult = 1, lastTime = 0; //Vestigial variables
 
-    private final Double sync = 0.0;
+    private static final Double sync = 0.0;
 
     public HardwareThread(HardwareMap hwMap, Configuration configuration){
         config = configuration;
         config.Configure(hwMap);
         int size = hardware.size();
-        hardwareVals = new double[size][];
         lastRun = new double[size];
         config.setBulkCachingManual(true);
     }
@@ -41,7 +37,7 @@ public class HardwareThread extends Thread implements SharedObjects {
                 runHardware();
             }
         }
-        catch(Exception e) {}
+        catch(Exception e) {System.out.println(e);}
         finally {
             for(DriveObject d : hardware) {
                 d.endThreads();
@@ -53,7 +49,7 @@ public class HardwareThread extends Thread implements SharedObjects {
 
     private void readHardware(){
 
-        config.clearBulkCache(); //Minuscule time
+        config.clearBulkCache();
 
         for(DriveObject d : hardware) {
             d.getHardware();
@@ -73,27 +69,21 @@ public class HardwareThread extends Thread implements SharedObjects {
         }
     }
 
-    public void updateCycle() {
+    public static void updateCycle() {
         synchronized(sync) {
             sync.notifyAll();
         }
     }
 
-    public void waitForCycle() {
-        synchronized(sync) {
+    public static void waitForCycle() {
+        synchronized (sync) {
             try {
                 sync.wait();
             } catch (Exception e) {
                 //I'm using println instead of printStackTrace for all my try-catches, so if you need to trace an error look there.
-                System.out.println(e);
+                System.out.println("Exception " + e + " in HardwareThread.waitForCycle().");
             }
         }
-        try {
-            Thread.sleep(2);
-        } catch (Exception e) {
-            System.out.println(e);
-        }
-        //Allows HardwareThread to access runValues first. This delay does not impact performance, as even with a single hub loop times are around 20 milliseconds minimum.
     }
 
     public void Stop(){

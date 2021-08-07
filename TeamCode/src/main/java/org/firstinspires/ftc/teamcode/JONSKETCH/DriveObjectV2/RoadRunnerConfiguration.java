@@ -4,8 +4,6 @@ package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
  * Simple mecanum drive hardware implementation for REV hardware.
  */
 
-import androidx.annotation.NonNull;
-
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.config.Config;
@@ -41,6 +39,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import androidx.annotation.NonNull;
+
 import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants.BASE_CONSTRAINTS;
 import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants.MOTOR_VELO_PID;
 import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants.RUN_USING_ENCODER;
@@ -48,7 +48,7 @@ import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstant
 import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstants.encoderTicksToInches;
 
 @Config
-public class ConfigurationRR extends MecanumDrive implements Configuration {
+public class RoadRunnerConfiguration extends MecanumDrive implements Configuration {
 
     public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(5, 0, 0);
     public static PIDCoefficients HEADING_PID = new PIDCoefficients(5, 0, 0);
@@ -79,17 +79,12 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     private Pose2d lastPoseOnTurn;
 
     public DMotor leftFront, leftRear, rightRear, rightFront;
-    public DServo loader, gripper, wobble;
-    public DMotor shooter;
-    public DDistanceSensor leftDist, rightDist, frontDist, backDist;
-    public DEncoderlessMotor ingester, preIngest;
     public List<DMotor> motors;
     private List<LynxModule> allHubs;
     public DIMU imu;
-    public DAnalogSensor left, right, back1, back2, leSense;
     private VoltageSensor batteryVoltageSensor;
 
-    public ConfigurationRR(HardwareMap hardwareMap) {
+    public RoadRunnerConfiguration(HardwareMap hardwareMap) {
         super(DriveConstants.kV, DriveConstants.kA, DriveConstants.kStatic, TRACK_WIDTH, TRACK_WIDTH, LATERAL_MULTIPLIER);
 
         dashboard = FtcDashboard.getInstance();
@@ -113,36 +108,16 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         batteryVoltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         allHubs = hardwareMap.getAll(LynxModule.class);
-
-        // TODO: adjust the names of the following hardware devices to match your configuration
-
-
     }
 
     public void Configure(HardwareMap hwMap){
-        //Add all hardware devices here.
-        //Example: hardware.put("motor1", new DriveObject(DriveObject.type.DcMotorImplEx, "left_back_motor", DriveObject.classification.Drivetrain, hwMap));
-        //In this example, "left_back_motor" is whatever your configuration says.
 
         hardware.clear();
-
-        //DAnalogSensor.InterpretVoltage distance = ((double voltage, double max) -> inchMult * (voltage - offset));
 
         leftFront = new DMotor(hwMap, "front_left_motor");
         leftRear = new DMotor(hwMap, "back_left_motor");
         rightRear = new DMotor(hwMap, "back_right_motor");
         rightFront = new DMotor(hwMap, "front_right_motor");
-        /*loader = new DServo(hwMap, "loader");
-        gripper = new DServo(hwMap, "gripper");
-        wobble = new DServo(hwMap, "wobble");
-        shooter = new DMotor(hwMap, "shooter");
-        ingester = new DEncoderlessMotor(hwMap, "rightEncoder");
-        preIngest = new DEncoderlessMotor(hwMap, "frontEncoder");
-        left = new DAnalogSensor(hwMap, "leftDist", distance);
-        right = new DAnalogSensor(hwMap, "rightDist", distance);
-        back1 = new DAnalogSensor(hwMap, "back1", distance);
-        back2 = new DAnalogSensor(hwMap, "back2", distance);
-         */
         imu = new DIMU(hwMap);
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
 
@@ -150,7 +125,6 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         // upward (normal to the floor) using a command like the following:
         // BNO055IMUUtil.remapAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);
 
-        //Not sure what the next part does so if stuff is wonky check it.
         for (DMotor motor : motors) {
             MotorConfigurationType motorConfigurationType = motor.getMotorType().clone();
             motorConfigurationType.setAchieveableMaxRPMFraction(1.0);
@@ -171,14 +145,8 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         motors.get(0).reverse(true);
         motors.get(1).reverse(true);
 
-        //preIngest.reverse(true);
-
-        //shooter.reverse(true);
-
-        System.out.println("Size: " + hardware.size());
         // TODO: if desired, use setLocalizer() to change the localization method
         setLocalizer(new DriveObjectTrackingWheelLocalizer(hwMap));
-        System.out.println("Size: " + hardware.size());
     }
 
     public void setBulkCachingManual(boolean manual){
@@ -223,7 +191,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         );
 
         turnStart = clock.seconds();
-        mode = ConfigurationRR.Mode.TURN;
+        mode = RoadRunnerConfiguration.Mode.TURN;
     }
 
     public void turn(double angle) {
@@ -301,7 +269,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
                 DashboardUtil.drawRobot(fieldOverlay, newPose);
 
                 if (t >= turnProfile.duration()) {
-                    mode = ConfigurationRR.Mode.IDLE;
+                    mode = RoadRunnerConfiguration.Mode.IDLE;
                     setDriveSignal(new DriveSignal());
                 }
 
@@ -322,7 +290,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
                 DashboardUtil.drawPoseHistory(fieldOverlay, poseHistory);
 
                 if (!follower.isFollowing()) {
-                    mode = ConfigurationRR.Mode.IDLE;
+                    mode = RoadRunnerConfiguration.Mode.IDLE;
                     setDriveSignal(new DriveSignal());
                 }
 

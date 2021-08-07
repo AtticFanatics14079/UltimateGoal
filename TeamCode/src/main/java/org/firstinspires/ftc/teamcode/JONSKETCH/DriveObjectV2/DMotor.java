@@ -86,8 +86,8 @@ public class DMotor implements Active, DcMotor {
     }
 
     public void setPower(double power) {
-        if(powerMode) set(power);
-        else set(power * powerToVelocity);
+        powerMode = true;
+        set(power);
     }
 
     @Override

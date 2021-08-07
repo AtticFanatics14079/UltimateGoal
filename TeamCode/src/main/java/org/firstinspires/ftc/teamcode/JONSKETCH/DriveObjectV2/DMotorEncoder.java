@@ -8,23 +8,23 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.Utils.Encoder;
 
-public class DOdometryPod implements Sensor, DriveObject {
+public class DMotorEncoder implements Sensor, DriveObject {
 
-    private Encoder odoPod;
+    private Encoder encoder;
     private int partNum;
     private double ticksPerInch = 1000; //MODIFY WITH THE EXACT VALUE
 
     //Array holding all the hardware inputs.
     private double[] hardwareVals;
 
-    //This variable is here to make sure that hardwareVals is visible to every thread.
+    //This variable is here to make sure that hardwareVals is visible to every thread. Updating it makes the entire array update to main memory.
     private volatile boolean updateHardware = true;
 
-    public DOdometryPod(HardwareMap hwMap, String objectName) {
+    public DMotorEncoder(HardwareMap hwMap, String objectName) {
         DcMotorImplEx d = hwMap.get(DcMotorImplEx.class, objectName);
         d.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         d.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        odoPod = new Encoder(d);
+        encoder = new Encoder(d);
         this.partNum = hardware.size();
         hardware.add(this);
     }
@@ -38,7 +38,7 @@ public class DOdometryPod implements Sensor, DriveObject {
     }
 
     public void getHardware() {
-        hardwareVals = new double[]{odoPod.getCurrentPosition(), odoPod.getCorrectedVelocity()};
+        hardwareVals = new double[]{encoder.getCurrentPosition(), encoder.getCorrectedVelocity()};
         updateHardware = !updateHardware;
     }
 
@@ -47,6 +47,6 @@ public class DOdometryPod implements Sensor, DriveObject {
     }
 
     public void reverse(boolean reverse) {
-        odoPod.setDirection(reverse ? Encoder.Direction.REVERSE : Encoder.Direction.FORWARD);
+        encoder.setDirection(reverse ? Encoder.Direction.REVERSE : Encoder.Direction.FORWARD);
     }
 }

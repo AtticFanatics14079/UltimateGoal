@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-public class DDistanceSensor implements Sensor, DriveObject, DistanceSensor {
+public class DDistanceSensor implements Sensor, DistanceSensor {
 
     private DistanceSensor sensor;
     private int partNum;
@@ -66,8 +66,8 @@ public class DDistanceSensor implements Sensor, DriveObject, DistanceSensor {
         Sequence pingSensor = new Sequence(() -> {
             gettingInput = true;
             //Need to add something to wait on at some point
+            HardwareThread.waitForCycle();
             gettingInput = false;
-            return null;
         });
         if(t != null && t.isAlive()) return;
         t = new Thread(pingSensor);

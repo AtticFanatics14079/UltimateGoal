@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
 
 import com.qualcomm.hardware.lynx.LynxModule;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import java.util.List;
@@ -32,11 +33,19 @@ public class SampleConfiguration implements Configuration {
         frontLeft = new DMotor(hwMap, "front_left_motor");
         frontRight = new DMotor(hwMap, "front_right_motor");
         backRight = new DMotor(hwMap, "back_right_motor");
-        left = new DAnalogSensor(hwMap, "left", distance);
-        right = new DAnalogSensor(hwMap, "right", distance);
-        back1 = new DAnalogSensor(hwMap, "back1", distance);
-        back2 = new DAnalogSensor(hwMap, "back2", distance);
-        imu = new DIMU(hwMap);
+        backLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        frontLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        backRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        frontRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        backLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        frontLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        frontRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        //left = new DAnalogSensor(hwMap, "left", distance);
+        //right = new DAnalogSensor(hwMap, "right", distance);
+        //back1 = new DAnalogSensor(hwMap, "back1", distance);
+        //back2 = new DAnalogSensor(hwMap, "back2", distance);
+        //imu = new DIMU(hwMap);
 
         frontRight.reverse(true);
         backRight.reverse(true);

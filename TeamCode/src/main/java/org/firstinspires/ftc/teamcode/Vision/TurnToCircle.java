@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.Vision;
+/*package org.firstinspires.ftc.teamcode.Vision;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -28,6 +28,7 @@ import org.openftc.easyopencv.OpenCvPipeline;
  * monitor: 640 x 480
  *YES
  */
+/*
 @Config
 @Autonomous
 public class TurnToCircle extends LinearOpMode {
@@ -112,7 +113,7 @@ public class TurnToCircle extends LinearOpMode {
              * Note that this method is invoked from the UI thread
              * so whatever we do here, we must do quickly.
              */
-
+/*
             int currentStageNum = stageToRenderToViewport.ordinal();
 
             int nextStageNum = currentStageNum + 1;
@@ -192,3 +193,4 @@ public class TurnToCircle extends LinearOpMode {
 
     }
 }
+*/

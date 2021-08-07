@@ -105,12 +105,13 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             hardware = new HardwareThread(hardwareMap, config);
             hardware.start();
 
-            int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+            /*int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
 
             webcam2 = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam2"), cameraMonitorViewId);
             webcam2.openCameraDevice();//open camera
             webcam2.setPipeline(new upperCameraPipeline());//different stages
             webcam2.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);//display on RC
+             */
             for(DMotor d : config.motors) d.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             configureMacros();
             config.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -252,7 +253,6 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             config.shooter.set(shooterSpeed + 140);
             sleep(400);
             shootOnce();
-            return null;
         });
         shootMacro = new Thread(shootThrice);
 
@@ -261,7 +261,6 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             config.shooter.set(-1340);
             //roadRunnerToPositionSlow(new Pose2d(-81, -38));
             imuTurn(Math.toRadians(15));
-            return null;
         });
         Sequence pivotShoot = new Sequence(() -> {
             sleep(400);
@@ -274,7 +273,6 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             sleep(400);
             shootOnce();
             config.loader.set(load);
-            return null;
         }, returnToPowerShot);
         powerShots = new Thread(pivotShoot);
 
@@ -282,7 +280,6 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             config.gripper.set(gripperClosed);
             sleep(1200);
             config.wobble.set(wobbleUp);
-            return null;
         });
         grabWobble = new Thread(grab);
 
@@ -290,7 +287,6 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             config.wobble.set(wobbleMid);
             sleep(200);
             config.gripper.set(gripperOpen);
-            return null;
         });
         dropWobble = new Thread(drop);
 
@@ -298,7 +294,6 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             config.wobble.set(wobbleDown);
             sleep(400);
             config.gripper.set(gripperOpen);
-            return null;
         });
         lowerWobble = new Thread(lowerToGrab);
     }

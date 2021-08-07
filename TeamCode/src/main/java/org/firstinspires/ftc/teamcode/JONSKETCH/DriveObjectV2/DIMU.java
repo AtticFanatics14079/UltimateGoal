@@ -43,6 +43,7 @@ public class DIMU implements Sensor, BNO055IMU {
         imu.initialize(parameters);
 
         this.partNum = hardware.size();
+        System.out.println(partNum);
         hardware.add(this);
     }
 
@@ -80,8 +81,8 @@ public class DIMU implements Sensor, BNO055IMU {
         Sequence pingSensor = new Sequence(() -> {
             gettingInput = true;
             //Wait on some object
+            HardwareThread.waitForCycle();
             gettingInput = false;
-            return null;
         });
         if(t != null && t.isAlive()) return;
         t = new Thread(pingSensor);
@@ -104,13 +105,12 @@ public class DIMU implements Sensor, BNO055IMU {
             gettingInput = true;
             Sequence delay = new Sequence(() -> {
                 try {
-                    //Need to find another object to wait on
+                    HardwareThread.waitForCycle();
                     imuOffset += get()[0];
                     gettingInput = false;
                 } catch (Exception e) {
 
                 }
-                return null;
             });
             Thread reset = new Thread(delay);
             reset.start();
@@ -138,20 +138,18 @@ public class DIMU implements Sensor, BNO055IMU {
         imu.close();
     }
 
-    //Use get().
+    //Use get() if possible, this method may be inconsistent from multiple threads.
     @Deprecated
     @Override
     public Orientation getAngularOrientation() {
-        return new Orientation(
-                AxesReference.EXTRINSIC, AxesOrder.XYZ, org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.RADIANS, (float) get()[0], (float) get()[1], (float) get()[2], 0
-        );
+        return imu.getAngularOrientation();
     }
 
-    //Use get().
+    //Same as above.
     @Deprecated
     @Override
     public Orientation getAngularOrientation(AxesReference reference, AxesOrder order, org.firstinspires.ftc.robotcore.external.navigation.AngleUnit angleUnit) {
-        return null;
+        return imu.getAngularOrientation(reference, order, angleUnit);
     }
 
     //Currently only using heading.
