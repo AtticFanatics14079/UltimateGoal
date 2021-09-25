@@ -1,36 +1,54 @@
 package org.firstinspires.ftc.teamcode.HardwareConfigs;
 
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.Configuration;
+import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DAnalogSensor;
+import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DDigitalSensor;
+
+import java.util.List;
+
 
 @Disabled
-public class LimitConfiguration {
+public class LimitConfiguration implements Configuration {
 
-    HardwareMap hwMap;
+    private List<LynxModule> allHubs;
 
-    public Servo servo;
-    private DigitalChannel limit;
-    private DigitalChannel limit2;
+    private DAnalogSensor potentiometer;
 
-    public HardwareMap Configure(HardwareMap ahwMap) {
+    public void Configure(HardwareMap ahwMap) {
 
-        hwMap = ahwMap;
+        System.out.println("Step 1");
 
-        limit = hwMap.get(DigitalChannel.class, "limit");
-        limit2 = hwMap.get(DigitalChannel.class, "limit2");
-        servo = hwMap.get(Servo.class, "servo");
+        hardware.clear();
 
-        return hwMap;
+        allHubs = ahwMap.getAll(LynxModule.class);
+
+        setBulkCachingManual(true);
+
+        potentiometer = new DAnalogSensor(ahwMap, "potent", (double voltage, double maxVoltage) -> voltage * 81.45);
+
+        System.out.println("Step 2");
     }
 
-    public boolean isPressed1() {
-        return limit.getState();
+    public void setBulkCachingManual(boolean manual){
+        for (LynxModule module : allHubs) {
+            module.setBulkCachingMode(manual ? LynxModule.BulkCachingMode.MANUAL : LynxModule.BulkCachingMode.AUTO);
+        }
     }
 
-    public boolean isPressed2() {
-        return limit2.getState();
+    public void clearBulkCache(){
+        for (LynxModule module : allHubs) {
+            if(module.getBulkCachingMode() == LynxModule.BulkCachingMode.MANUAL) {
+                System.out.println("Clearing");
+                module.clearBulkCache();
+                //module.getBulkData();
+            }
+        }
     }
 }

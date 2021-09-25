@@ -86,7 +86,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     public List<DMotor> motors;
     private List<LynxModule> allHubs;
     public DIMU imu;
-    public DAnalogSensor left, right, back1, back2, leSense;
+    public DAnalogSensor left, right, back1, back2, leSense, gyro;
     private VoltageSensor batteryVoltageSensor;
 
     public ConfigurationRR(HardwareMap hardwareMap) {
@@ -132,6 +132,11 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         leftRear = new DMotor(hwMap, "back_left_motor");
         rightRear = new DMotor(hwMap, "back_right_motor");
         rightFront = new DMotor(hwMap, "front_right_motor");
+        gyro = new DAnalogSensor(hwMap, "gyro", ((double voltage, double max) -> {
+            double x = 2 * Math.PI - (voltage / 3.233 * Math.PI * 2) - max;
+            if(x > Math.PI) x -= Math.PI * 2;
+            return x;
+        }));
         /*loader = new DServo(hwMap, "loader");
         gripper = new DServo(hwMap, "gripper");
         wobble = new DServo(hwMap, "wobble");
@@ -400,6 +405,6 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     //Fix later
     @Override
     public double getRawExternalHeading() {
-        return imu.get()[0];
+        return gyro.get()[0];
     }
 }

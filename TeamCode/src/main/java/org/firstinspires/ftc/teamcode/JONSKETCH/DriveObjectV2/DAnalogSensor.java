@@ -12,7 +12,7 @@ public class DAnalogSensor implements Sensor, AnalogSensor {
 
     private InterpretVoltage interpret;
 
-    private double maxVolt;
+    private double maxVolt = 0;
 
     //Array holding all the hardware inputs.
     private double[] hardwareVals;
@@ -24,7 +24,6 @@ public class DAnalogSensor implements Sensor, AnalogSensor {
         sensor = hwMap.get(AnalogInput.class, objectName);
         this.partNum = hardware.size();
         interpret = method;
-        maxVolt = getMaxVoltage();
         hardware.add(this);
     }
 
@@ -47,7 +46,12 @@ public class DAnalogSensor implements Sensor, AnalogSensor {
     }
 
     public double getMaxVoltage() {
-        return sensor.getMaxVoltage();
+        return maxVolt;
+    }
+
+    //Can also be used to modify the InterpretVoltage result, such as by setting maxVolt to an offset and including maxVolt into interpret.
+    public void setMaxVoltage(double value) {
+        maxVolt = value;
     }
 
     @Override

@@ -11,6 +11,7 @@ public class SampleConfiguration implements Configuration {
     private List<LynxModule> allHubs;
 
     public DMotor backLeft, frontLeft, frontRight, backRight;
+    public DEncoderlessMotor ingest;
     //public DOdometryPod frontOdoPod, leftOdoPod, rightOdoPod;
     //public DServo servo;
     //public DMotor motor;
@@ -29,10 +30,11 @@ public class SampleConfiguration implements Configuration {
         DAnalogSensor.InterpretVoltage distance = ((double voltage, double max) -> 87.4 * (voltage - 0.138));
 
         hardware.clear();
-        backLeft = new DMotor(hwMap, "back_left_motor");
         frontLeft = new DMotor(hwMap, "front_left_motor");
+        backLeft = new DMotor(hwMap, "back_left_motor");
         frontRight = new DMotor(hwMap, "front_right_motor");
         backRight = new DMotor(hwMap, "back_right_motor");
+        ingest = new DEncoderlessMotor(hwMap, "ingest");
         backLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         frontLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         backRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -41,6 +43,11 @@ public class SampleConfiguration implements Configuration {
         frontLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         backRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         frontRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        imu = new DIMU(hwMap);
         //left = new DAnalogSensor(hwMap, "left", distance);
         //right = new DAnalogSensor(hwMap, "right", distance);
         //back1 = new DAnalogSensor(hwMap, "back1", distance);
