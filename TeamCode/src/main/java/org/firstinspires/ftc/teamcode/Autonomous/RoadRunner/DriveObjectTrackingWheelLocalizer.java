@@ -43,7 +43,7 @@ public class DriveObjectTrackingWheelLocalizer extends ThreeTrackingWheelLocaliz
     public static double X_MULTIPLIER = 0.993;
     public static double Y_MULTIPLER = 1.011;
 
-    private ThreadedOdometry leftEncoder, rightEncoder, frontEncoder;
+    private DMotorEncoder leftEncoder, rightEncoder, frontEncoder;
 
     public DriveObjectTrackingWheelLocalizer(HardwareMap hwMap) {
 
@@ -53,12 +53,12 @@ public class DriveObjectTrackingWheelLocalizer extends ThreeTrackingWheelLocaliz
                 new Pose2d(FORWARD_OFFSET, 0, Math.toRadians(90)) // front
         ));
 
-        leftEncoder = new ThreadedOdometry(hwMap, "leftEncoder");
-        rightEncoder = new ThreadedOdometry(hwMap, "rightEncoder");
-        frontEncoder = new ThreadedOdometry(hwMap, "frontEncoder");
+        leftEncoder = new DMotorEncoder(hwMap, "leftEncoder");
+        rightEncoder = new DMotorEncoder(hwMap, "rightEncoder");
+        frontEncoder = new DMotorEncoder(hwMap, "frontEncoder");
 
-        rightEncoder.setDirection(Encoder.Direction.REVERSE);
-        frontEncoder.setDirection(Encoder.Direction.REVERSE);
+        rightEncoder.reverse(true);
+        frontEncoder.reverse(true);
     }
 
     public static double encoderTicksToInches(double ticks) {

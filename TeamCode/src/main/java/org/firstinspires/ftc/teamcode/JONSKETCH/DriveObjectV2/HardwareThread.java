@@ -11,7 +11,7 @@ public class HardwareThread extends Thread implements SharedObjects {
     ElapsedTime time;
     double[] lastRun; //Previous run values.
     public Configuration config;
-    private volatile boolean stop = false, resetIMU = false;
+    private volatile boolean stop = false;
 
     private static final Double sync = 0.0;
 

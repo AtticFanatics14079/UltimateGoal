@@ -66,6 +66,8 @@ public class DIMU implements Sensor, BNO055IMU {
     }
 
     public void getHardware() {
+        if(!gettingInput) return;
+
         hardwareVals = new double[]{calculateOffset(imu.getAngularOrientation().firstAngle), imu.getAngularOrientation().secondAngle, imu.getAngularOrientation().thirdAngle};
 
         updateHardware = !updateHardware;
@@ -80,7 +82,7 @@ public class DIMU implements Sensor, BNO055IMU {
     public void pingSensor() {
         Sequence pingSensor = new Sequence(() -> {
             gettingInput = true;
-            //Wait on some object
+            HardwareThread.waitForCycle();
             HardwareThread.waitForCycle();
             gettingInput = false;
         });

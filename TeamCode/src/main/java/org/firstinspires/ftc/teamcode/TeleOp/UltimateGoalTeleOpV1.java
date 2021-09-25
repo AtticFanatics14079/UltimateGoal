@@ -64,7 +64,13 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     public static double offsetDivisor = 50;
     public static double rotateAngle = 180;
 
+    private boolean turning = false;
+
     public static double fastImuP = 0.5, fastImuF = 0.15, highGoalFastP = 0.0005, highGoalFastF = 0.08;
+
+    private double expectedX = 0.01, expectedY = 0.01, lastX = 0, lastY = 0, lastHeading = 0;
+
+    public static double angleAdjust = 0.5;
 
     public static int upperCameraCenter = 0;
     public static double maxX = -1;
@@ -75,6 +81,8 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     public static int extract = 1;
     public static int row = 320;
 
+    public static int millis = 140;
+
     OpenCvCamera webCam, webcam2;
 
 
@@ -82,7 +90,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     DriveObjectRobotMovement drive;
     ValueStorage vals;
     HardwareThread hardware;
-    Thread returnToShoot, powerShots, shootMacro, grabWobble, dropWobble, lowerWobble;
+    Thread returnToShoot, powerShots, shootMacro, grabWobble, dropWobble, lowerWobble, waitThread, gyroCorrectThread;
     public static double wobbleUp = 0.4, wobbleDown = 0.85, wobbleMid = 0.67, gripperOpen = 0, gripperClosed = 1, load = 0.7, reload = 0.45, shooterSpeed = -1460, multiplier = 1, sensorSideOffset = 8.20, sensorSideAngle = 0.66, sensorStrightOffset = 9, sensorStraightAngle = 0, rightDistMult = 1; //Sheets had 1.15 as multiplier, seeing if just my house that's off
 
     public static double highGoalX = 0, highGoalY = 0, powerShotX = 0, powerShotY = 0, wallDistance = 18, distanceLeft = 21, distanceRight = 15;
@@ -97,6 +105,8 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
     private boolean lockedLoader = false, pressedLock = false, pressedShooter = false, shooterFast = false, pressedOdoAdjust = false;
 
     public static double intakeSpeed = 0;
+
+    private double lastTime = -1;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -115,15 +125,25 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             for(DMotor d : config.motors) d.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             configureMacros();
             config.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            drive = new DriveObjectRobotMovement(config);
+            //drive = new DriveObjectRobotMovement(config);
+            config.imu.retrievingHardware(true);
             for(DMotor d : config.motors) d.setPowerMode(true);
-            config.setPoseEstimate(setOdo());
+            //config.setPoseEstimate(setOdo());
+            config.setPoseEstimate(new Pose2d(0, 0));
+            sleep(400);
+            config.gyro.setMaxVoltage(config.gyro.get()[0]);
+            config.imu.retrievingHardware(false);
             waitForStart();
             time = new ElapsedTime();
             if(!isStopRequested()) {
                 //config.setPoseEstimate(new Pose2d(-1, 0, 0));
                 while(opModeIsActive()){
                     hardware.waitForCycle();
+                    if(time.seconds() - lastTime > 1) {
+                        gyroCorrectThread.start();
+                        lastTime = time.seconds();
+                        System.out.println("Time: " + time.seconds());
+                    }
                     getInput();
                 }
             }
@@ -139,9 +159,13 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         //Main loop
         System.out.println("Input loop: " + time.milliseconds());
         config.update();
+        Pose2d currentPose = config.getPoseEstimate();
+        telemetry.addData("Gyro: ", config.gyro.get()[0]);
         telemetry.addData("Pose: ", config.getPoseEstimate());
+        telemetry.addData("Front Encoder: ", hardware.hardware.get(hardware.hardware.size() - 1).get()[0]);
         //config.imu.retrievingHardware(true);
         //double head = config.imu.get()[0];
+        if(gamepad1.dpad_down) imuTurn(Math.toRadians(45));
         telemetry.update();
         if(gamepad2.a && !pressedShooter) {
             pressedShooter = true;
@@ -150,7 +174,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         else if(pressedShooter && !gamepad2.a) pressedShooter = false;
         if(gamepad1.right_stick_button) {
             config.setPoseEstimate(sensorPoseAnalog());
-            Pose2d currentPose = config.getPoseEstimate();
+            currentPose = config.getPoseEstimate();
             System.out.println("Current pose: " + currentPose);
             System.out.println("Angle: " + Math.atan((currentPose.getY() + 60) / currentPose.getX()));
             /*if(dist < 96) shooterSpeed = -1600;
@@ -186,7 +210,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             turnUntilHighGoalFast((int)(100 / dist * 30));
 
              */config.setPoseEstimate(sensorPoseAnalog());
-            Pose2d currentPose = config.getPoseEstimate();
+            currentPose = config.getPoseEstimate();
             System.out.println("Current pose: " + currentPose);
             System.out.println("Angle: " + Math.atan((currentPose.getY() + 60) / currentPose.getX()));
             /*if(dist < 96) shooterSpeed = -1600;
@@ -202,27 +226,84 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         if(gamepad2.start) {
             config.setPoseEstimate(setOdo());
             config.imu.resetIMU();
+
         }
         if(gamepad2.left_stick_y > 0.5) shooterSpeed = -1540;
         else if(gamepad2.left_stick_y < -0.5) shooterSpeed = -1640;
-        if(!shootMacro.isAlive()) config.shooter.set(shooterFast ? shooterSpeed : 0);
+        //if(!shootMacro.isAlive()) config.shooter.set(shooterFast ? shooterSpeed : 0);
 
         if(gamepad1.a && !shootMacro.isAlive()) { //Just making sure we don't shoot until after shooter reaches speed, may add this check to the macro.
             shootMacro.start();
         }
 
         if(gamepad1.back && !shootMacro.isAlive()) {
-            powerShots.start();
-            while(powerShots.isAlive());
+            //powerShots.start();
+            //while(powerShots.isAlive());
+            //while(powerShots.isAlive());
         }
         System.out.println("Time 1: " + time.milliseconds());
         double speedMultiplier = -1;
-        if(gamepad1.left_bumper) speedMultiplier = -0.2;
-        if(gamepad1.right_bumper) speedMultiplier = -0.6;
-        setPower(speedMultiplier * -gamepad1.left_stick_x, speedMultiplier * gamepad1.left_stick_y, speedMultiplier * -gamepad1.right_stick_x);
+        //if(gamepad1.left_bumper) speedMultiplier = -0.2;
+        //if(gamepad1.right_bumper) speedMultiplier = -0.6;
+        double imuHeading = config.gyro.get()[0];
+        double tempHeading = imuHeading;
+        double tempTarget = lastHeading;
+        if(tempHeading < 0) tempHeading += 2 * Math.PI;
+        if(lastHeading < 0) tempTarget += 2 * Math.PI;
+        double invert = lastHeading - imuHeading;
+        if(invert > Math.PI) invert -= 2 * Math.PI;
+        else if(invert < -Math.PI) invert += 2 * Math.PI;
+        invert = invert < 0 ? 1 : -1;
+        double power = invert * angleAdjust * (Math.abs(tempHeading - tempTarget) > Math.PI ? (Math.abs(tempHeading > Math.PI ? 2 * Math.PI - tempHeading : tempHeading) + Math.abs(tempTarget > Math.PI ? 2 * Math.PI - tempTarget : tempTarget)) : Math.abs(tempHeading - tempTarget)); //Long line, but the gist is if you're calculating speed in the wrong direction, git gud.
+        if(Math.abs(gamepad1.right_stick_x) > 0.05) turning = true;
+        else if(turning && !waitThread.isAlive()) waitThread.start();
+
+        if(turning) {
+            power = 0;
+            lastHeading = imuHeading;
+        }
+        if(Math.abs(power) < 0.02) power = 0;
+
+        setPower(Math.cos(tempHeading)*gamepad1.left_stick_y+Math.sin(tempHeading)*gamepad1.left_stick_x, -Math.cos(tempHeading)*gamepad1.left_stick_x+Math.sin(tempHeading)*gamepad1.left_stick_y, gamepad1.right_stick_x+power);
+
+        //lastX = currentPose.getX();
+        //lastY = currentPose.getY();
+
+        //Field-centric, correcting movement
+        /*double heading = config.imu.get()[0];
+
+        double xChange = currentPose.getX() - lastX;
+        double yChange = currentPose.getY() - lastY;
+
+        System.out.println("XChange: " + xChange + ", YChange: " + yChange);
+
+        double ratioX = xChange / expectedX;
+        double ratioY = yChange / expectedY;
+        double ratio = ratioX + ratioY / 2;
+
+        System.out.println("RatioX: " + ratioX + ", RatioY: " + ratioY);
+
+        double xCorrection = -(ratio * expectedX - xChange);
+        double yCorrection = -(ratio * expectedY - yChange);
+
+        System.out.println("XCorrection: " + xCorrection + ", YCorrection: " + yCorrection);
+
+        expectedX = Math.cos(heading)*gamepad1.left_stick_x+Math.sin(heading)*gamepad1.left_stick_y;
+        expectedY = Math.cos(heading)*gamepad1.left_stick_y+Math.sin(heading)*gamepad1.left_stick_x;
+
+        expectedX = expectedX == 0 ? 0.1 : expectedX;
+        expectedY = expectedY == 0 ? 0.1 : expectedY;
+
+        System.out.println("ExpectedX: " + expectedX + ", ExpectedY: " + expectedY);
+
+        lastX = currentPose.getX();
+        lastY = currentPose.getY();
+
+        setPower(xCorrection+Math.cos(heading)*gamepad1.left_stick_x+Math.sin(heading)*gamepad1.left_stick_y, yCorrection+Math.cos(heading)*gamepad1.left_stick_y+Math.sin(heading)*gamepad1.left_stick_x, gamepad1.right_stick_x);
+*/
         if(shootMacro.isAlive()) {}
         else if((gamepad1.b || gamepad2.back) && config.ingester.get()[0] >= shooterSpeed - 500) config.loader.set(load);
-        else config.loader.set(reload);
+        //else config.loader.set(reload);
 
         if(gamepad1.x && !grabWobble.isAlive() && !dropWobble.isAlive() && !lowerWobble.isAlive()) grabWobble.start();
         else if(gamepad2.x && !grabWobble.isAlive() && !dropWobble.isAlive() && !lowerWobble.isAlive()) dropWobble.start();
@@ -239,8 +320,8 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         if(gamepad2.dpad_up || gamepad1.dpad_right) intakeSpeed = -1;
         else if(gamepad2.b) intakeSpeed = 0;
         else if(gamepad2.dpad_down || gamepad1.dpad_left) intakeSpeed = 1;
-        config.ingester.set(intakeSpeed);
-        config.preIngest.set(-intakeSpeed);
+        //config.ingester.set(intakeSpeed);
+        //config.preIngest.set(-intakeSpeed);
     }
 
     public void configureMacros() {
@@ -296,6 +377,23 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             config.gripper.set(gripperOpen);
         });
         lowerWobble = new Thread(lowerToGrab);
+
+        Sequence waitMillis = new Sequence(() -> {
+            sleep(millis);
+            turning = false;
+        }, null);
+        waitThread = new Thread(waitMillis);
+
+        Sequence correctGyro = new Sequence(() -> {
+            config.imu.gettingInput = true;
+            HardwareThread.waitForCycle();
+            HardwareThread.waitForCycle();
+            config.imu.gettingInput = false;
+            System.out.println("Gyro Before Reset: " + config.gyro.get()[0]);
+            config.gyro.setMaxVoltage(config.gyro.getMaxVoltage() - (config.imu.get()[0] - config.gyro.get()[0]));
+            System.out.println("IMU: " + config.imu.get()[0] + ", Gyro: " + config.gyro.get()[0]);
+        });
+        gyroCorrectThread = new Thread(correctGyro);
     }
 
     /*public void imuTurn() {
@@ -349,7 +447,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             vals.waitForCycle();
         }
         setPower(0, 0, 0);
-        config.imu.retrievingHardware(false);
+        //config.imu.retrievingHardware(false);
     }
 
     public void imuTurnFast(double angle) {
@@ -382,7 +480,7 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             System.out.println("End of cycle");
         }
         setPower(0, 0, 0);
-        config.imu.retrievingHardware(false);
+        //config.imu.retrievingHardware(false);
     }
 
     public void roadRunnerToPosition(Pose2d targetPose) {
@@ -492,6 +590,9 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
             poseY = Math.abs(back2Sin - back1Sin) < confidence ? (back2Sin + back1Sin) / 2 : Math.max(back1Sin, back2Sin);
             poseX = Math.abs(leftSin - rightSin) < confidence ? (leftSin + rightSin) / 2 : Math.max(leftSin, rightSin);
         }
+
+        lastX = poseX;
+        lastY = poseY;
 
         return new Pose2d(poseX, poseY, imuHeading);
     }
@@ -846,8 +947,23 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         config.loader.set(reload);
     }
 
-    public void setPower(double x, double y, double a){
-        drive.setPower(x, y, a);
+    public void setPower(double px, double py, double pa){ //Multiplied pa by -1 to suit turning requests
+        double p1 = px - py + pa;
+        double p2 = -px - py + pa;
+        double p3 = px - py - pa;
+        double p4 = -px - py - pa;
+        double max = Math.max(1.0, Math.abs(p1));
+        max = Math.max(max, Math.abs(p2));
+        max = Math.max(max, Math.abs(p3));
+        max = Math.max(max, Math.abs(p4));
+        p1 /= max;
+        p2 /= max;
+        p3 /= max;
+        p4 /= max;
+        config.motors.get(0).setPower(p1);
+        config.motors.get(1).setPower(p2);
+        config.motors.get(2).setPower(p3);
+        config.motors.get(3).setPower(p4);
     }
 
     static class upperCameraPipeline extends OpenCvPipeline

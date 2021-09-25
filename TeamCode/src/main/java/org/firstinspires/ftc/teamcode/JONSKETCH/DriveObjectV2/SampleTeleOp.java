@@ -5,6 +5,9 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.HardwareConfigs.CVConfig;
+import org.firstinspires.ftc.teamcode.HardwareConfigs.LimitConfiguration;
+
 import static org.firstinspires.ftc.teamcode.TeleOp.UltimateGoalTeleOpV1.sensorSideOffset;
 import static org.firstinspires.ftc.teamcode.TeleOp.UltimateGoalTeleOpV1.sensorStrightOffset;
 
@@ -12,16 +15,18 @@ import static org.firstinspires.ftc.teamcode.TeleOp.UltimateGoalTeleOpV1.sensorS
 public class SampleTeleOp extends LinearOpMode {
 
     HardwareThread hardware;
-    SampleConfiguration config;
+    //SampleConfiguration config;
+    LimitConfiguration config;
 
     @Override
     public void runOpMode() throws InterruptedException {
         try {
-            config = new SampleConfiguration();
+            config = new LimitConfiguration();
             hardware = new HardwareThread(hardwareMap, config);
             //config.imu.gettingInput = true;
             hardware.start();
-            Sequence seq = new Sequence(() -> {
+            System.out.println("Step 3");
+            /*Sequence seq = new Sequence(() -> {
                 while(Math.abs(config.backLeft.get()[1]) < 1000) {
                     setPower(0, 0, 0.5);
                     HardwareThread.waitForCycle();
@@ -40,11 +45,13 @@ public class SampleTeleOp extends LinearOpMode {
 
             }, seq);
             System.out.println("Here");
+
+             */
             waitForStart();
             System.out.println("There");
             ElapsedTime time = new ElapsedTime();
-            Thread t = new Thread(seq2);
-            t.start();
+            //Thread t = new Thread(seq2);
+            //t.start();
             while(!isStopRequested()){
                 hardware.waitForCycle();
                 getInput();
@@ -67,9 +74,11 @@ public class SampleTeleOp extends LinearOpMode {
         //telemetry.addData("Wall: ", hypotenuse * Math.cos(Math.toRadians(imuDegrees)));
         //telemetry.addData("IMU: ", imuDegrees);
         System.out.println("Exited input loop.");
+        telemetry.addData("Degree: ", hardware.hardware.get(0).get()[0]);
+        telemetry.update();
     }
 
-    private void setPower(double px, double py, double pa){
+    /*private void setPower(double px, double py, double pa){
         double p1 = -px + py + pa;
         double p2 = px + py + pa;
         double p3 = -px + py - pa;
@@ -87,4 +96,6 @@ public class SampleTeleOp extends LinearOpMode {
         config.frontRight.setPower(p3);
         config.backRight.setPower(p4);
     }
+
+     */
 }
