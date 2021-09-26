@@ -23,9 +23,9 @@ public class TestTeleOp extends LinearOpMode {
         HardwareThread hardware = new HardwareThread(hardwareMap, config);
         hardware.start();
 
-        double lastHeading = 0, ingesterSpeed = 0;
+        double lastHeading = 0, ingesterSpeed = 0, spinnerSpeed = 0;
 
-        boolean pressed = false;
+        boolean ingestPressed = false, spinnerPressed = false;
 
         config.imu.gettingInput = true;
 
@@ -40,16 +40,27 @@ public class TestTeleOp extends LinearOpMode {
         while(!isStopRequested()) {
 
             config.ingest.setPower(ingesterSpeed);
+            config.spinner.setPower(spinnerSpeed);
 
-            if(gamepad1.b && !pressed) {
+            if(gamepad1.b && !ingestPressed) {
                 ingesterSpeed += 0.1;
-                pressed = true;
+                ingestPressed = true;
             }
-            else if(gamepad1.a && !pressed) {
+            else if(gamepad1.a && !ingestPressed) {
                 ingesterSpeed -= 0.1;
-                pressed = true;
+                ingestPressed = true;
             }
-            else if(!gamepad1.a && !gamepad1.b) pressed = false;
+            else if(!gamepad1.a && !gamepad1.b) ingestPressed = false;
+
+            if(gamepad1.y && !spinnerPressed) {
+                spinnerSpeed += 0.1;
+                spinnerPressed = true;
+            }
+            else if(gamepad1.x && !spinnerPressed) {
+                spinnerSpeed -= 0.1;
+                spinnerPressed = true;
+            }
+            else if(!gamepad1.y && !gamepad1.x) spinnerPressed = false;
 
             double imuHeading = config.imu.get()[0];
             double tempHeading = imuHeading;
@@ -77,7 +88,8 @@ public class TestTeleOp extends LinearOpMode {
 
             double speed = gamepad1.left_bumper ? 0.4 : 1;
 
-            setPower(-speed * (Math.cos(tempHeading)*gamepad1.left_stick_y+Math.sin(tempHeading)*gamepad1.left_stick_x), -speed * (-Math.cos(tempHeading)*gamepad1.left_stick_x+Math.sin(tempHeading)*gamepad1.left_stick_y), speed * gamepad1.right_stick_x+power);
+            //setPower(-speed * (Math.cos(tempHeading)*gamepad1.left_stick_y+Math.sin(tempHeading)*gamepad1.left_stick_x), -speed * (-Math.cos(tempHeading)*gamepad1.left_stick_x+Math.sin(tempHeading)*gamepad1.left_stick_y), speed * gamepad1.right_stick_x+power);
+            setPower(-speed * gamepad1.left_stick_x, -speed * gamepad1.left_stick_y, speed * gamepad1.right_stick_x);
         }
 
         hardware.Stop();

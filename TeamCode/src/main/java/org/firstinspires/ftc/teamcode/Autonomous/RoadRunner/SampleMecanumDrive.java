@@ -80,11 +80,11 @@ public class SampleMecanumDrive extends MecanumDrive {
 
     private List<Pose2d> poseHistory;
 
-    public DcMotorImplEx shooter;
-    public Servo loader, wobble, gripper;
+    public DcMotorImplEx slides, spinner;
+    public Servo dropper;
     private DcMotorEx leftFront, leftRear, rightRear, rightFront;
     public List<DcMotorEx> motors;
-    public DcMotorSimple ingester, preIngest;
+    public DcMotorSimple ingester;
     public BNO055IMU imu;
     private VoltageSensor batteryVoltageSensor;
     public AnalogInput left, right, back1, back2;
@@ -132,19 +132,12 @@ public class SampleMecanumDrive extends MecanumDrive {
         leftRear = hardwareMap.get(DcMotorEx.class, "back_left_motor");
         rightRear = hardwareMap.get(DcMotorEx.class, "back_right_motor");
         rightFront = hardwareMap.get(DcMotorEx.class, "front_right_motor");
-        shooter = hardwareMap.get(DcMotorImplEx.class,"shooter");
-        shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        loader = hardwareMap.get(Servo.class, "loader");
-        wobble = hardwareMap.get(Servo.class, "wobble");
-        gripper = hardwareMap.get(Servo.class, "gripper");
-        ingester = hardwareMap.get(DcMotorSimple.class, "rightEncoder");
-        preIngest = hardwareMap.get(DcMotorSimple.class, "frontEncoder");
-
-        left = hardwareMap.get(AnalogInput.class, "leftDist");
-        right = hardwareMap.get(AnalogInput.class, "rightDist");
-        back1 = hardwareMap.get(AnalogInput.class, "back1");
-        back2 = hardwareMap.get(AnalogInput.class, "back2");
+        slides = hardwareMap.get(DcMotorImplEx.class,"slides");
+        slides.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        slides.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        dropper = hardwareMap.get(Servo.class, "servo");
+        ingester = hardwareMap.get(DcMotorSimple.class, "ingest");
+        spinner = hardwareMap.get(DcMotorImplEx.class, "spinner");
 
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
 
@@ -171,11 +164,9 @@ public class SampleMecanumDrive extends MecanumDrive {
         rightRear.setDirection(DcMotorSimple.Direction.FORWARD);
         leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
         leftRear.setDirection(DcMotorSimple.Direction.REVERSE);
-        shooter.setDirection(DcMotorSimple.Direction.REVERSE);
 
         // TODO: if desired, use setLocalizer() to change the localization method
         // for instance, setLocalizer(new ThreeTrackingWheelLocalizer(...));
-        setLocalizer(new StandardTrackingWheelLocalizer(hardwareMap));
     }
 
     public TrajectoryBuilder trajectoryBuilder(Pose2d startPose) {

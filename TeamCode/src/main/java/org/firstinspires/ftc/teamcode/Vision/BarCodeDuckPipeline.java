@@ -12,6 +12,7 @@ import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
@@ -46,7 +47,7 @@ public class BarCodeDuckPipeline extends LinearOpMode {
     public static int duckLocation = -1;
     private static double color1, color2, color3;
     public static Point leftUL = new Point(200, 70), middleUL = new Point(200, 110), rightUL = new Point(200, 150);
-
+    public static int rotateAngle = 90;
     public static int extract = 1;
 
     OpenCvCamera webCam, webcam2;
@@ -131,7 +132,9 @@ public class BarCodeDuckPipeline extends LinearOpMode {
             rawMat = input;
             //Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2YCrCb);
             //YCRCBMat = rawMat;
-            Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2HSV);
+            Mat rota = Imgproc.getRotationMatrix2D(new Point(160, 120), rotateAngle,1);
+            Imgproc.warpAffine(rawMat, rawMat, rota, new Size(320,240));
+            Imgproc.cvtColor(rawMat, YCRCBMat, Imgproc.COLOR_BGR2HSV);
             Core.extractChannel(YCRCBMat, ExtractMat, extract);
 
             color1 = color2 = color3 = 0;
