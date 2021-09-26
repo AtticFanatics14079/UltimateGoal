@@ -2,11 +2,25 @@ package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
 
 public class Sequence implements Runnable {
 
-    private Action action;
+    private volatile Action action;
+    private volatile Condition condition = null;
     private Sequence sequence;
 
-    public interface Action {
-        DThread runAction(); //Return null if not setting anything to a position, return the thread you are waiting on otherwise.
+    private volatile boolean conditionFinished = false;
+
+    public interface Action extends Runnable{
+        void run();
+    }
+
+    //Condition should loop UNTIL A CONDITION IS MET.
+    public interface Condition extends Runnable {
+        void run();
+    }
+
+    public Sequence(Action action, Condition condition, Sequence sequence){
+        this.action = action;
+        this.condition = condition;
+        this.sequence = sequence;
     }
 
     public Sequence(Action action, Sequence sequence){
@@ -22,7 +36,19 @@ public class Sequence implements Runnable {
         if(sequence != null) {
             sequence.run();
         }
-        DThread t = action.runAction();
-        while(t != null && t.isAlive()){} //Accounts both for threads and single actions.
+
+        //Runs condition first
+        Thread actionThread = new Thread(action);
+        Thread conditionThread = null;
+        if(condition != null) {
+            conditionThread = new Thread(condition);
+            conditionThread.start();
+            actionThread.start();
+        } else {
+            actionThread.run();
+        }
+        while((conditionThread == null || conditionThread.isAlive()) && actionThread.isAlive()){
+            HardwareThread.waitForCycle();
+        }
     }
 }

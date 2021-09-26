@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
+ package org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2;
 
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.AnalogSensor;
@@ -12,13 +12,18 @@ public class DAnalogSensor implements Sensor, AnalogSensor {
 
     private InterpretVoltage interpret;
 
-    private double maxVolt;
+    private double maxVolt = 0;
+
+    //Array holding all the hardware inputs.
+    private double[] hardwareVals;
+
+    //This variable is here to make sure that hardwareVals is visible to every thread. The value of this variable does not matter.
+    private volatile boolean updateHardware = true;
 
     public DAnalogSensor(HardwareMap hwMap, String objectName, InterpretVoltage method) {
         sensor = hwMap.get(AnalogInput.class, objectName);
         this.partNum = hardware.size();
         interpret = method;
-        maxVolt = getMaxVoltage();
         hardware.add(this);
     }
 
@@ -41,7 +46,12 @@ public class DAnalogSensor implements Sensor, AnalogSensor {
     }
 
     public double getMaxVoltage() {
-        return sensor.getMaxVoltage();
+        return maxVolt;
+    }
+
+    //Can also be used to modify the InterpretVoltage result, such as by setting maxVolt to an offset and including maxVolt into interpret.
+    public void setMaxVoltage(double value) {
+        maxVolt = value;
     }
 
     @Override
@@ -51,13 +61,15 @@ public class DAnalogSensor implements Sensor, AnalogSensor {
 
     @Override
     public double[] get() {
-        return vals.hardware(false, null, partNum);
+        return hardwareVals;
     }
 
     @Override
-    public double[] getHardware() {
+    public void getHardware() {
         double input = sensor.getVoltage();
-        return new double[]{interpret.interpret(input, maxVolt), input};
+        hardwareVals = new double[]{interpret.interpret(input, maxVolt), input};
+
+        updateHardware = !updateHardware;
     }
 
     @Override

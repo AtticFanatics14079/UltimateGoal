@@ -5,14 +5,13 @@ import androidx.annotation.NonNull;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.localization.ThreeTrackingWheelLocalizer;
-import com.qualcomm.hardware.bosch.BNO055IMU;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ConfigurationRR;
-import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DIMU;
-import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DOdometryPod;
-import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ValueStorage;
+import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.DMotorEncoder;
+import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.HardwareThread;
+import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.SharedObjects;
+import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.ThreadedOdometry;
 import org.firstinspires.ftc.teamcode.Utils.Encoder;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,22 +32,20 @@ import java.util.List;
  *
  */
 @Config
-public class DriveObjectTrackingWheelLocalizer extends ThreeTrackingWheelLocalizer {
+public class DriveObjectTrackingWheelLocalizer extends ThreeTrackingWheelLocalizer implements SharedObjects {
     public static double TICKS_PER_REV = 8192;
     public static double WHEEL_RADIUS = 0.75; // in
     public static double GEAR_RATIO = 1; // output (wheel) speed / input (encoder) speed
 
-    public static double LATERAL_DISTANCE = 10.44; // in; distance between the left and right wheels
-    public static double FORWARD_OFFSET = 7.5; // in; offset of the lateral wheel
+    public static double LATERAL_DISTANCE = 10.59; // in; distance between the left and right wheels
+    public static double FORWARD_OFFSET = -6; // in; offset of the lateral wheel
 
-    public static double X_MULTIPLIER = 1.019716;
-    public static double Y_MULTIPLER = 1.020482;
+    public static double X_MULTIPLIER = 0.993;
+    public static double Y_MULTIPLER = 1.011;
 
-    private DOdometryPod leftEncoder, rightEncoder, frontEncoder;
+    private DMotorEncoder leftEncoder, rightEncoder, frontEncoder;
 
-    ValueStorage vals;
-
-    public DriveObjectTrackingWheelLocalizer(ValueStorage vals, ConfigurationRR config) {
+    public DriveObjectTrackingWheelLocalizer(HardwareMap hwMap) {
 
         super(Arrays.asList(
                 new Pose2d(0, LATERAL_DISTANCE / 2, 0), // left
@@ -56,11 +53,12 @@ public class DriveObjectTrackingWheelLocalizer extends ThreeTrackingWheelLocaliz
                 new Pose2d(FORWARD_OFFSET, 0, Math.toRadians(90)) // front
         ));
 
-        leftEncoder = config.leftEncoder;
-        rightEncoder = config.rightEncoder;
-        frontEncoder = config.frontEncoder;
+        leftEncoder = new DMotorEncoder(hwMap, "leftEncoder");
+        rightEncoder = new DMotorEncoder(hwMap, "rightEncoder");
+        frontEncoder = new DMotorEncoder(hwMap, "frontEncoder");
 
-        this.vals = vals;
+        rightEncoder.reverse(true);
+        frontEncoder.reverse(true);
     }
 
     public static double encoderTicksToInches(double ticks) {
