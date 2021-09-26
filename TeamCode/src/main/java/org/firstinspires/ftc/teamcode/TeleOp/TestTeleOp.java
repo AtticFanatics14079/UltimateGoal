@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.TeleOp;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -7,12 +8,15 @@ import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.HardwareThread;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.SampleConfiguration;
 import org.firstinspires.ftc.teamcode.JONSKETCH.DriveObjectV2.Sequence;
 
+@Config
 @TeleOp
 public class TestTeleOp extends LinearOpMode {
 
     SampleConfiguration config;
 
     boolean turning = false;
+
+    public static double openPos = 0, closePos = 1;
 
     Thread waitThread;
 
@@ -78,6 +82,14 @@ public class TestTeleOp extends LinearOpMode {
             double speed = gamepad1.left_bumper ? 0.4 : 1;
 
             setPower(-speed * (Math.cos(tempHeading)*gamepad1.left_stick_y+Math.sin(tempHeading)*gamepad1.left_stick_x), -speed * (-Math.cos(tempHeading)*gamepad1.left_stick_x+Math.sin(tempHeading)*gamepad1.left_stick_y), speed * gamepad1.right_stick_x+power);
+
+            double slidePower = gamepad2.left_stick_y;
+            //if(config.limit.get()[0] == 1 && slidePower < 0) slidePower = 0;
+
+            config.slides.setPower(slidePower);
+
+            if(gamepad1.x) config.servo.set(openPos);
+            else if(gamepad1.y) config.servo.set(closePos);
         }
 
         hardware.Stop();
