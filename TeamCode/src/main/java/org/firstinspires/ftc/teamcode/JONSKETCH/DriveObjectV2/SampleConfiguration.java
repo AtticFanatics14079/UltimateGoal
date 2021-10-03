@@ -10,7 +10,7 @@ public class SampleConfiguration implements Configuration {
 
     private List<LynxModule> allHubs;
 
-    public DMotor backLeft, frontLeft, frontRight, backRight, spinner;
+    public DMotor backLeft, frontLeft, frontRight, backRight, spinner, slides;
     public DEncoderlessMotor ingest;
     //public DOdometryPod frontOdoPod, leftOdoPod, rightOdoPod;
     //public DServo servo;
@@ -18,7 +18,7 @@ public class SampleConfiguration implements Configuration {
     //public Odometry odometry;
     public DAnalogSensor left, right, back1, back2;
 
-    public DServo servo;
+    public DServo dropper;
 
     public DDigitalSensor limit;
 
@@ -40,10 +40,14 @@ public class SampleConfiguration implements Configuration {
         backRight = new DMotor(hwMap, "back_right_motor");
         ingest = new DEncoderlessMotor(hwMap, "ingest");
         spinner = new DMotor(hwMap, "spinner");
+        slides = new DMotor(hwMap, "slides");
+        dropper = new DServo(hwMap, "dropper");
+        limit = new DDigitalSensor(hwMap, "limit");
         backLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         frontLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         backRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         frontRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        slides.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         spinner.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         backLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         frontLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -55,6 +59,7 @@ public class SampleConfiguration implements Configuration {
         frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         spinner.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        slides.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         imu = new DIMU(hwMap);
         //left = new DAnalogSensor(hwMap, "left", distance);
         //right = new DAnalogSensor(hwMap, "right", distance);

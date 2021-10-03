@@ -29,6 +29,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorImpl;
 import com.qualcomm.robotcore.hardware.DcMotorImplEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -54,7 +55,7 @@ import static org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.DriveConstant
 @Config
 public class SampleMecanumDrive extends MecanumDrive {
     public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(5, 0, 0);
-    public static PIDCoefficients HEADING_PID = new PIDCoefficients(5, 0, 0);
+    public static PIDCoefficients HEADING_PID = new PIDCoefficients(0, 0, 0);
 
     public static AxesOrder axes = AxesOrder.YZX;
 
@@ -82,6 +83,7 @@ public class SampleMecanumDrive extends MecanumDrive {
 
     public DcMotorImplEx slides, spinner;
     public Servo dropper;
+    public DigitalChannel limit;
     private DcMotorEx leftFront, leftRear, rightRear, rightFront;
     public List<DcMotorEx> motors;
     public DcMotorSimple ingester;
@@ -133,9 +135,11 @@ public class SampleMecanumDrive extends MecanumDrive {
         rightRear = hardwareMap.get(DcMotorEx.class, "back_right_motor");
         rightFront = hardwareMap.get(DcMotorEx.class, "front_right_motor");
         slides = hardwareMap.get(DcMotorImplEx.class,"slides");
+        limit = hardwareMap.get(DigitalChannel.class, "limit");
+        slides.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         slides.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         slides.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        dropper = hardwareMap.get(Servo.class, "servo");
+        dropper = hardwareMap.get(Servo.class, "dropper");
         ingester = hardwareMap.get(DcMotorSimple.class, "ingest");
         spinner = hardwareMap.get(DcMotorImplEx.class, "spinner");
 
@@ -160,10 +164,10 @@ public class SampleMecanumDrive extends MecanumDrive {
         }
 
         // TODO: reverse any motors using DcMotor.setDirection()
-        rightFront.setDirection(DcMotorSimple.Direction.FORWARD);
-        rightRear.setDirection(DcMotorSimple.Direction.FORWARD);
-        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
-        leftRear.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightRear.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftFront.setDirection(DcMotorSimple.Direction.FORWARD);
+        leftRear.setDirection(DcMotorSimple.Direction.FORWARD);
 
         // TODO: if desired, use setLocalizer() to change the localization method
         // for instance, setLocalizer(new ThreeTrackingWheelLocalizer(...));

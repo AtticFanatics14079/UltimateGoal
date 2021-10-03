@@ -132,11 +132,13 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
         leftRear = new DMotor(hwMap, "back_left_motor");
         rightRear = new DMotor(hwMap, "back_right_motor");
         rightFront = new DMotor(hwMap, "front_right_motor");
-        gyro = new DAnalogSensor(hwMap, "gyro", ((double voltage, double max) -> {
+        /*gyro = new DAnalogSensor(hwMap, "gyro", ((double voltage, double max) -> {
             double x = 2 * Math.PI - (voltage / 3.233 * Math.PI * 2) - max;
             if(x > Math.PI) x -= Math.PI * 2;
             return x;
         }));
+
+         */
         /*loader = new DServo(hwMap, "loader");
         gripper = new DServo(hwMap, "gripper");
         wobble = new DServo(hwMap, "wobble");
@@ -182,7 +184,7 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
 
         System.out.println("Size: " + hardware.size());
         // TODO: if desired, use setLocalizer() to change the localization method
-        setLocalizer(new DriveObjectTrackingWheelLocalizer(hwMap));
+        //setLocalizer(new DriveObjectTrackingWheelLocalizer(hwMap));
         System.out.println("Size: " + hardware.size());
     }
 
@@ -405,6 +407,6 @@ public class ConfigurationRR extends MecanumDrive implements Configuration {
     //Fix later
     @Override
     public double getRawExternalHeading() {
-        return gyro.get()[0];
+        return imu.get()[0];
     }
 }

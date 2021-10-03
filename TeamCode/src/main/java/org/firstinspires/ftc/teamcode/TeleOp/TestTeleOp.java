@@ -16,15 +16,27 @@ public class TestTeleOp extends LinearOpMode {
 
     boolean turning = false;
 
-    public static double openPos = 0, closePos = 1;
+    public static double OPEN = 0, CLOSE = 0.5;
+
+    public static int[] levels = {0, -2500, -5000};
+
+    private int currentLevel = 0;
+
+    public boolean limitPressed = false, levelPressed = false;
+
+    public double slidesOffset = 0;
 
     Thread waitThread;
+
+    Thread limit;
+
+    HardwareThread hardware;
 
     @Override
     public void runOpMode() throws InterruptedException {
 
         config  = new SampleConfiguration();
-        HardwareThread hardware = new HardwareThread(hardwareMap, config);
+        hardware = new HardwareThread(hardwareMap, config);
         hardware.start();
 
         double lastHeading = 0, ingesterSpeed = 0, spinnerSpeed = 0;
@@ -33,7 +45,19 @@ public class TestTeleOp extends LinearOpMode {
 
         config.imu.gettingInput = true;
 
+        setUpSequences();
+
+        sleep(1000);
+
+        config.slides.setPower(0.4);
+        while(!isStopRequested() && config.limit.get()[0] == 0) {}
+        config.slides.setPower(0);
+
+        slidesOffset = config.slides.get()[1];
+
         waitForStart();
+
+        //limit.start();
 
         Sequence waitMillis = new Sequence(() -> {
             sleep(140);
@@ -57,11 +81,11 @@ public class TestTeleOp extends LinearOpMode {
             else if(!gamepad1.a && !gamepad1.b) ingestPressed = false;
 
             if(gamepad1.y && !spinnerPressed) {
-                spinnerSpeed += 0.1;
+                spinnerSpeed += spinnerSpeed < 0 ? -spinnerSpeed : 0.3;
                 spinnerPressed = true;
             }
             else if(gamepad1.x && !spinnerPressed) {
-                spinnerSpeed -= 0.1;
+                spinnerSpeed -= spinnerSpeed > 0 ? spinnerSpeed : 0.3;
                 spinnerPressed = true;
             }
             else if(!gamepad1.y && !gamepad1.x) spinnerPressed = false;
@@ -80,6 +104,27 @@ public class TestTeleOp extends LinearOpMode {
 
             else if(turning && !waitThread.isAlive()) waitThread.start();
 
+            //config.slides.setPower(gamepad2.left_stick_y);
+            if((gamepad1.dpad_up || gamepad2.dpad_up) && !levelPressed) {
+                currentLevel += currentLevel < 2 ? 1 : 0;
+                levelPressed = true;
+            }
+            else if((gamepad1.dpad_down || gamepad2.dpad_down) && !levelPressed) {
+                currentLevel -= currentLevel > 0 ? 1 : 0;
+                levelPressed = true;
+            }
+            else if(!gamepad1.dpad_down && !gamepad1.dpad_up) levelPressed = false;
+
+            //if(limitPressed) slidesOffset += config.slides.get()[1];
+
+            double tempPos = config.slides.get()[1] - slidesOffset;
+
+            int pow = tempPos > levels[currentLevel] ? -1 : 1;
+
+            if(Math.abs(tempPos - levels[currentLevel]) < 150 || (pow == 1 && config.limit.get()[0] == 1)) pow = 0;
+
+            config.slides.setPower(pow);
+
             if(turning) {
                 power = 0;
                 lastHeading = imuHeading;
@@ -88,7 +133,14 @@ public class TestTeleOp extends LinearOpMode {
 
             telemetry.addData("Heading: ", imuHeading);
             telemetry.addData("Sped: ", config.ingest.get()[0]);
+            telemetry.addData("Slide Height: ", tempPos);
+            telemetry.addData("Limit: ", config.limit.get()[0]);
+            telemetry.addData("Expected Height: ", levels[currentLevel]);
+            telemetry.addData("Level: ", currentLevel);
             telemetry.update();
+
+            if(gamepad1.dpad_right) config.dropper.set(OPEN);
+            else if(gamepad1.dpad_left) config.dropper.set(CLOSE);
 
             double speed = gamepad1.left_bumper ? 0.4 : 1;
 
@@ -97,6 +149,10 @@ public class TestTeleOp extends LinearOpMode {
         }
 
         hardware.Stop();
+    }
+
+    public void setUpSequences() {
+
     }
 
     public void setPower(double x, double y, double a){

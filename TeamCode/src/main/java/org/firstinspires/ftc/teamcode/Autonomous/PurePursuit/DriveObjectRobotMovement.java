@@ -43,9 +43,9 @@ public class DriveObjectRobotMovement {
     }
 
     public DriveObjectRobotMovement(ConfigurationRR config){
-        Motors[1] = config.motors.get(0);
-        Motors[0] = config.motors.get(1);
-        Motors[3] = config.motors.get(2);
+        Motors[0] = config.motors.get(0);
+        Motors[1] = config.motors.get(1);
+        Motors[2] = config.motors.get(2);
         Motors[2] = config.motors.get(3);
         System.out.println(config.hardware.size());
     }

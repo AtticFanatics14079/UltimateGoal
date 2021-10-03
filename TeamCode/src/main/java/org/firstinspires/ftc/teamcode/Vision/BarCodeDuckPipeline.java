@@ -43,10 +43,10 @@ public class BarCodeDuckPipeline extends LinearOpMode {
     private static int cols = 240;
     public static int sampleWidth = 20;
     public static int sampleHeight = 10;
-    public static int thresh = 140, redThresh = 137;
+    public static int thresh = 230, redThresh = 137;
     public static int duckLocation = -1;
-    private static double color1, color2, color3;
-    public static Point leftUL = new Point(200, 70), middleUL = new Point(200, 110), rightUL = new Point(200, 150);
+    public static int colorSpace = 2;
+    public static Point leftUL = new Point(15, 136), middleUL = new Point(160, 140), rightUL = new Point(275, 140);
     public static int rotateAngle = 90;
     public static int extract = 1;
 
@@ -90,7 +90,7 @@ public class BarCodeDuckPipeline extends LinearOpMode {
     }
 
     //detection pipeline
-    static class duckScanPipeline extends OpenCvPipeline
+    public static class duckScanPipeline extends OpenCvPipeline
     {
         Mat rawMat = new Mat();
         Mat YCRCBMat = new Mat();
@@ -103,7 +103,7 @@ public class BarCodeDuckPipeline extends LinearOpMode {
             RED
         }
 
-        private Stage stageToRenderToViewport = Stage.RAW;
+        private Stage stageToRenderToViewport = Stage.EXTRACT;
         private Stage[] stages = Stage.values();
 
         @Override
@@ -132,12 +132,12 @@ public class BarCodeDuckPipeline extends LinearOpMode {
             rawMat = input;
             //Imgproc.cvtColor(input, YCRCBMat, Imgproc.COLOR_BGR2YCrCb);
             //YCRCBMat = rawMat;
-            Mat rota = Imgproc.getRotationMatrix2D(new Point(160, 120), rotateAngle,1);
-            Imgproc.warpAffine(rawMat, rawMat, rota, new Size(320,240));
-            Imgproc.cvtColor(rawMat, YCRCBMat, Imgproc.COLOR_BGR2HSV);
+            //Mat rota = Imgproc.getRotationMatrix2D(new Point(160, 120), rotateAngle,1);
+            //Imgproc.warpAffine(rawMat, rawMat, rota, new Size(320,240));
+            Imgproc.cvtColor(rawMat, YCRCBMat, colorSpace);
             Core.extractChannel(YCRCBMat, ExtractMat, extract);
 
-            color1 = color2 = color3 = 0;
+            double color1 = 0, color2 = 0, color3 = 0;
 
             for(int i = (int)(leftUL.x); i <= (int)(leftUL.x + sampleWidth); i++){
                 for(int j = (int)(leftUL.y);  j <= (int)(leftUL.y + sampleHeight); j++){
@@ -155,7 +155,7 @@ public class BarCodeDuckPipeline extends LinearOpMode {
 
             for(int i = (int)(rightUL.x); i <= (int)(rightUL.x + sampleWidth); i++){
                 for(int j = (int)(rightUL.y);  j <= (int)(rightUL.y + sampleHeight); j++){
-                    color2 += ExtractMat.get(j, i)[0];
+                    color3 += ExtractMat.get(j, i)[0];
                 }
             }
             color3 /= sampleWidth * sampleHeight;
@@ -164,10 +164,16 @@ public class BarCodeDuckPipeline extends LinearOpMode {
             boolean midDuck = color2 > thresh;
             boolean rightDuck = color3 > thresh;
 
+            System.out.println("Color1: " + color1 + ", Color2: " + color2 + "Color3: " + color3);
+
             if(leftDuck && !midDuck && !rightDuck) duckLocation = 0;
             else if(!leftDuck && midDuck && !rightDuck) duckLocation = 1;
             else if(!leftDuck && !midDuck && rightDuck) duckLocation = 2;
             else duckLocation = -1;
+
+            Imgproc.rectangle(ExtractMat, leftUL, new Point(leftUL.x + sampleWidth, leftUL.y + sampleHeight), leftDuck ? new Scalar(0, 255, 0) : new Scalar(255, 0, 0));
+            Imgproc.rectangle(ExtractMat, middleUL, new Point(middleUL.x + sampleWidth, middleUL.y + sampleHeight), midDuck ? new Scalar(0, 255, 0) : new Scalar(255, 0, 0));
+            Imgproc.rectangle(ExtractMat, rightUL, new Point(rightUL.x + sampleWidth, rightUL.y + sampleHeight), rightDuck ? new Scalar(0, 255, 0) : new Scalar(255, 0, 0));
 
             switch (stageToRenderToViewport){
                 case RAW:
