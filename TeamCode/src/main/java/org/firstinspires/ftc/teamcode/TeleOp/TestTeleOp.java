@@ -45,15 +45,15 @@ public class TestTeleOp extends LinearOpMode {
 
         config.imu.gettingInput = true;
 
-        setUpSequences();
+        //setUpSequences();
 
         sleep(1000);
 
-        config.slides.setPower(0.4);
-        while(!isStopRequested() && config.limit.get()[0] == 0) {}
-        config.slides.setPower(0);
+        //config.slides.setPower(0.4);
+        //while(!isStopRequested() && config.limit.get()[0] == 0) {}
+        //config.slides.setPower(0);
 
-        slidesOffset = config.slides.get()[1];
+        //slidesOffset = config.slides.get()[1];
 
         waitForStart();
 

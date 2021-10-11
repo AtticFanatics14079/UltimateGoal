@@ -10,12 +10,12 @@ import org.firstinspires.ftc.teamcode.HardwareConfigs.shooterTestConfig;
 
 @Config
 @TeleOp
-public class ShooterTest extends LinearOpMode {
+public class IngestTest extends LinearOpMode {
 
     public static double velo = -1000;
     public static double open = 0.15;
     public static double closed = 0.55;
-    public static double power = -1, p1 = -0.5, p2 = -0.7, p3 = -1;
+    public static double power = 0.85, p1 = -0.5, p2 = -0.7, p3 = -1;
     public static int s1 = 250, s2 = 300, s3 = 500;
 
     //Duck carousel notes: good ducks can go about 0.1 faster on p1 and p2, and have a shorter s2 delay. However, bad ducks be scuffed. Maybe put bad ducks
@@ -29,7 +29,7 @@ public class ShooterTest extends LinearOpMode {
         waitForStart();
 
         while(!isStopRequested()) {
-            if(gamepad1.a) {
+            /*if(gamepad1.a) {
                 config.shooter.setPower(p1);
                 sleep(s1);
                 config.shooter.setPower(p2);
@@ -40,6 +40,8 @@ public class ShooterTest extends LinearOpMode {
             }
             telemetry.addLine("Speed: " + config.shooter.getPower());
             telemetry.update();
+             */
+            config.shooter.setPower(power);
         }
 
 
