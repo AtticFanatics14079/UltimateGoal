@@ -16,9 +16,9 @@ public class TestTeleOp extends LinearOpMode {
 
     boolean turning = false;
 
-    public static double OPEN = 0, CLOSE = 0.5;
+    public static double OPEN = 0.1, CLOSE = 0.5;
 
-    public static int[] levels = {0, -2500, -5000};
+    public static int[] levels = {0, -2500, -5000, -6000, -7000, -8000, -9000};
 
     private int currentLevel = 0;
 
@@ -106,7 +106,7 @@ public class TestTeleOp extends LinearOpMode {
 
             //config.slides.setPower(gamepad2.left_stick_y);
             if((gamepad1.dpad_up || gamepad2.dpad_up) && !levelPressed) {
-                currentLevel += currentLevel < 2 ? 1 : 0;
+                currentLevel += currentLevel < 6 ? 1 : 0;
                 levelPressed = true;
             }
             else if((gamepad1.dpad_down || gamepad2.dpad_down) && !levelPressed) {
@@ -131,14 +131,6 @@ public class TestTeleOp extends LinearOpMode {
             }
             if(Math.abs(power) < 0.02) power = 0;
 
-            telemetry.addData("Heading: ", imuHeading);
-            telemetry.addData("Sped: ", config.ingest.get()[0]);
-            telemetry.addData("Slide Height: ", tempPos);
-            telemetry.addData("Limit: ", config.limit.get()[0]);
-            telemetry.addData("Expected Height: ", levels[currentLevel]);
-            telemetry.addData("Level: ", currentLevel);
-            telemetry.update();
-
             if(gamepad1.dpad_right) config.dropper.set(OPEN);
             else if(gamepad1.dpad_left) config.dropper.set(CLOSE);
 
@@ -146,6 +138,15 @@ public class TestTeleOp extends LinearOpMode {
 
             //setPower(-speed * (Math.cos(tempHeading)*gamepad1.left_stick_y+Math.sin(tempHeading)*gamepad1.left_stick_x), -speed * (-Math.cos(tempHeading)*gamepad1.left_stick_x+Math.sin(tempHeading)*gamepad1.left_stick_y), speed * gamepad1.right_stick_x+power);
             setPower(-speed * gamepad1.left_stick_x, -speed * gamepad1.left_stick_y, speed * gamepad1.right_stick_x);
+
+            telemetry.addData("Heading: ", imuHeading);
+            telemetry.addData("Sped: ", config.ingest.get()[0]);
+            telemetry.addData("Slide Height: ", tempPos);
+            telemetry.addData("Limit: ", config.limit.get()[0]);
+            telemetry.addData("Expected Height: ", levels[currentLevel]);
+            telemetry.addData("Level: ", currentLevel);
+            telemetry.addData("Servo Position:" , config.dropper.get());
+            telemetry.update();
         }
 
         hardware.Stop();
