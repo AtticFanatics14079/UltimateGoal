@@ -11,6 +11,7 @@ import com.acmerobotics.roadrunner.trajectory.constraints.DriveConstraints;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDrive;
@@ -47,9 +48,9 @@ public class FreightBasicPath extends LinearOpMode {
 
     public static int duckLocation = -1;
 
-    public static double level1 = -2500, level2 = -5000;
+    public static double level1 = -2500, level2 = -5000, sensorSideOffset, sensorStrightOffset;
 
-    public static double OPEN = 0, CLOSED = 0, back1 = 8, forward1 = 24, back2 = 48, forward2 = 20, strafe = 54;
+    public static double OPEN = 0, CLOSED = 0, back = 8, forward1 = 24, front = 48, forward2 = 20, strafe = 54;
 
     SampleMecanumDrive drive;
 
@@ -65,9 +66,13 @@ public class FreightBasicPath extends LinearOpMode {
         webCam.openCameraDevice();//open camera
         webCam.setPipeline(new duckScanPipeline());
         webCam.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);//display on RC
+        ElapsedTime time = new ElapsedTime();
+        double lastTime = 0;
 
         while(!isStarted() && !isStopRequested()) {
             drive.update();
+            if(time.seconds() - lastTime > 1) drive.setPoseEstimate(distanceSensorPose());
+
             telemetry.addData("Position: ", drive.getPoseEstimate());
             telemetry.update();
         }
@@ -83,10 +88,10 @@ public class FreightBasicPath extends LinearOpMode {
         telemetry.addData("Position: ", drive.getPoseEstimate());
         telemetry.update();
 
-        Trajectory back = drive.trajectoryBuilder(startPose)
-                .back(back1)
+        Trajectory back1 = drive.trajectoryBuilder(startPose)
+                .back(back)
                 .build();
-        drive.followTrajectory(back);
+        drive.followTrajectory(back1);
 
         drive.turn(Math.toRadians(90));
 
@@ -114,7 +119,7 @@ public class FreightBasicPath extends LinearOpMode {
          */
 
         Trajectory goToDropOff = drive.trajectoryBuilder(drive.getPoseEstimate())
-                .back(back2)
+                .back(front)
                 .build();
         drive.followTrajectory(goToDropOff);
 
@@ -176,6 +181,91 @@ public class FreightBasicPath extends LinearOpMode {
             drive.setMotorPowers(power, power, -power, -power);
         }
         drive.setMotorPowers(0, 0, 0, 0);
+    }
+
+    public Pose2d distanceSensorPose() {
+
+        if(isStopRequested()) return null;
+        double imuHeading = drive.imu.getAngularOrientation().firstAngle;
+        double headingOffsetPlus = imuHeading + Math.toRadians(12.5);
+        double headingOffsetMinus = imuHeading - Math.toRadians(12.5);
+        double anglePlus = Math.toDegrees(Math.abs(headingOffsetPlus)) % 90;
+        anglePlus = anglePlus > 45 ? Math.abs(anglePlus - 90) : anglePlus;
+        double angleMinus = Math.toDegrees(Math.abs(headingOffsetMinus)) % 90;
+        angleMinus = angleMinus > 45 ? Math.abs(angleMinus - 90) : angleMinus;
+        double angleCompensatorPlus = 1 - 0.0002 * anglePlus + 0.0000069 * Math.pow(anglePlus, 2) + 0.00000428 * Math.pow(anglePlus, 3);
+        double angleCompensatorMinus = 1 - 0.0002 * angleMinus + 0.0000069 * Math.pow(angleMinus, 2) + 0.00000428 * Math.pow(angleMinus, 3);
+        double mult = 86, offset = 0.135;
+        double left = mult * (drive.left.getVoltage() - offset);
+        double right = mult * (drive.right.getVoltage() - offset);
+        double back = mult * (drive.back.getVoltage() - offset);
+        double front = mult * (drive.front.getVoltage() - offset);
+
+        telemetry.addLine("Left: " + left);
+        telemetry.addLine("Right: " + right);
+        telemetry.addLine("Back: " + back);
+        telemetry.addLine("Front: " + front);
+
+        //Getting distance from distance sensor to either wall.
+        double leftCos = left * Math.abs(Math.cos(headingOffsetPlus)) * angleCompensatorPlus;
+        double leftSin = left * Math.abs(Math.sin(headingOffsetPlus)) * angleCompensatorPlus;
+        double rightCos = right * Math.abs(Math.cos(headingOffsetMinus)) * angleCompensatorMinus;
+        double rightSin = right * Math.abs(Math.sin(headingOffsetMinus)) * angleCompensatorMinus;
+        double backCos = back * Math.abs(Math.cos(headingOffsetMinus)) * angleCompensatorMinus;
+        double backSin = back * Math.abs(Math.sin(headingOffsetMinus)) * angleCompensatorMinus;
+        double frontCos = front * Math.abs(Math.cos(headingOffsetPlus)) * angleCompensatorPlus;
+        double frontSin = front * Math.abs(Math.sin(headingOffsetPlus)) * angleCompensatorPlus;
+
+        /*telemetry.addLine("Left Cos: " + leftCos);
+        telemetry.addLine("Left Sin: " + leftSin);
+        telemetry.addLine("Right Cos: " + rightCos);
+        telemetry.addLine("Right Sin: " + rightSin);
+        telemetry.addLine("back Cos: " + backCos);
+        telemetry.addLine("back Sin: " + backSin);
+        telemetry.addLine("front Cos: " + frontCos);
+        telemetry.addLine("front Sin: " + frontSin);
+
+         */
+
+        //Assumes radially centered.
+        leftCos += sensorSideOffset * Math.abs(Math.cos(imuHeading));
+        leftSin += sensorSideOffset * Math.abs(Math.sin(imuHeading));
+        rightCos += sensorSideOffset * Math.abs(Math.cos(imuHeading));
+        rightSin += sensorSideOffset * Math.abs(Math.sin(imuHeading));
+        backCos += sensorStrightOffset * Math.abs(Math.cos(imuHeading));
+        backSin += sensorStrightOffset * Math.abs(Math.sin(imuHeading));
+        frontCos += sensorStrightOffset * Math.abs(Math.cos(imuHeading));
+        frontSin += sensorStrightOffset * Math.abs(Math.sin(imuHeading));
+
+        //Get actual X and Y of each position, assuming each input is good, based on heading for every value.
+        leftCos = Math.abs(headingOffsetPlus) < Math.PI / 2 ? -leftCos : leftCos - 142; //Left or right
+        leftSin = headingOffsetPlus < 0 ? -leftSin : leftSin - 142; //Front or back
+        rightCos = Math.abs(headingOffsetMinus) < Math.PI / 2 ? rightCos - 142 : -rightCos; //Right or left
+        rightSin = headingOffsetMinus < 0 ? rightSin - 142 : -rightSin; //Back or front
+        backCos = Math.abs(headingOffsetMinus) < Math.PI / 2 ? backCos - 142 : -backCos; //Front or back
+        backSin = headingOffsetMinus < 0 ? -backSin : backSin - 142; //Left or right
+        frontCos = Math.abs(headingOffsetPlus) < Math.PI / 2 ? -frontCos: frontCos - 142 ; //Back or front
+        frontSin = headingOffsetPlus < 0 ? frontSin  - 142 : -frontSin; //Right or left
+
+        Pose2d pose = drive.getPoseEstimate();
+        double poseX = pose.getX(), poseY = pose.getY();
+        double confidence = 8;
+
+        if(Math.abs(Math.cos(headingOffsetPlus)) > Math.cos(Math.toRadians(20)) || Math.abs(Math.cos(headingOffsetMinus)) > Math.cos(Math.toRadians(20))) {
+            poseY = Math.abs(leftCos - rightCos) < confidence && Math.abs((leftCos + rightCos) / 2 - poseY) < 15 ? (leftCos + rightCos) / 2 : Math.min(Math.abs(leftCos - poseY), Math.abs(rightCos - poseY)) < confidence ? poseY + Math.min(Math.abs(leftCos - poseY), Math.abs(rightCos - poseY)) : poseY;
+            poseX = Math.abs(frontCos - backCos) < confidence && Math.abs((backCos + frontCos) / 2 - poseX) < 15 ? (frontCos + backCos) / 2 : Math.min(Math.abs(backCos - poseX), Math.abs(frontCos - poseX)) < confidence ? poseX + Math.min(Math.abs(backCos - poseX), Math.abs(frontCos - poseX)) : poseX;
+        }
+        else if(Math.abs(Math.sin(headingOffsetPlus)) > Math.cos(Math.toRadians(20)) || Math.abs(Math.sin(headingOffsetMinus)) > Math.cos(Math.toRadians(20))) {
+            poseY = Math.abs(frontSin - backSin) < confidence && Math.abs((backSin + frontSin) / 2 - poseY) < 15 ? (frontSin + backSin) / 2 : Math.min(Math.abs(backSin - poseY), Math.abs(frontSin - poseY)) < confidence ? poseY + Math.min(Math.abs(backSin - poseY), Math.abs(frontSin - poseY)) : poseY;
+            poseX = Math.abs(leftSin - rightSin) < confidence && Math.abs((leftSin + rightSin) / 2 - poseX) < 15 ? (leftSin + rightSin) / 2 : Math.min(Math.abs(leftSin - poseX), Math.abs(rightSin - poseX)) < confidence ? poseX + Math.min(Math.abs(leftSin - poseX), Math.abs(rightSin - poseX)) : poseX;
+        }
+
+        if(poseX < -140) poseX = pose.getX();
+        if(poseY < -100) poseY = pose.getY();
+
+        System.out.println("Old pose: " + pose + ", new pose: " + new Pose2d(poseX, poseY, imuHeading));
+
+        return new Pose2d(poseX, poseY, imuHeading);
     }
 
     static class duckScanPipeline extends OpenCvPipeline
