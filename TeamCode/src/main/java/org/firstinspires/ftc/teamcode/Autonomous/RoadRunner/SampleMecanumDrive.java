@@ -82,13 +82,12 @@ public class SampleMecanumDrive extends MecanumDrive {
     private List<Pose2d> poseHistory;
 
     public DcMotorImplEx slides, spinner;
-    public Servo dropper;
+    public Servo dropper, flipdown;
     public DigitalChannel limit;
     private DcMotorEx leftFront, leftRear, rightRear, rightFront;
     public List<DcMotorEx> motors;
-    public DcMotorSimple ingester;
+    public DcMotorSimple ingester, preingest;
     public BNO055IMU imu;
-    private VoltageSensor batteryVoltageSensor;
     public AnalogInput left, right, back, front;
 
     private Pose2d lastPoseOnTurn;
@@ -114,8 +113,6 @@ public class SampleMecanumDrive extends MecanumDrive {
 
         LynxModuleUtil.ensureMinimumFirmwareVersion(hardwareMap);
 
-        batteryVoltageSensor = hardwareMap.voltageSensor.iterator().next();
-
         for (LynxModule module : hardwareMap.getAll(LynxModule.class)) {
             module.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
         }
@@ -134,14 +131,18 @@ public class SampleMecanumDrive extends MecanumDrive {
         leftRear = hardwareMap.get(DcMotorEx.class, "back_left_motor");
         rightRear = hardwareMap.get(DcMotorEx.class, "back_right_motor");
         rightFront = hardwareMap.get(DcMotorEx.class, "front_right_motor");
-        //slides = hardwareMap.get(DcMotorImplEx.class,"slides");
-        //limit = hardwareMap.get(DigitalChannel.class, "limit");
-        //slides.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        //slides.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        //slides.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        //dropper = hardwareMap.get(Servo.class, "dropper");
-        //ingester = hardwareMap.get(DcMotorSimple.class, "ingest");
-        //spinner = hardwareMap.get(DcMotorImplEx.class, "spinner");
+        slides = hardwareMap.get(DcMotorImplEx.class,"slides");
+        limit = hardwareMap.get(DigitalChannel.class, "limit");
+        dropper = hardwareMap.get(Servo.class, "dropper");
+        flipdown = hardwareMap.get(Servo.class, "flipdown");
+        ingester = hardwareMap.get(DcMotorSimple.class, "ingest");
+        preingest = hardwareMap.get(DcMotorSimple.class, "preingest");
+        spinner = hardwareMap.get(DcMotorImplEx.class, "spinner");
+        slides.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        slides.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        slides.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        spinner.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        spinner.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
 

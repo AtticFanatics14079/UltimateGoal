@@ -340,7 +340,6 @@ public class UltimateGoalTeleOpV1 extends LinearOpMode {
         Sequence returnToPowerShot = new Sequence(() -> {
             config.setPoseEstimate(sensorPoseAnalog());
             config.shooter.set(-1340);
-            //roadRunnerToPositionSlow(new Pose2d(-81, -38));
             imuTurn(Math.toRadians(15));
         });
         Sequence pivotShoot = new Sequence(() -> {

@@ -11,20 +11,18 @@ public class SampleConfiguration implements Configuration {
     private List<LynxModule> allHubs;
 
     public DMotor backLeft, frontLeft, frontRight, backRight, spinner, slides;
-    public DEncoderlessMotor ingest;
+    public DEncoderlessMotor ingest, preIngest;
     //public DOdometryPod frontOdoPod, leftOdoPod, rightOdoPod;
     //public DServo servo;
     //public DMotor motor;
     //public Odometry odometry;
     public DAnalogSensor left, right, back1, back2;
 
-    public DServo dropper;
+    public DServo dropper, flipdown;
 
     public DDigitalSensor limit;
 
     public DIMU imu;
-
-    public ValueStorage vals;
 
     public void Configure(HardwareMap hwMap){
         //Add all hardware devices here.
@@ -39,9 +37,11 @@ public class SampleConfiguration implements Configuration {
         frontRight = new DMotor(hwMap, "front_right_motor");
         backRight = new DMotor(hwMap, "back_right_motor");
         ingest = new DEncoderlessMotor(hwMap, "ingest");
+        preIngest = new DEncoderlessMotor(hwMap, "preingest");
         spinner = new DMotor(hwMap, "spinner");
         slides = new DMotor(hwMap, "slides");
         dropper = new DServo(hwMap, "dropper");
+        flipdown = new DServo(hwMap, "flipdown");
         limit = new DDigitalSensor(hwMap, "limit");
         backLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         frontLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -58,14 +58,11 @@ public class SampleConfiguration implements Configuration {
         frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        ingest.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        preIngest.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         spinner.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         slides.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         imu = new DIMU(hwMap);
-        //left = new DAnalogSensor(hwMap, "left", distance);
-        //right = new DAnalogSensor(hwMap, "right", distance);
-        //back1 = new DAnalogSensor(hwMap, "back1", distance);
-        //back2 = new DAnalogSensor(hwMap, "back2", distance);
-        //imu = new DIMU(hwMap);
 
         frontRight.reverse(true);
         backRight.reverse(true);
