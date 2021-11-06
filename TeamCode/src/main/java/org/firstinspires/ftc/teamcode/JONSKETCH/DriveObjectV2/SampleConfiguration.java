@@ -64,8 +64,8 @@ public class SampleConfiguration implements Configuration {
         slides.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         imu = new DIMU(hwMap);
 
-        frontRight.reverse(true);
-        backRight.reverse(true);
+        frontLeft.reverse(true);
+        backLeft.reverse(true);
         //Adding more later
 
         //Below are other configuration activities that are necessary for writing to file.
