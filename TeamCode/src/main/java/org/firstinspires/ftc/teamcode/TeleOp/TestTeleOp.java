@@ -119,7 +119,7 @@ public class TestTeleOp extends LinearOpMode {
 
             double speed = gamepad1.left_bumper ? 0.4 : 1;
 
-            setPower(-speed * gamepad1.left_stick_x, -speed * gamepad1.left_stick_y, speed * (gamepad1.right_stick_x + power));
+            setPower(-speed * gamepad1.left_stick_x, -speed * gamepad1.left_stick_y, speed * (gamepad1.right_stick_x));
 
             telemetry.addData("Heading: ", imuHeading);
             telemetry.addData("Sped: ", config.ingest.get()[0]);
@@ -135,9 +135,9 @@ public class TestTeleOp extends LinearOpMode {
     }
 
     public void setPower(double x, double y, double a){
-        config.backLeft.setPower(x + y + a);
-        config.frontLeft.setPower(-x + y + a);
-        config.frontRight.setPower(x + y - a);
+        config.backLeft.setPower(-x + y + a);
+        config.frontLeft.setPower(x + y + a);
+        config.frontRight.setPower(-x + y - a);
         config.backRight.setPower(-x + y - a);
     }
 }
