@@ -43,10 +43,10 @@ public class BarCodeDuckPipeline extends LinearOpMode {
     private static int cols = 240;
     public static int sampleWidth = 20;
     public static int sampleHeight = 10;
-    public static int thresh = 230, redThresh = 137;
+    public static int thresh = 210, redThresh = 137;
     public static int duckLocation = -1;
-    public static int colorSpace = 2;
-    public static Point leftUL = new Point(15, 136), middleUL = new Point(160, 140), rightUL = new Point(275, 140);
+    public static int colorSpace = 41;
+    public static Point leftUL = new Point(85, 120), middleUL = new Point(200, 120), rightUL = new Point(290, 120);
     public static int rotateAngle = 90;
     public static int extract = 1;
 

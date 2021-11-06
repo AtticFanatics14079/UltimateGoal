@@ -22,6 +22,8 @@ import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvPipeline;
 
+import static org.firstinspires.ftc.teamcode.Vision.BarCodeDuckPipeline.colorSpace;
+import static org.firstinspires.ftc.teamcode.Vision.BarCodeDuckPipeline.extract;
 import static org.firstinspires.ftc.teamcode.Vision.BarCodeDuckPipeline.leftUL;
 import static org.firstinspires.ftc.teamcode.Vision.BarCodeDuckPipeline.middleUL;
 import static org.firstinspires.ftc.teamcode.Vision.BarCodeDuckPipeline.rightUL;
@@ -47,7 +49,7 @@ public class FreightBluePathWarehouse extends LinearOpMode {
 
     public static int duckLocation = -1;
 
-    public static double level1 = -2500, level2 = -5000, sensorSideOffset, sensorStrightOffset;
+    public static double level1 = 900, level2 = 1900, sensorSideOffset, sensorStrightOffset;
 
     public static double OPEN = 0, CLOSED = 0, back = 8, forward1 = 24, front = 48, forward2 = 20, strafe = 54;
 
@@ -259,8 +261,8 @@ public class FreightBluePathWarehouse extends LinearOpMode {
             //YCRCBMat = rawMat;
             //Mat rota = Imgproc.getRotationMatrix2D(new Point(160, 120), rotateAngle,1);
             //Imgproc.warpAffine(rawMat, rawMat, rota, new Size(320,240));
-            Imgproc.cvtColor(rawMat, YCRCBMat, 2);
-            Core.extractChannel(YCRCBMat, ExtractMat, 1);
+            Imgproc.cvtColor(rawMat, YCRCBMat, colorSpace);
+            Core.extractChannel(YCRCBMat, ExtractMat, extract);
 
             double color1 = 0, color2 = 0, color3 = 0;
 

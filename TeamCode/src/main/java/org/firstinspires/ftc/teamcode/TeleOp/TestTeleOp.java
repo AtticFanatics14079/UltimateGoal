@@ -16,9 +16,9 @@ public class TestTeleOp extends LinearOpMode {
 
     boolean turning = false;
 
-    public static double OPEN = 0.1, CLOSE = 0.5, FLIPDOWN = 0.5;
+    public static double OPEN = 0.1, CLOSE = 0.5, FLIPDOWN = 1;
 
-    public static int[] levels = {0, -2500, -5000, -6000, -7000, -8000, -9000};
+    public static int[] levels = {0, 900, 1900};
 
     private int currentLevel = 0;
 
@@ -43,11 +43,17 @@ public class TestTeleOp extends LinearOpMode {
 
         sleep(1000);
 
-        config.slides.setPower(0.4);
-        while(!isStopRequested() && config.limit.get()[0] == 0) {}
-        config.slides.setPower(0);
+        //config.slides.setPower(-0.2);
+        //while(!isStopRequested() && config.limit.get()[0] == 0) {}
+        //config.slides.setPower(0);
 
         slidesOffset = config.slides.get()[1];
+
+        while(!isStarted() && !isStopRequested()) {
+            telemetry.addData("Slides: ", config.slides.get()[1]);
+            telemetry.addData("Limit: ", config.limit.get()[0]);
+            telemetry.update();
+        }
 
         waitForStart();
 
@@ -85,7 +91,7 @@ public class TestTeleOp extends LinearOpMode {
 
             //config.slides.setPower(gamepad2.left_stick_y);
             if((gamepad1.dpad_up || gamepad2.dpad_up) && !levelPressed) {
-                currentLevel += currentLevel < 6 ? 1 : 0;
+                currentLevel += currentLevel < 2 ? 1 : 0;
                 levelPressed = true;
             }
             else if((gamepad1.dpad_down || gamepad2.dpad_down) && !levelPressed) {
@@ -96,11 +102,11 @@ public class TestTeleOp extends LinearOpMode {
 
             double tempPos = config.slides.get()[1] - slidesOffset;
 
-            int pow = tempPos > levels[currentLevel] ? -1 : 1;
+            double pow = tempPos > levels[currentLevel] ? -0.6 : 0.6;
 
-            if(Math.abs(tempPos - levels[currentLevel]) < 150 || (pow == 1 && config.limit.get()[0] == 1)) pow = 0;
+            if(Math.abs(tempPos - levels[currentLevel]) < 150 || (pow == -1 && config.limit.get()[0] == 1)) pow = 0.001;
 
-            config.slides.setPower(pow);
+            //config.slides.setPower((Math.abs(gamepad2.right_stick_y) < 0.1 ? pow : (config.limit.get()[0] != 1 || gamepad2.right_stick_y > 0) ? gamepad2.right_stick_y : 0.001));
 
             if(turning) {
                 lastHeading = imuHeading;
