@@ -15,7 +15,7 @@ public class IngestTest extends LinearOpMode {
     public static double velo = -1000;
     public static double open = 0.15;
     public static double closed = 0.55;
-    public static double power = 0.85, p1 = -0.5, p2 = -0.7, p3 = -1;
+    public static double power = 0.85, p1 = -0.5, p2 = -0.7, p3 = -1, pos = 0.5;
     public static int s1 = 250, s2 = 300, s3 = 500;
 
     //Duck carousel notes: good ducks can go about 0.1 faster on p1 and p2, and have a shorter s2 delay. However, bad ducks be scuffed. Maybe put bad ducks
@@ -42,6 +42,7 @@ public class IngestTest extends LinearOpMode {
             telemetry.update();
              */
             config.shooter.setPower(power);
+            config.loader.setPosition(pos);
         }
 
 

@@ -42,7 +42,7 @@ public class SampleConfiguration implements Configuration {
         slides = new DMotor(hwMap, "slides");
         dropper = new DServo(hwMap, "dropper");
         flipdown = new DServo(hwMap, "flipdown");
-        limit = new DDigitalSensor(hwMap, "limit");
+        //limit = new DDigitalSensor(hwMap, "limit");
         backLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         frontLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         backRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -66,6 +66,7 @@ public class SampleConfiguration implements Configuration {
 
         frontLeft.reverse(true);
         backLeft.reverse(true);
+        ingest.reverse(true);
         //Adding more later
 
         //Below are other configuration activities that are necessary for writing to file.

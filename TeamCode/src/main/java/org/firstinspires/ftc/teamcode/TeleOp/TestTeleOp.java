@@ -16,7 +16,7 @@ public class TestTeleOp extends LinearOpMode {
 
     boolean turning = false;
 
-    public static double OPEN = 0.1, CLOSE = 0.5, FLIPDOWN = 1;
+    public static double OPEN = 0.1, CLOSE = 0.69, FLIPDOWN = 1;
 
     public static int[] levels = {0, 900, 1900};
 
@@ -47,11 +47,11 @@ public class TestTeleOp extends LinearOpMode {
         //while(!isStopRequested() && config.limit.get()[0] == 0) {}
         //config.slides.setPower(0);
 
-        slidesOffset = config.slides.get()[1];
+        //slidesOffset = config.slides.get()[1];
 
         while(!isStarted() && !isStopRequested()) {
             telemetry.addData("Slides: ", config.slides.get()[1]);
-            telemetry.addData("Limit: ", config.limit.get()[0]);
+            //telemetry.addData("Limit: ", config.limit.get()[0]);
             telemetry.update();
         }
 
@@ -100,13 +100,18 @@ public class TestTeleOp extends LinearOpMode {
             }
             else if(!gamepad1.dpad_down && !gamepad1.dpad_up) levelPressed = false;
 
-            double tempPos = config.slides.get()[1] - slidesOffset;
+            double tempPos = config.slides.get()[1];// - slidesOffset;
 
             double pow = tempPos > levels[currentLevel] ? -0.6 : 0.6;
 
-            if(Math.abs(tempPos - levels[currentLevel]) < 150 || (pow == -1 && config.limit.get()[0] == 1)) pow = 0.001;
+            //if(Math.abs(tempPos - levels[currentLevel]) < 150 || (pow == -1 && config.limit.get()[0] == 1)) pow = 0.001;
+            if(Math.abs(tempPos - levels[currentLevel]) < 150) pow = 0.001;
 
             //config.slides.setPower((Math.abs(gamepad2.right_stick_y) < 0.1 ? pow : (config.limit.get()[0] != 1 || gamepad2.right_stick_y > 0) ? gamepad2.right_stick_y : 0.001));
+            double pow1 = Math.abs(gamepad2.right_stick_y) < 0.3 ? 0 : gamepad2.right_stick_y;
+            if(tempPos <= 0 && pow1 < 0) pow1 = 0;
+
+            config.slides.setPower(pow1);
 
             if(turning) {
                 lastHeading = imuHeading;
@@ -122,12 +127,11 @@ public class TestTeleOp extends LinearOpMode {
             setPower(-speed * gamepad1.left_stick_x, -speed * gamepad1.left_stick_y, speed * (gamepad1.right_stick_x));
 
             telemetry.addData("Heading: ", imuHeading);
-            telemetry.addData("Sped: ", config.ingest.get()[0]);
+            //telemetry.addData("Sped: ", config.ingest.get()[0]);
             telemetry.addData("Slide Height: ", tempPos);
-            telemetry.addData("Limit: ", config.limit.get()[0]);
-            telemetry.addData("Expected Height: ", levels[currentLevel]);
-            telemetry.addData("Level: ", currentLevel);
-            telemetry.addData("Servo Position:" , config.dropper.get());
+            //telemetry.addData("Limit: ", config.limit.get()[0]);
+           // telemetry.addData("Expected Height: ", levels[currentLevel]);
+            //telemetry.addData("Level: ", currentLevel);
             telemetry.update();
         }
 
@@ -138,6 +142,6 @@ public class TestTeleOp extends LinearOpMode {
         config.backLeft.setPower(-x + y + a);
         config.frontLeft.setPower(x + y + a);
         config.frontRight.setPower(-x + y - a);
-        config.backRight.setPower(-x + y - a);
+        config.backRight.setPower(x + y - a);
     }
 }

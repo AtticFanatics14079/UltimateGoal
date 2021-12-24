@@ -4,18 +4,13 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
-import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
-import com.acmerobotics.roadrunner.trajectory.TrajectoryBuilder;
-import com.acmerobotics.roadrunner.trajectory.constraints.DriveConstraints;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.Autonomous.RoadRunner.SampleMecanumDrive;
-import org.firstinspires.ftc.teamcode.Vision.BarCodeDuckPipeline;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
@@ -26,8 +21,6 @@ import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvPipeline;
 
-import static org.firstinspires.ftc.teamcode.Vision.BarCodeDuckPipeline.colorSpace;
-import static org.firstinspires.ftc.teamcode.Vision.BarCodeDuckPipeline.extract;
 import static org.firstinspires.ftc.teamcode.Vision.BarCodeDuckPipeline.leftUL;
 import static org.firstinspires.ftc.teamcode.Vision.BarCodeDuckPipeline.middleUL;
 import static org.firstinspires.ftc.teamcode.Vision.BarCodeDuckPipeline.rightUL;
@@ -41,22 +34,21 @@ import static org.firstinspires.ftc.teamcode.Vision.BarCodeDuckPipeline.thresh;
  */
 @Config
 @Autonomous(group = "drive")
-public class FreightBluePathDucks extends LinearOpMode {
+public class FreightSimpleRedDuck extends LinearOpMode {
 
     public static int startHeading = 0;
 
-    public static double duckX = -46, duckY = -54, hubX = -34, hubY = -12, parkX = -36, parkY = -54;
-
-    private Pose2d startPose = new Pose2d(-62.0, -36.0, Math.toRadians(startHeading)); //Need to vary heading
-    private Pose2d duckPose = new Pose2d(duckX, duckY, Math.toRadians(startHeading - 90));
-    private Pose2d hubPose = new Pose2d(hubX, hubY, Math.toRadians(startHeading - 90));
-    private Pose2d parkPose = new Pose2d(parkX, parkY,Math.toRadians(startHeading - 90));
+    private Pose2d startPose = new Pose2d(-62.0, -36.0, Math.toRadians(startHeading));
+    private Pose2d spinPose = new Pose2d(67.0 , 63.0, Math.toRadians(270));
+    private Pose2d allianceGoalPose = new Pose2d(24.0, 12.0, Math.toRadians(0));
+    private Pose2d allianceGoalDropOffPose = new Pose2d(24.0, 22.0, Math.toRadians(100));
+    private Pose2d tapedParkPose = new Pose2d(36.0,60.0,90);
 
     public static int duckLocation = -1;
 
     public static double level1 = 900, level2 = 1900, sensorSideOffset, sensorStrightOffset;
 
-    public static double OPEN = 0, CLOSED = 0, back = 8, forward1 = 24, front = 48, forward2 = 20, strafe = 54;
+    public static double OPEN = 0, CLOSED = 0, first = 24, back = 14, forward1 = 12, leaveSpinner = 8, front = 20, forward2 = 14, strafe = 54; //ALL VALUES NEED TO BE TUNED
 
     SampleMecanumDrive drive;
 
@@ -75,55 +67,41 @@ public class FreightBluePathDucks extends LinearOpMode {
         ElapsedTime time = new ElapsedTime();
         double lastTime = 0;
 
+        drive.setPoseEstimate(startPose);
+
         waitForStart();
         if(isStopRequested()) return;
 
         double slideTicks = 0;
         if(duckLocation > 0) slideTicks = duckLocation == 1 ? level1 : level2;
 
-        System.out.println("Duck: " + duckLocation + ", ticks: " + slideTicks);
-
-        telemetry.addData("Position: ", drive.getPoseEstimate());
-        telemetry.update();
-
-        Trajectory forward = drive.trajectoryBuilder(startPose)
-                .splineTo(new Vector2d(startPose.getX() + 12, startPose.getY()), startPose.getHeading())
+        Trajectory inchUp = drive.trajectoryBuilder(startPose)
+                .forward(first)
                 .build();
-        drive.followTrajectory(forward);
+        drive.followTrajectory(inchUp);
 
-        Trajectory ducks = drive.trajectoryBuilder(drive.getPoseEstimate(), true) //Reverse is questionable
-                .splineTo(duckPose.vec(), duckPose.getHeading())
+        drive.turn(Math.toRadians(-90)); //Might need to be positive
+
+        Trajectory moveForward = drive.trajectoryBuilder(startPose)
+                .forward(forward1)
                 .build();
-        drive.followTrajectory(ducks);
+        drive.followTrajectory(moveForward);
+
+        drive.turn(Math.toRadians(-90)); //Might need to be positive
+
+        Trajectory f2 = drive.trajectoryBuilder(startPose)
+                .forward(forward2)
+                .build();
+        drive.followTrajectory(f2);
 
         drive.spinner.setPower(-0.4);
-        sleep(3500);
+        sleep(4500);
         drive.spinner.setPower(0);
 
-        while(Math.abs(drive.slides.getCurrentPosition() - slideTicks) > 50) {
-            drive.slides.setPower(-0.8);
-        }
-        drive.slides.setPower(0);
-
-        Trajectory hub = drive.trajectoryBuilder(drive.getPoseEstimate())
-                .splineTo(hubPose.vec(), hubPose.getHeading())
+        Trajectory goToSpin = drive.trajectoryBuilder(drive.getPoseEstimate())
+                .back(back)
                 .build();
-        drive.followTrajectory(hub);
-
-        drive.dropper.setPosition(OPEN);
-        sleep(600);
-
-        Trajectory toPark = drive.trajectoryBuilder(drive.getPoseEstimate(), true)
-                .splineTo(parkPose.vec(), parkPose.getHeading())
-                .build();
-        drive.followTrajectory(toPark);
-
-        drive.dropper.setPosition(CLOSED);
-
-        while(Math.abs(drive.slides.getCurrentPosition()) > 50 && !drive.limit.getState()) {
-            drive.slides.setPower(0.8);
-        }
-        drive.slides.setPower(0);
+        drive.followTrajectory(goToSpin);
     }
 
     public void imuTurn(double angle) {
@@ -281,8 +259,8 @@ public class FreightBluePathDucks extends LinearOpMode {
             //YCRCBMat = rawMat;
             //Mat rota = Imgproc.getRotationMatrix2D(new Point(160, 120), rotateAngle,1);
             //Imgproc.warpAffine(rawMat, rawMat, rota, new Size(320,240));
-            Imgproc.cvtColor(rawMat, YCRCBMat, colorSpace);
-            Core.extractChannel(YCRCBMat, ExtractMat, extract);
+            Imgproc.cvtColor(rawMat, YCRCBMat, 2);
+            Core.extractChannel(YCRCBMat, ExtractMat, 1);
 
             double color1 = 0, color2 = 0, color3 = 0;
 
@@ -340,4 +318,3 @@ public class FreightBluePathDucks extends LinearOpMode {
 
     }
 }
-

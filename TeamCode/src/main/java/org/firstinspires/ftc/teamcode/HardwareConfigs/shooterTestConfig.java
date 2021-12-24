@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.HardwareConfigs;
 
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorImplEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -21,6 +22,7 @@ public class shooterTestConfig {
         shooter = hwMap.get(DcMotorImplEx.class,"motor");
         shooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        loader = hwMap.get(Servo.class, "servo");
         //loader = hwMap.get(Servo.class, "servo");
 
         return hwMap;

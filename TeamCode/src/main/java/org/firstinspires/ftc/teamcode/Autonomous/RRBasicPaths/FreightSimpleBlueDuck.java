@@ -41,7 +41,7 @@ import static org.firstinspires.ftc.teamcode.Vision.BarCodeDuckPipeline.thresh;
 @Autonomous(group = "drive")
 public class FreightSimpleBlueDuck extends LinearOpMode {
 
-    public static int startHeading = 90;
+    public static int startHeading = 0;
 
     private Pose2d startPose = new Pose2d(-62.0, -36.0, Math.toRadians(startHeading));
     private Pose2d spinPose = new Pose2d(67.0 , 63.0, Math.toRadians(270));
@@ -53,7 +53,7 @@ public class FreightSimpleBlueDuck extends LinearOpMode {
 
     public static double level1 = 900, level2 = 1900, sensorSideOffset, sensorStrightOffset;
 
-    public static double OPEN = 0, CLOSED = 0, back = 24, forward1 = 8, leaveSpinner = 8, front = 48, forward2 = 20, strafe = 54; //ALL VALUES NEED TO BE TUNED
+    public static double OPEN = 0, CLOSED = 0, first = 6, back = 32, forward1 = 6, leaveSpinner = 8, front = 20, forward2 = 16, strafe = 54; //ALL VALUES NEED TO BE TUNED
 
     SampleMecanumDrive drive;
 
@@ -80,47 +80,35 @@ public class FreightSimpleBlueDuck extends LinearOpMode {
         double slideTicks = 0;
         if(duckLocation > 0) slideTicks = duckLocation == 1 ? level1 : level2;
 
+        Trajectory inchUp = drive.trajectoryBuilder(startPose)
+                .forward(first)
+                .build();
+        drive.followTrajectory(inchUp);
+
+        drive.turn(Math.toRadians(90)); //Might need to be positive
+
         Trajectory moveForward = drive.trajectoryBuilder(startPose)
                 .forward(forward1)
                 .build();
         drive.followTrajectory(moveForward);
 
+        drive.spinner.setPower(0.4);
+        sleep(4500);
+        drive.spinner.setPower(0);
+
         drive.turn(Math.toRadians(-90)); //Might need to be positive
 
         Trajectory goToSpin = drive.trajectoryBuilder(drive.getPoseEstimate())
-                .back(back)
+                .forward(forward2)
                 .build();
         drive.followTrajectory(goToSpin);
 
-        drive.spinner.setPower(-0.4);
-        sleep(3500);
-        drive.spinner.setPower(0);
+        drive.turn(Math.toRadians(90)); //Might need to be positive
 
         Trajectory goToDropOff = drive.trajectoryBuilder(drive.getPoseEstimate())
                 .forward(front)
                 .build();
         drive.followTrajectory(goToDropOff);
-
-        imuTurn(Math.toRadians(0));
-
-        while(Math.abs(drive.slides.getCurrentPosition() - slideTicks) > 50) {
-            drive.slides.setPower(0.8);
-        }
-        drive.slides.setPower(0);
-
-        Trajectory goToDropOff2 = drive.trajectoryBuilder(drive.getPoseEstimate())
-                .forward(forward2)
-                .build();
-        drive.followTrajectory(goToDropOff2);
-
-        drive.dropper.setPosition(OPEN);
-        sleep(600);
-
-        Trajectory toPark = drive.trajectoryBuilder(drive.getPoseEstimate())
-                //.splineTo(tapedParkPose.vec(), 0)
-                .strafeRight(strafe)
-                .build();
-        drive.followTrajectory(toPark);
     }
 
     public void imuTurn(double angle) {
